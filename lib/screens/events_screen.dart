@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../services/database_service.dart';
+import '../models/event.dart';
 
 class EventsScreen extends StatefulWidget {
   const EventsScreen({super.key});
@@ -9,59 +11,11 @@ class EventsScreen extends StatefulWidget {
 }
 
 class _EventsScreenState extends State<EventsScreen> {
-  final List<Event> _events = [
-    Event(
-      title: 'State Leadership Conference',
-      description: 'Join us for the annual State Leadership Conference featuring workshops, competitions, and networking opportunities.',
-      date: DateTime(2024, 3, 15),
-      endDate: DateTime(2024, 3, 17),
-      location: 'Atlanta Convention Center, Atlanta, GA',
-      type: 'Conference',
-      registered: true,
-    ),
-    Event(
-      title: 'Monthly Chapter Meeting',
-      description: 'Regular chapter meeting to discuss upcoming events and activities.',
-      date: DateTime(2024, 2, 20),
-      location: 'Room 205',
-      type: 'Meeting',
-      registered: true,
-    ),
-    Event(
-      title: 'FBLA Business Skills Workshop',
-      description: 'Learn essential business skills including public speaking, resume writing, and interview techniques.',
-      date: DateTime(2024, 2, 28),
-      location: 'Room 301',
-      type: 'Workshop',
-      registered: false,
-    ),
-    Event(
-      title: 'Regional Competition',
-      description: 'Compete in various business and leadership events at the regional level.',
-      date: DateTime(2024, 4, 10),
-      location: 'Regional Conference Center',
-      type: 'Competition',
-      registered: false,
-    ),
-    Event(
-      title: 'Community Service Project',
-      description: 'Join fellow members for a community service initiative at the local food bank.',
-      date: DateTime(2024, 3, 5),
-      location: 'Community Food Bank',
-      type: 'Service',
-      registered: false,
-    ),
-  ];
-
+  final DatabaseService _dbService = DatabaseService();
   String _selectedFilter = 'All';
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final filteredEvents = _selectedFilter == 'All'
-        ? _events
-        : _events.where((e) => e.type == _selectedFilter).toList();
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Events'),
@@ -75,7 +29,14 @@ class _EventsScreenState extends State<EventsScreen> {
             child: ListView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              children: ['All', 'Conference', 'Meeting', 'Workshop', 'Competition', 'Service']
+              children: [
+                'All',
+                'Conference',
+                'Meeting',
+                'Workshop',
+                'Competition',
+                'Service'
+              ]
                   .map((filter) => Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: FilterChip(
@@ -93,14 +54,84 @@ class _EventsScreenState extends State<EventsScreen> {
           ),
           // Events List
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: filteredEvents.length,
-              itemBuilder: (context, index) {
-                final event = filteredEvents[index];
-                return _EventListItem(
-                  event: event,
-                  onTap: () => _showEventDetails(context, event),
+            child: StreamBuilder<List<Event>>(
+              stream: _dbService.eventsStream,
+              builder: (context, eventSnapshot) {
+                if (eventSnapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (eventSnapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48),
+                        const SizedBox(height: 16),
+                        Text('Error: ${eventSnapshot.error}'),
+                      ],
+                    ),
+                  );
+                }
+
+                final events = eventSnapshot.data ?? [];
+                final filteredEvents = _selectedFilter == 'All'
+                    ? events
+                    : events.where((e) => e.type == _selectedFilter).toList();
+
+                if (filteredEvents.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.event_busy,
+                          size: 64,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.4),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _selectedFilter == 'All'
+                              ? 'No events yet'
+                              : 'No $_selectedFilter events',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurface
+                                    .withOpacity(0.6),
+                              ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return StreamBuilder<List<String>>(
+                  stream: _dbService.userRegisteredEventsStream,
+                  builder: (context, regSnapshot) {
+                    final registeredIds = regSnapshot.data ?? [];
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: filteredEvents.length,
+                      itemBuilder: (context, index) {
+                        final event = filteredEvents[index];
+                        final isRegistered = registeredIds.contains(event.id);
+                        return _EventListItem(
+                          event: event,
+                          isRegistered: isRegistered,
+                          onTap: () =>
+                              _showEventDetails(context, event, isRegistered),
+                        );
+                      },
+                    );
+                  },
                 );
               },
             ),
@@ -110,24 +141,31 @@ class _EventsScreenState extends State<EventsScreen> {
     );
   }
 
-  void _showEventDetails(BuildContext context, Event event) {
+  void _showEventDetails(
+      BuildContext context, Event event, bool isRegistered) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => _EventDetailsSheet(event: event),
+      builder: (context) => _EventDetailsSheet(
+        event: event,
+        isRegistered: isRegistered,
+        dbService: _dbService,
+      ),
     );
   }
 }
 
 class _EventListItem extends StatelessWidget {
   final Event event;
+  final bool isRegistered;
   final VoidCallback onTap;
 
   const _EventListItem({
     required this.event,
+    required this.isRegistered,
     required this.onTap,
   });
 
@@ -166,7 +204,7 @@ class _EventListItem extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  if (event.registered)
+                  if (isRegistered)
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -239,10 +277,63 @@ class _EventListItem extends StatelessWidget {
   }
 }
 
-class _EventDetailsSheet extends StatelessWidget {
+class _EventDetailsSheet extends StatefulWidget {
   final Event event;
+  final bool isRegistered;
+  final DatabaseService dbService;
 
-  const _EventDetailsSheet({required this.event});
+  const _EventDetailsSheet({
+    required this.event,
+    required this.isRegistered,
+    required this.dbService,
+  });
+
+  @override
+  State<_EventDetailsSheet> createState() => _EventDetailsSheetState();
+}
+
+class _EventDetailsSheetState extends State<_EventDetailsSheet> {
+  bool _isLoading = false;
+  late bool _isRegistered;
+
+  @override
+  void initState() {
+    super.initState();
+    _isRegistered = widget.isRegistered;
+  }
+
+  Future<void> _toggleRegistration() async {
+    setState(() => _isLoading = true);
+
+    try {
+      if (_isRegistered) {
+        await widget.dbService.unregisterFromEvent(widget.event.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unregistered from event')),
+          );
+        }
+      } else {
+        await widget.dbService.registerForEvent(widget.event.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Registered for event!')),
+          );
+        }
+      }
+      setState(() => _isRegistered = !_isRegistered);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -284,7 +375,7 @@ class _EventDetailsSheet extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      event.type,
+                      widget.event.type,
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: theme.colorScheme.onPrimaryContainer,
                         fontWeight: FontWeight.bold,
@@ -293,7 +384,7 @@ class _EventDetailsSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    event.title,
+                    widget.event.title,
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -302,15 +393,21 @@ class _EventDetailsSheet extends StatelessWidget {
                   _DetailRow(
                     icon: Icons.calendar_today,
                     label: 'Date',
-                    value: event.endDate != null
-                        ? '${dateFormat.format(event.date)} - ${dateFormat.format(event.endDate!)}'
-                        : dateFormat.format(event.date),
+                    value: widget.event.endDate != null
+                        ? '${dateFormat.format(widget.event.date)} - ${dateFormat.format(widget.event.endDate!)}'
+                        : dateFormat.format(widget.event.date),
                   ),
                   const SizedBox(height: 16),
                   _DetailRow(
                     icon: Icons.location_on,
                     label: 'Location',
-                    value: event.location,
+                    value: widget.event.location,
+                  ),
+                  const SizedBox(height: 16),
+                  _DetailRow(
+                    icon: Icons.people,
+                    label: 'Participants',
+                    value: '${widget.event.participantCount} registered',
                   ),
                   const SizedBox(height: 24),
                   Text(
@@ -321,31 +418,43 @@ class _EventDetailsSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    event.description,
+                    widget.event.description,
                     style: theme.textTheme.bodyLarge,
                   ),
                   const SizedBox(height: 32),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: () {
-                        // Handle registration
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(event.registered
-                                ? 'Already registered for this event'
-                                : 'Registration successful!'),
-                          ),
-                        );
-                      },
-                      icon: Icon(event.registered ? Icons.check : Icons.event_available),
-                      label: Text(event.registered ? 'Registered' : 'Register for Event'),
+                      onPressed: _isLoading ? null : _toggleRegistration,
+                      icon: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Icon(
+                              _isRegistered ? Icons.check : Icons.event_available,
+                            ),
+                      label: Text(
+                        _isRegistered ? 'Registered' : 'Register for Event',
+                      ),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor:
+                            _isRegistered ? Colors.green : null,
                       ),
                     ),
                   ),
+                  if (_isRegistered) ...[
+                    const SizedBox(height: 12),
+                    TextButton(
+                      onPressed: _isLoading ? null : _toggleRegistration,
+                      child: const Text('Cancel Registration'),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -398,24 +507,4 @@ class _DetailRow extends StatelessWidget {
       ],
     );
   }
-}
-
-class Event {
-  final String title;
-  final String description;
-  final DateTime date;
-  final DateTime? endDate;
-  final String location;
-  final String type;
-  final bool registered;
-
-  Event({
-    required this.title,
-    required this.description,
-    required this.date,
-    this.endDate,
-    required this.location,
-    required this.type,
-    this.registered = false,
-  });
 }

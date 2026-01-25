@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import '../services/database_service.dart';
+import '../models/competition.dart';
 
 class CompetitionsScreen extends StatefulWidget {
   const CompetitionsScreen({super.key});
@@ -8,63 +11,11 @@ class CompetitionsScreen extends StatefulWidget {
 }
 
 class _CompetitionsScreenState extends State<CompetitionsScreen> {
+  final DatabaseService _dbService = DatabaseService();
   String _selectedCategory = 'All';
-
-  final List<Competition> _competitions = [
-    Competition(
-      name: 'Business Communication',
-      category: 'Business',
-      description: 'Demonstrate effective written and oral business communication skills through various scenarios.',
-      level: 'State',
-      date: 'March 15, 2024',
-      status: 'Registered',
-      participants: '1/2',
-    ),
-    Competition(
-      name: 'Business Law',
-      category: 'Business',
-      description: 'Test knowledge of business law concepts, contracts, and legal principles.',
-      level: 'Regional',
-      date: 'April 10, 2024',
-      status: 'Open',
-      participants: '0/2',
-    ),
-    Competition(
-      name: 'Public Speaking',
-      category: 'Leadership',
-      description: 'Deliver an impromptu speech on a given business topic.',
-      level: 'State',
-      date: 'March 16, 2024',
-      status: 'Registered',
-      participants: '1/1',
-    ),
-    Competition(
-      name: 'Website Design',
-      category: 'Technology',
-      description: 'Design and develop a functional business website with modern design principles.',
-      level: 'Regional',
-      date: 'April 11, 2024',
-      status: 'Open',
-      participants: '0/3',
-    ),
-    Competition(
-      name: 'Entrepreneurship',
-      category: 'Business',
-      description: 'Develop and present a comprehensive business plan for a new venture.',
-      level: 'State',
-      date: 'March 17, 2024',
-      status: 'Pending',
-      participants: '1/3',
-    ),
-  ];
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final filteredCompetitions = _selectedCategory == 'All'
-        ? _competitions
-        : _competitions.where((c) => c.category == _selectedCategory).toList();
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Competitions'),
@@ -96,14 +47,85 @@ class _CompetitionsScreenState extends State<CompetitionsScreen> {
           ),
           // Competitions List
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: filteredCompetitions.length,
-              itemBuilder: (context, index) {
-                final competition = filteredCompetitions[index];
-                return _CompetitionCard(
-                  competition: competition,
-                  onTap: () => _showCompetitionDetails(context, competition),
+            child: StreamBuilder<List<Competition>>(
+              stream: _dbService.competitionsStream,
+              builder: (context, compSnapshot) {
+                if (compSnapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (compSnapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48),
+                        const SizedBox(height: 16),
+                        Text('Error: ${compSnapshot.error}'),
+                      ],
+                    ),
+                  );
+                }
+
+                final competitions = compSnapshot.data ?? [];
+                final filteredCompetitions = _selectedCategory == 'All'
+                    ? competitions
+                    : competitions
+                        .where((c) => c.category == _selectedCategory)
+                        .toList();
+
+                if (filteredCompetitions.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.emoji_events_outlined,
+                          size: 64,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.4),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _selectedCategory == 'All'
+                              ? 'No competitions yet'
+                              : 'No $_selectedCategory competitions',
+                          style:
+                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.6),
+                                  ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return StreamBuilder<List<String>>(
+                  stream: _dbService.userRegisteredCompetitionsStream,
+                  builder: (context, regSnapshot) {
+                    final registeredIds = regSnapshot.data ?? [];
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: filteredCompetitions.length,
+                      itemBuilder: (context, index) {
+                        final competition = filteredCompetitions[index];
+                        final isRegistered =
+                            registeredIds.contains(competition.id);
+                        return _CompetitionCard(
+                          competition: competition,
+                          isRegistered: isRegistered,
+                          onTap: () => _showCompetitionDetails(
+                              context, competition, isRegistered),
+                        );
+                      },
+                    );
+                  },
                 );
               },
             ),
@@ -113,41 +135,39 @@ class _CompetitionsScreenState extends State<CompetitionsScreen> {
     );
   }
 
-  void _showCompetitionDetails(BuildContext context, Competition competition) {
+  void _showCompetitionDetails(
+      BuildContext context, Competition competition, bool isRegistered) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => _CompetitionDetailsSheet(competition: competition),
+      builder: (context) => _CompetitionDetailsSheet(
+        competition: competition,
+        isRegistered: isRegistered,
+        dbService: _dbService,
+      ),
     );
   }
 }
 
 class _CompetitionCard extends StatelessWidget {
   final Competition competition;
+  final bool isRegistered;
   final VoidCallback onTap;
 
   const _CompetitionCard({
     required this.competition,
+    required this.isRegistered,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    Color statusColor;
-    switch (competition.status) {
-      case 'Registered':
-        statusColor = Colors.green;
-        break;
-      case 'Pending':
-        statusColor = Colors.orange;
-        break;
-      default:
-        statusColor = Colors.blue;
-    }
+    final dateFormat = DateFormat('MMM d, yyyy');
+    final statusColor = isRegistered ? Colors.green : Colors.blue;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -179,23 +199,24 @@ class _CompetitionCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      competition.status,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: statusColor,
-                        fontWeight: FontWeight.bold,
+                  if (isRegistered)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusColor.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'Registered',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: statusColor,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                  ),
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -242,7 +263,7 @@ class _CompetitionCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    competition.date,
+                    dateFormat.format(competition.date),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.6),
                     ),
@@ -270,25 +291,68 @@ class _CompetitionCard extends StatelessWidget {
   }
 }
 
-class _CompetitionDetailsSheet extends StatelessWidget {
+class _CompetitionDetailsSheet extends StatefulWidget {
   final Competition competition;
+  final bool isRegistered;
+  final DatabaseService dbService;
 
-  const _CompetitionDetailsSheet({required this.competition});
+  const _CompetitionDetailsSheet({
+    required this.competition,
+    required this.isRegistered,
+    required this.dbService,
+  });
+
+  @override
+  State<_CompetitionDetailsSheet> createState() =>
+      _CompetitionDetailsSheetState();
+}
+
+class _CompetitionDetailsSheetState extends State<_CompetitionDetailsSheet> {
+  bool _isLoading = false;
+  late bool _isRegistered;
+
+  @override
+  void initState() {
+    super.initState();
+    _isRegistered = widget.isRegistered;
+  }
+
+  Future<void> _register() async {
+    if (_isRegistered) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Already registered for this competition')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      await widget.dbService.registerForCompetition(widget.competition.id);
+      setState(() => _isRegistered = true);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Registered for competition!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    Color statusColor;
-    switch (competition.status) {
-      case 'Registered':
-        statusColor = Colors.green;
-        break;
-      case 'Pending':
-        statusColor = Colors.orange;
-        break;
-      default:
-        statusColor = Colors.blue;
-    }
+    final dateFormat = DateFormat('EEEE, MMMM d, yyyy');
+    final statusColor = _isRegistered ? Colors.green : Colors.blue;
 
     return DraggableScrollableSheet(
       initialChildSize: 0.9,
@@ -327,7 +391,7 @@ class _CompetitionDetailsSheet extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          competition.category,
+                          widget.competition.category,
                           style: theme.textTheme.labelMedium?.copyWith(
                             color: theme.colorScheme.onPrimaryContainer,
                             fontWeight: FontWeight.bold,
@@ -335,28 +399,29 @@ class _CompetitionDetailsSheet extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          competition.status,
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: statusColor,
-                            fontWeight: FontWeight.bold,
+                      if (_isRegistered)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: statusColor.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Registered',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: statusColor,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    competition.name,
+                    widget.competition.name,
                     style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -372,7 +437,7 @@ class _CompetitionDetailsSheet extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      competition.level,
+                      widget.competition.level,
                       style: theme.textTheme.labelMedium?.copyWith(
                         color: Colors.amber.shade900,
                         fontWeight: FontWeight.bold,
@@ -383,13 +448,13 @@ class _CompetitionDetailsSheet extends StatelessWidget {
                   _DetailRow(
                     icon: Icons.calendar_today,
                     label: 'Date',
-                    value: competition.date,
+                    value: dateFormat.format(widget.competition.date),
                   ),
                   const SizedBox(height: 16),
                   _DetailRow(
                     icon: Icons.people,
                     label: 'Team Size',
-                    value: 'Team: ${competition.participants}',
+                    value: 'Team: ${widget.competition.participants}',
                   ),
                   const SizedBox(height: 24),
                   Text(
@@ -400,44 +465,30 @@ class _CompetitionDetailsSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    competition.description,
+                    widget.competition.description,
                     style: theme.textTheme.bodyLarge,
                   ),
                   const SizedBox(height: 32),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(competition.status == 'Registered'
-                                ? 'Already registered for this competition'
-                                : competition.status == 'Pending'
-                                    ? 'Registration is pending approval'
-                                    : 'Registration successful!'),
-                          ),
-                        );
-                      },
-                      icon: Icon(
-                        competition.status == 'Registered'
-                            ? Icons.check
-                            : competition.status == 'Pending'
-                                ? Icons.hourglass_empty
-                                : Icons.add,
+                      onPressed: _isLoading ? null : _register,
+                      icon: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Icon(_isRegistered ? Icons.check : Icons.add),
+                      label: Text(
+                        _isRegistered ? 'Registered' : 'Register for Competition',
                       ),
-                      label: Text(competition.status == 'Registered'
-                          ? 'Registered'
-                          : competition.status == 'Pending'
-                              ? 'Pending Approval'
-                              : 'Register for Competition'),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: competition.status == 'Registered'
-                            ? Colors.green
-                            : competition.status == 'Pending'
-                                ? Colors.orange
-                                : null,
+                        backgroundColor: _isRegistered ? Colors.green : null,
                       ),
                     ),
                   ),
@@ -493,24 +544,4 @@ class _DetailRow extends StatelessWidget {
       ],
     );
   }
-}
-
-class Competition {
-  final String name;
-  final String category;
-  final String description;
-  final String level;
-  final String date;
-  final String status;
-  final String participants;
-
-  Competition({
-    required this.name,
-    required this.category,
-    required this.description,
-    required this.level,
-    required this.date,
-    required this.status,
-    required this.participants,
-  });
 }
