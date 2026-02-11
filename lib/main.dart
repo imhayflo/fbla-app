@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fbla_member_app/screens/home_screen.dart';
 import 'package:fbla_member_app/screens/login_screen.dart';
 import 'package:fbla_member_app/services/database_service.dart';
@@ -162,15 +163,35 @@ class _HomeScreenWithSyncState extends State<_HomeScreenWithSync>
   /// Perform initial sync on app startup (non-blocking)
   Future<void> _performInitialSync() async {
     try {
-      // Add timeout to prevent hanging
+      // Run news and competitions sync in parallel
       await Future.any([
-        _syncNewsIfNeeded(),
-        Future.delayed(const Duration(seconds: 30), () {
-          print('Sync timeout after 30 seconds');
+        Future.wait([_syncNewsIfNeeded(), _syncCompetitionsIfNeeded()]),
+        Future.delayed(const Duration(seconds: 45), () {
+          print('Sync timeout after 45 seconds');
         }),
       ]);
     } catch (e) {
       print('Error during initial sync: $e');
+    }
+  }
+
+  /// Sync competitions if needed
+  Future<void> _syncCompetitionsIfNeeded() async {
+    try {
+      final doc = await _dbService.getCompetitionsSyncTime();
+      final lastSync = doc != null ? (doc['lastSync'] as dynamic) : null;
+      DateTime? lastSyncDate;
+      if (lastSync != null && lastSync is Timestamp) {
+        lastSyncDate = lastSync.toDate();
+      }
+      final now = DateTime.now();
+      if (lastSyncDate == null || now.difference(lastSyncDate).inHours >= 1) {
+        print('Starting FBLA competitions sync...');
+        await _dbService.syncFBLACompetitions();
+        print('FBLA competitions sync completed');
+      }
+    } catch (e) {
+      print('Error syncing FBLA competitions: $e');
     }
   }
 
@@ -198,8 +219,8 @@ class _HomeScreenWithSyncState extends State<_HomeScreenWithSync>
 
   /// Sync if needed (when app comes to foreground)
   Future<void> _syncIfNeeded() async {
-    // Run sync in background without blocking
     _syncNewsIfNeeded();
+    _syncCompetitionsIfNeeded();
   }
 
   @override

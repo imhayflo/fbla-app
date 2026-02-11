@@ -5,6 +5,7 @@ import '../models/event.dart';
 import '../models/announcement.dart';
 import '../models/competition.dart';
 import 'news_sync_service.dart';
+import 'competitions_sync_service.dart';
 
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -239,6 +240,71 @@ class DatabaseService {
   }
 
   // ==================== COMPETITIONS ====================
+
+  // Sync FBLA competitions from their website
+  Future<void> syncFBLACompetitions() async {
+    try {
+      try {
+        await _db.collection('_test').limit(1).get();
+      } catch (e) {
+        print('Firebase not configured - competitions sync skipped: $e');
+        return;
+      }
+
+      final syncService = CompetitionsSyncService();
+      final competitions = await syncService.fetchFBLACompetitions();
+
+      if (competitions.isEmpty) {
+        print('No competitions fetched from FBLA');
+        return;
+      }
+
+      final batch = _db.batch();
+      int addedCount = 0;
+      int updatedCount = 0;
+
+      for (final comp in competitions) {
+        try {
+          final docRef = _db.collection('competitions').doc(comp.id);
+          final existing = await docRef.get();
+
+          if (!existing.exists) {
+            batch.set(docRef, comp.toMap());
+            addedCount++;
+          } else {
+            batch.update(docRef, {
+              'name': comp.name,
+              'category': comp.category,
+              'description': comp.description,
+              'level': comp.level,
+            });
+            updatedCount++;
+          }
+        } catch (e) {
+          print('Error syncing competition ${comp.id}: $e');
+        }
+      }
+
+      if (addedCount > 0 || updatedCount > 0) {
+        await batch.commit();
+        await _db.collection('metadata').doc('competitionsSync').set({
+          'lastSync': FieldValue.serverTimestamp(),
+        });
+        print('Synced $addedCount new FBLA competitions');
+      }
+    } catch (e) {
+      print('Error syncing FBLA competitions: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>?> getCompetitionsSyncTime() async {
+    try {
+      final doc = await _db.collection('metadata').doc('competitionsSync').get();
+      return doc.exists ? doc.data() : null;
+    } catch (e) {
+      return null;
+    }
+  }
 
   // Get all competitions
   Stream<List<Competition>> get competitionsStream {

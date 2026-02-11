@@ -29,7 +29,7 @@ class _CompetitionsScreenState extends State<CompetitionsScreen> {
             child: ListView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              children: ['All', 'Business', 'Leadership', 'Technology']
+              children: ['All', 'Business', 'Leadership', 'Technology', 'Academic', 'General']
                   .map((category) => Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: FilterChip(
