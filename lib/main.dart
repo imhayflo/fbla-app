@@ -130,8 +130,18 @@ class _HomeScreenWithSyncState extends State<_HomeScreenWithSync>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _ensureProfileExists();
     // Perform sync in background without blocking UI
     _performInitialSync();
+  }
+
+  /// Create user profile in Firestore if missing (e.g. user logged in but has no profile doc)
+  Future<void> _ensureProfileExists() async {
+    try {
+      await _dbService.ensureUserProfileExists();
+    } catch (e) {
+      print('Error ensuring profile exists: $e');
+    }
   }
 
   @override

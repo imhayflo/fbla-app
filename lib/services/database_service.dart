@@ -14,6 +14,27 @@ class DatabaseService {
 
   // ==================== USER/MEMBER ====================
 
+  // Ensure user has a profile document (creates minimal one if missing)
+  Future<void> ensureUserProfileExists() async {
+    if (_uid == null) return;
+    final doc = await _db.collection('users').doc(_uid!).get();
+    if (doc.exists) return;
+    final user = _auth.currentUser;
+    await _db.collection('users').doc(_uid!).set({
+      'uid': _uid,
+      'email': user?.email ?? '',
+      'name': user?.displayName ?? (user?.email?.split('@').first ?? 'Member'),
+      'school': '',
+      'chapter': '',
+      'phone': '',
+      'points': 0,
+      'rank': 0,
+      'eventsAttended': 0,
+      'memberSince': FieldValue.serverTimestamp(),
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   // Get current user's profile
   Stream<Member?> get memberStream {
     if (_uid == null) return Stream.value(null);

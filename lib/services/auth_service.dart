@@ -91,7 +91,8 @@ class AuthService {
       case 'user-not-found':
         return 'No user found with this email.';
       case 'wrong-password':
-        return 'Incorrect password.';
+      case 'invalid-credential':
+        return 'Invalid email or password.';
       case 'user-disabled':
         return 'This account has been disabled.';
       case 'too-many-requests':
