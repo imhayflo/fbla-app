@@ -48,8 +48,26 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } catch (e) {
+      // Show user-friendly message for common Firebase/auth errors
+      String message = e.toString();
+      if (message.contains('firebase') ||
+          message.contains('network') ||
+          message.contains('API') ||
+          message.contains('configuration')) {
+        message =
+            'Login failed. Check that Firebase is configured with your project (see SWITCH_FIREBASE.md). '
+            'Details: ${e.toString()}';
+      } else if (message.contains('user-not-found') ||
+          message.contains('wrong-password') ||
+          message.contains('invalid-credential')) {
+        message = 'Invalid email or password.';
+      } else if (message.contains('invalid-email')) {
+        message = 'Invalid email address.';
+      } else if (message.contains('too-many-requests')) {
+        message = 'Too many attempts. Try again later.';
+      }
       setState(() {
-        _error = e.toString();
+        _error = message;
       });
     } finally {
       if (mounted) {

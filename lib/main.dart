@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fbla_member_app/screens/home_screen.dart';
 import 'package:fbla_member_app/screens/login_screen.dart';
+import 'package:fbla_member_app/services/database_service.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -100,9 +101,9 @@ class FBLAApp extends StatelessWidget {
             );
           }
           
-          // If user is logged in, show home screen
+          // If user is logged in, show home screen with auto-sync
           if (snapshot.hasData) {
-            return const HomeScreen();
+            return _HomeScreenWithSync();
           }
           
           // Otherwise show login screen
@@ -110,5 +111,90 @@ class FBLAApp extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+/// Wrapper widget that handles automatic news syncing
+class _HomeScreenWithSync extends StatefulWidget {
+  const _HomeScreenWithSync();
+
+  @override
+  State<_HomeScreenWithSync> createState() => _HomeScreenWithSyncState();
+}
+
+class _HomeScreenWithSyncState extends State<_HomeScreenWithSync>
+    with WidgetsBindingObserver {
+  final DatabaseService _dbService = DatabaseService();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Perform sync in background without blocking UI
+    _performInitialSync();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Sync when app comes to foreground (after being in background)
+    if (state == AppLifecycleState.resumed) {
+      _syncIfNeeded();
+    }
+  }
+
+  /// Perform initial sync on app startup (non-blocking)
+  Future<void> _performInitialSync() async {
+    try {
+      // Add timeout to prevent hanging
+      await Future.any([
+        _syncNewsIfNeeded(),
+        Future.delayed(const Duration(seconds: 30), () {
+          print('Sync timeout after 30 seconds');
+        }),
+      ]);
+    } catch (e) {
+      print('Error during initial sync: $e');
+    }
+  }
+
+  /// Sync news if needed
+  Future<void> _syncNewsIfNeeded() async {
+    try {
+      final lastSync = await _dbService.getLastNewsSyncTime();
+      final now = DateTime.now();
+
+      // Sync if never synced before, or if last sync was more than 1 hour ago
+      if (lastSync == null ||
+          now.difference(lastSync).inHours >= 1) {
+        print('Starting FBLA news sync...');
+        await _dbService.syncFBLANews();
+        await _dbService.updateLastNewsSyncTime();
+        print('FBLA news sync completed');
+      } else {
+        print('Skipping sync - last sync was ${now.difference(lastSync).inMinutes} minutes ago');
+      }
+    } catch (e) {
+      print('Error syncing FBLA news: $e');
+      // Don't throw - allow app to continue even if sync fails
+    }
+  }
+
+  /// Sync if needed (when app comes to foreground)
+  Future<void> _syncIfNeeded() async {
+    // Run sync in background without blocking
+    _syncNewsIfNeeded();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Always show HomeScreen - sync happens in background
+    return const HomeScreen();
   }
 }

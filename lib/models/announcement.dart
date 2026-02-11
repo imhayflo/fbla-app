@@ -8,6 +8,8 @@ class Announcement {
   final String author;
   final String category;
   final String priority; // 'high', 'medium', 'low'
+  final String? externalUrl; // URL to external source (e.g., FBLA newsroom)
+  final String? imageUrl; // URL to article image
 
   Announcement({
     required this.id,
@@ -17,6 +19,8 @@ class Announcement {
     required this.author,
     required this.category,
     required this.priority,
+    this.externalUrl,
+    this.imageUrl,
   });
 
   factory Announcement.fromFirestore(DocumentSnapshot doc) {
@@ -29,6 +33,8 @@ class Announcement {
       author: data['author'] ?? '',
       category: data['category'] ?? 'General',
       priority: data['priority'] ?? 'low',
+      externalUrl: data['externalUrl'],
+      imageUrl: data['imageUrl'],
     );
   }
 
@@ -40,6 +46,8 @@ class Announcement {
       'author': author,
       'category': category,
       'priority': priority,
+      if (externalUrl != null) 'externalUrl': externalUrl,
+      if (imageUrl != null) 'imageUrl': imageUrl,
     };
   }
 }

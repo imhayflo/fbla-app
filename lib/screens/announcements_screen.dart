@@ -1,22 +1,80 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import '../services/database_service.dart';
 import '../models/announcement.dart';
 
-class AnnouncementsScreen extends StatelessWidget {
+class AnnouncementsScreen extends StatefulWidget {
   const AnnouncementsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final dbService = DatabaseService();
+  State<AnnouncementsScreen> createState() => _AnnouncementsScreenState();
+}
 
+class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
+  final DatabaseService _dbService = DatabaseService();
+  bool _isRefreshing = false;
+
+  Future<void> _refreshNews() async {
+    setState(() {
+      _isRefreshing = true;
+    });
+
+    try {
+      await _dbService.syncFBLANews();
+      await _dbService.updateLastNewsSyncTime();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('News synced successfully'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error syncing news: $e'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Announcements'),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: _isRefreshing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.refresh),
+            onPressed: _isRefreshing ? null : _refreshNews,
+            tooltip: 'Refresh news',
+          ),
+        ],
       ),
-      body: StreamBuilder<List<Announcement>>(
-        stream: dbService.announcementsStream,
+      body: RefreshIndicator(
+        onRefresh: _refreshNews,
+        child: StreamBuilder<List<Announcement>>(
+          stream: _dbService.announcementsStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -75,12 +133,13 @@ class AnnouncementsScreen extends StatelessWidget {
             },
           );
         },
+        ),
       ),
     );
   }
 
-  void _showAnnouncementDetails(
-      BuildContext context, Announcement announcement) {
+  Future<void> _showAnnouncementDetails(
+      BuildContext context, Announcement announcement) async {
     final theme = Theme.of(context);
     final dateFormat = DateFormat('MMMM d, yyyy');
 
@@ -116,6 +175,17 @@ class AnnouncementsScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (announcement.imageUrl != null) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    announcement.imageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
               Text(
                 announcement.content,
                 style: theme.textTheme.bodyLarge,
@@ -156,6 +226,25 @@ class AnnouncementsScreen extends StatelessWidget {
           ),
         ),
         actions: [
+          if (announcement.externalUrl != null)
+            TextButton.icon(
+              onPressed: () async {
+                final uri = Uri.parse(announcement.externalUrl!);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                } else {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Could not open link'),
+                      ),
+                    );
+                  }
+                }
+              },
+              icon: const Icon(Icons.open_in_new, size: 18),
+              label: const Text('Read Full Article'),
+            ),
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Close'),
@@ -232,6 +321,19 @@ class _AnnouncementCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
+              if (announcement.imageUrl != null) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    announcement.imageUrl!,
+                    height: 150,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               Text(
                 announcement.title,
                 style: theme.textTheme.titleMedium?.copyWith(
@@ -249,6 +351,26 @@ class _AnnouncementCard extends StatelessWidget {
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
+              if (announcement.externalUrl != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.link,
+                      size: 14,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Read on FBLA.org',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 12),
               Row(
                 children: [

@@ -4,6 +4,7 @@ import '../models/member.dart';
 import '../models/event.dart';
 import '../models/announcement.dart';
 import '../models/competition.dart';
+import 'news_sync_service.dart';
 
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -118,6 +119,102 @@ class DatabaseService {
         .snapshots()
         .map((snapshot) =>
             snapshot.docs.map((doc) => Announcement.fromFirestore(doc)).toList());
+  }
+
+  // Sync FBLA news from their website
+  Future<void> syncFBLANews() async {
+    try {
+      // Check if Firebase is properly initialized
+      try {
+        // Try to access Firestore to verify it's configured
+        await _db.collection('_test').limit(1).get();
+      } catch (e) {
+        print('Firebase not configured - news sync will fetch but not save: $e');
+        // Still fetch news so users can see it, but don't try to save
+        final newsService = NewsSyncService();
+        await newsService.fetchFBLANews();
+        print('Fetched FBLA news (not saved to database - Firebase not configured)');
+        return;
+      }
+
+      final newsService = NewsSyncService();
+      final newsItems = await newsService.fetchFBLANews();
+
+      if (newsItems.isEmpty) {
+        print('No news items fetched from FBLA');
+        return;
+      }
+
+      final batch = _db.batch();
+      int addedCount = 0;
+      int updatedCount = 0;
+
+      for (final newsItem in newsItems) {
+        try {
+          // Check if this news item already exists
+          final existingQuery = await _db
+              .collection('announcements')
+              .where('externalUrl', isEqualTo: newsItem.externalUrl)
+              .limit(1)
+              .get();
+
+          if (existingQuery.docs.isEmpty) {
+            // Add new news item
+            final docRef = _db.collection('announcements').doc(newsItem.id);
+            batch.set(docRef, newsItem.toMap());
+            addedCount++;
+          } else {
+            // Update existing news item (in case title/content changed)
+            final existingDoc = existingQuery.docs.first;
+            batch.update(existingDoc.reference, {
+              'title': newsItem.title,
+              'content': newsItem.content,
+              'category': newsItem.category,
+              'imageUrl': newsItem.imageUrl,
+            });
+            updatedCount++;
+          }
+        } catch (e) {
+          print('Error processing news item ${newsItem.id}: $e');
+          // Continue with other items
+        }
+      }
+
+      if (addedCount > 0 || updatedCount > 0) {
+        await batch.commit();
+        print('Synced $addedCount new FBLA news items');
+      }
+    } catch (e) {
+      print('Error syncing FBLA news: $e');
+      // Don't rethrow - allow app to continue even if sync fails
+    }
+  }
+
+  // Get last sync time
+  Future<DateTime?> getLastNewsSyncTime() async {
+    try {
+      final doc = await _db.collection('metadata').doc('newsSync').get();
+      if (doc.exists) {
+        final data = doc.data();
+        final timestamp = data?['lastSync'] as Timestamp?;
+        return timestamp?.toDate();
+      }
+    } catch (e) {
+      print('Error getting last sync time (Firebase may not be configured): $e');
+    }
+    return null;
+  }
+
+  // Update last sync time
+  Future<void> updateLastNewsSyncTime() async {
+    try {
+      await _db.collection('metadata').doc('newsSync').set({
+        'lastSync': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('Error updating last sync time (Firebase may not be configured): $e');
+      // Don't throw - this is not critical
+    }
   }
 
   // ==================== COMPETITIONS ====================

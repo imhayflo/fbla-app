@@ -14,8 +14,19 @@ import 'package:flutter/foundation.dart'
 /// 
 /// This will automatically generate this file with your Firebase config.
 class DefaultFirebaseOptions {
+  static bool _isPlaceholder(String? value) =>
+      value == null || value.isEmpty || value.startsWith('YOUR_');
+
   /// True if firebase_options still has placeholder values (flutterfire configure not run).
-  static bool get hasPlaceholderValues => web.projectId == 'YOUR_PROJECT_ID';
+  /// When true, main.dart will call Firebase.initializeApp() without options so that
+  /// platform config (google-services.json, GoogleService-Info.plist) is used instead.
+  static bool get hasPlaceholderValues =>
+      _isPlaceholder(web.projectId) ||
+      _isPlaceholder(web.apiKey) ||
+      _isPlaceholder(android.apiKey) ||
+      _isPlaceholder(android.appId) ||
+      _isPlaceholder(ios.apiKey) ||
+      _isPlaceholder(ios.appId);
 
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
@@ -44,48 +55,53 @@ class DefaultFirebaseOptions {
 
   // TODO: Replace these placeholder values with your actual Firebase config
   // Run `flutterfire configure` to generate the real values
-  
+
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'YOUR_WEB_API_KEY',
-    appId: 'YOUR_WEB_APP_ID',
-    messagingSenderId: 'YOUR_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
+    apiKey: 'AIzaSyCkYqpAqXuqZiDvWf4snHE4wITMioVqFg8',
+    appId: '1:1020739823021:web:f49c75f35ae6295debad24',
+    messagingSenderId: '1020739823021',
+    projectId: 'fblamobileappdevelopment-e6b54',
+    authDomain: 'fblamobileappdevelopment-e6b54.firebaseapp.com',
+    storageBucket: 'fblamobileappdevelopment-e6b54.firebasestorage.app',
+    measurementId: 'G-Z52SQJJJKM',
   );
 
+  
+
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'YOUR_ANDROID_API_KEY',
-    appId: 'YOUR_ANDROID_APP_ID',
-    messagingSenderId: 'YOUR_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
+    apiKey: 'AIzaSyDTM9KgVEBv8E-kvNezV1VSxjIr2K1lrMQ',
+    appId: '1:1020739823021:android:c2c2a63f5642efeeebad24',
+    messagingSenderId: '1020739823021',
+    projectId: 'fblamobileappdevelopment-e6b54',
+    storageBucket: 'fblamobileappdevelopment-e6b54.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'YOUR_IOS_API_KEY',
-    appId: 'YOUR_IOS_APP_ID',
-    messagingSenderId: 'YOUR_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
-    iosBundleId: 'com.example.fblaApp',
+    apiKey: 'AIzaSyDoDCuvHjEdHASM6gOVgXZhaPgjEQj3Vmg',
+    appId: '1:1020739823021:ios:e74512e73b99409debad24',
+    messagingSenderId: '1020739823021',
+    projectId: 'fblamobileappdevelopment-e6b54',
+    storageBucket: 'fblamobileappdevelopment-e6b54.firebasestorage.app',
+    iosBundleId: 'com.example.fblaMemberApp',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'YOUR_MACOS_API_KEY',
-    appId: 'YOUR_MACOS_APP_ID',
-    messagingSenderId: 'YOUR_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
-    iosBundleId: 'com.example.fblaApp',
+    apiKey: 'AIzaSyDoDCuvHjEdHASM6gOVgXZhaPgjEQj3Vmg',
+    appId: '1:1020739823021:ios:e74512e73b99409debad24',
+    messagingSenderId: '1020739823021',
+    projectId: 'fblamobileappdevelopment-e6b54',
+    storageBucket: 'fblamobileappdevelopment-e6b54.firebasestorage.app',
+    iosBundleId: 'com.example.fblaMemberApp',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'YOUR_WINDOWS_API_KEY',
-    appId: 'YOUR_WINDOWS_APP_ID',
-    messagingSenderId: 'YOUR_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
-    storageBucket: 'YOUR_PROJECT_ID.appspot.com',
+    apiKey: 'AIzaSyCkYqpAqXuqZiDvWf4snHE4wITMioVqFg8',
+    appId: '1:1020739823021:web:003e7bfd02573d93ebad24',
+    messagingSenderId: '1020739823021',
+    projectId: 'fblamobileappdevelopment-e6b54',
+    authDomain: 'fblamobileappdevelopment-e6b54.firebaseapp.com',
+    storageBucket: 'fblamobileappdevelopment-e6b54.firebasestorage.app',
+    measurementId: 'G-F8K2HW57S5',
   );
+
 }
