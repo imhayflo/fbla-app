@@ -18,7 +18,10 @@ class AuthService {
     required String name,
     required String school,
     required String chapter,
+    required String state,
+    required String section,
     String? phone,
+    String? chapterInstagramHandle,
   }) async {
     try {
       // Create user account
@@ -35,7 +38,10 @@ class AuthService {
           'name': name,
           'school': school,
           'chapter': chapter,
+          'state': state,
+          'section': section,
           'phone': phone ?? '',
+          'chapterInstagramHandle': chapterInstagramHandle ?? '',
           'points': 0,
           'rank': 0,
           'eventsAttended': 0,
@@ -68,6 +74,33 @@ class AuthService {
   // Sign out
   Future<void> signOut() async {
     await _auth.signOut();
+  }
+
+  /// Delete the current user account. Requires [password] for re-authentication.
+  /// Deletes Firestore user document and subcollections, then Firebase Auth user.
+  Future<void> deleteAccount(String password) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('Not signed in');
+    if (user.email == null || user.email!.isEmpty) throw Exception('No email');
+    final credential = EmailAuthProvider.credential(
+      email: user.email!,
+      password: password,
+    );
+    await user.reauthenticateWithCredential(credential);
+    final uid = user.uid;
+    await _deleteUserFirestoreData(uid);
+    await user.delete();
+  }
+
+  Future<void> _deleteUserFirestoreData(String uid) async {
+    final userRef = _db.collection('users').doc(uid);
+    final batch = _db.batch();
+    batch.delete(userRef);
+    final registeredEvents = await userRef.collection('registeredEvents').get();
+    for (final doc in registeredEvents.docs) batch.delete(doc.reference);
+    final registeredCompetitions = await userRef.collection('registeredCompetitions').get();
+    for (final doc in registeredCompetitions.docs) batch.delete(doc.reference);
+    await batch.commit();
   }
 
   // Reset password

@@ -4,6 +4,7 @@ import 'package:fbla_member_app/screens/events_screen.dart';
 import 'package:fbla_member_app/screens/announcements_screen.dart';
 import 'package:fbla_member_app/screens/profile_screen.dart';
 import 'package:fbla_member_app/screens/competitions_screen.dart';
+import 'package:fbla_member_app/screens/social_screen.dart';
 import '../services/database_service.dart';
 import '../models/member.dart';
 import '../models/event.dart';
@@ -24,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
     const EventsScreen(),
     const AnnouncementsScreen(),
     const CompetitionsScreen(),
+    const SocialScreen(),
     const ProfileScreen(),
   ];
 
@@ -60,6 +62,11 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.emoji_events_outlined),
             selectedIcon: Icon(Icons.emoji_events),
             label: 'Compete',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.share_outlined),
+            selectedIcon: Icon(Icons.share),
+            label: 'Social',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),

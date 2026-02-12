@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
+import '../services/social_service.dart';
 import '../models/member.dart';
 import 'login_screen.dart';
+import 'update_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -14,6 +16,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final AuthService _authService = AuthService();
   final DatabaseService _dbService = DatabaseService();
+  final SocialService _socialService = SocialService();
 
   Future<void> _signOut() async {
     final confirmed = await showDialog<bool>(
@@ -41,6 +44,80 @@ class _ProfileScreenState extends State<ProfileScreen> {
           context,
           MaterialPageRoute(builder: (_) => const LoginScreen()),
           (route) => false,
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteAccount() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Account'),
+        content: const Text(
+          'This will permanently delete your account and all data. You must enter your password to confirm. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final password = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        final controller = TextEditingController();
+        return AlertDialog(
+          title: const Text('Enter password'),
+          content: TextField(
+            controller: controller,
+            obscureText: true,
+            decoration: const InputDecoration(
+              labelText: 'Password',
+              border: OutlineInputBorder(),
+            ),
+            onSubmitted: (value) => Navigator.pop(context, value),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, controller.text),
+              child: const Text('Confirm'),
+            ),
+          ],
+        );
+      },
+    );
+    if (password == null || password.isEmpty) return;
+    try {
+      await _authService.deleteAccount(password);
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Account deleted')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete account: $e')),
         );
       }
     }
@@ -175,6 +252,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         title: 'Chapter',
                         value: member.chapter,
                       ),
+                      if (member.state.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        _InfoCard(
+                          icon: Icons.map,
+                          title: 'State',
+                          value: member.state,
+                        ),
+                      ],
+                      if (member.section.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        _InfoCard(
+                          icon: Icons.category,
+                          title: 'Section',
+                          value: member.section
+                              .split('_')
+                              .map((e) => e.isNotEmpty ? '${e[0].toUpperCase()}${e.substring(1).toLowerCase()}' : '')
+                              .join(' '),
+                        ),
+                      ],
                       const SizedBox(height: 12),
                       _InfoCard(
                         icon: Icons.email,
@@ -218,6 +314,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               title: achievement.title,
                               subtitle: achievement.subtitle,
                               color: _getColor(achievement.color),
+                              onShare: () => _socialService.shareAchievement(
+                                achievement,
+                                memberName: member.name,
+                              ),
                             );
                           },
                         ),
@@ -234,12 +334,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 16),
                       _ActionButton(
                         icon: Icons.edit,
-                        title: 'Edit Profile',
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Edit profile coming soon!')),
+                        title: 'Update Profile',
+                        onTap: () async {
+                          final updated = await Navigator.push<bool>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => UpdateProfileScreen(member: member),
+                            ),
                           );
+                          if (updated == true && mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Profile updated')),
+                            );
+                          }
                         },
                       ),
                       const SizedBox(height: 12),
@@ -269,6 +376,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         icon: Icons.logout,
                         title: 'Sign Out',
                         onTap: _signOut,
+                        isDestructive: true,
+                      ),
+                      const SizedBox(height: 12),
+                      _ActionButton(
+                        icon: Icons.delete_forever,
+                        title: 'Delete Account',
+                        onTap: _deleteAccount,
                         isDestructive: true,
                       ),
                     ],
@@ -377,12 +491,14 @@ class _AchievementCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final Color color;
+  final VoidCallback? onShare;
 
   const _AchievementCard({
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.color,
+    this.onShare,
   });
 
   @override
@@ -411,6 +527,19 @@ class _AchievementCard extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
+            if (onShare != null) ...[
+              const SizedBox(height: 8),
+              FilledButton.tonalIcon(
+                onPressed: onShare,
+                icon: const Icon(Icons.share, size: 18),
+                label: const Text('Share'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
           ],
         ),
       ),

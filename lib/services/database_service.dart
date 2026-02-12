@@ -4,6 +4,8 @@ import '../models/member.dart';
 import '../models/event.dart';
 import '../models/announcement.dart';
 import '../models/competition.dart';
+import '../models/social_config.dart';
+import '../models/fbla_section.dart';
 import 'news_sync_service.dart';
 import 'competitions_sync_service.dart';
 
@@ -27,12 +29,15 @@ class DatabaseService {
       'name': user?.displayName ?? (user?.email?.split('@').first ?? 'Member'),
       'school': '',
       'chapter': '',
+      'state': '',
+      'section': '',
       'phone': '',
       'points': 0,
       'rank': 0,
       'eventsAttended': 0,
       'memberSince': FieldValue.serverTimestamp(),
       'createdAt': FieldValue.serverTimestamp(),
+      'chapterInstagramHandle': '',
     });
   }
 
@@ -374,5 +379,164 @@ class DatabaseService {
         .snapshots()
         .map((snapshot) =>
             snapshot.docs.map((doc) => Member.fromFirestore(doc)).toList());
+  }
+
+  // ==================== SOCIAL / INSTAGRAM ====================
+
+  /// Ensures default social config exists in Firestore (idempotent). Call on app start so Social tab works without manual setup.
+  Future<void> ensureSocialConfigExists() async {
+    try {
+      await _db.collection('_test').limit(1).get();
+    } catch (_) {
+      return;
+    }
+    final ref = _db.collection('social_config').doc('instagram');
+    final doc = await ref.get();
+    if (doc.exists) return;
+    await ref.set({
+      'nationalInstagramHandle': 'fbla_national',
+      'defaultStateInstagramHandle': 'fbla_national',
+      'stateInstagramHandles': {
+        'CA': 'californiafbla',
+        'TX': 'texasfbla',
+        'GA': 'gafbla',
+        'FL': 'floridafbla',
+        'NY': 'newyorkfbla',
+        'IL': 'illinoisfbla',
+        'OH': 'ohiofbla',
+        'PA': 'pennsylvaniafbla',
+        'NC': 'ncfbla',
+        'MI': 'michiganfbla',
+      },
+    });
+    print('Social config (instagram) created with defaults');
+  }
+
+  /// Fetches social config (national + state Instagram handles). Uses defaults if doc missing.
+  Future<SocialConfig> getSocialConfig() async {
+    try {
+      final doc =
+          await _db.collection('social_config').doc('instagram').get();
+      if (doc.exists && doc.data() != null) {
+        return SocialConfig.fromMap(doc.data());
+      }
+    } catch (e) {
+      print('Error loading social config: $e');
+    }
+    return const SocialConfig();
+  }
+
+  /// Ensures default FBLA regional sections exist in Firestore (idempotent). Sections are regional per state (e.g. Bay Section in CA).
+  Future<void> ensureFblaSectionsExist() async {
+    try {
+      await _db.collection('_test').limit(1).get();
+    } catch (_) {
+      return;
+    }
+    final snapshot = await _db.collection('fbla_sections').limit(1).get();
+    if (snapshot.docs.isNotEmpty) return;
+    // Regional sections per state (e.g. California: Bay Section, Northern, Southern)
+    final defaults = [
+      {'id': 'ca_bay', 'name': 'Bay Section', 'stateCode': 'CA', 'order': 0},
+      {'id': 'ca_northern', 'name': 'Northern California', 'stateCode': 'CA', 'order': 1},
+      {'id': 'ca_southern', 'name': 'Southern California', 'stateCode': 'CA', 'order': 2},
+      {'id': 'ca_central', 'name': 'Central California', 'stateCode': 'CA', 'order': 3},
+      {'id': 'tx_north', 'name': 'North Texas', 'stateCode': 'TX', 'order': 0},
+      {'id': 'tx_south', 'name': 'South Texas', 'stateCode': 'TX', 'order': 1},
+      {'id': 'tx_central', 'name': 'Central Texas', 'stateCode': 'TX', 'order': 2},
+      {'id': 'fl_north', 'name': 'Northern Florida', 'stateCode': 'FL', 'order': 0},
+      {'id': 'fl_south', 'name': 'Southern Florida', 'stateCode': 'FL', 'order': 1},
+      {'id': 'ny_upstate', 'name': 'Upstate New York', 'stateCode': 'NY', 'order': 0},
+      {'id': 'ny_metro', 'name': 'Metro New York', 'stateCode': 'NY', 'order': 1},
+      {'id': 'ga_north', 'name': 'Northern Georgia', 'stateCode': 'GA', 'order': 0},
+      {'id': 'ga_south', 'name': 'Southern Georgia', 'stateCode': 'GA', 'order': 1},
+    ];
+    final batch = _db.batch();
+    for (final s in defaults) {
+      batch.set(_db.collection('fbla_sections').doc(s['id'] as String), s);
+    }
+    await batch.commit();
+    print('FBLA regional sections created with defaults');
+  }
+
+  /// Fetches FBLA regional sections for a state from Firestore (API). Used for signup/update profile section dropdown.
+  /// [stateCode] e.g. CA, TX. If null or empty, returns empty list (user must select state first).
+  Future<List<FblaSection>> getFblaSectionsForState(String? stateCode) async {
+    if (stateCode == null || stateCode.isEmpty) return [];
+    try {
+      final snapshot = await _db
+          .collection('fbla_sections')
+          .where('stateCode', isEqualTo: stateCode)
+          .orderBy('order', descending: false)
+          .get();
+      if (snapshot.docs.isNotEmpty) {
+        return snapshot.docs.map((doc) {
+          final d = doc.data();
+          return FblaSection(
+            id: doc.id,
+            name: d['name'] as String? ?? doc.id,
+            stateCode: d['stateCode'] as String? ?? stateCode,
+            order: (d['order'] as num?)?.toInt() ?? 0,
+          );
+        }).toList();
+      }
+    } catch (e) {
+      print('Error loading FBLA sections for $stateCode: $e');
+    }
+    // Fallback regional sections for a few states when Firestore is empty or no index
+    return _defaultSectionsForState(stateCode);
+  }
+
+  static List<FblaSection> _defaultSectionsForState(String stateCode) {
+    switch (stateCode) {
+      case 'CA':
+        return const [
+          FblaSection(id: 'ca_bay', name: 'Bay Section', stateCode: 'CA', order: 0),
+          FblaSection(id: 'ca_northern', name: 'Northern California', stateCode: 'CA', order: 1),
+          FblaSection(id: 'ca_southern', name: 'Southern California', stateCode: 'CA', order: 2),
+          FblaSection(id: 'ca_central', name: 'Central California', stateCode: 'CA', order: 3),
+        ];
+      case 'TX':
+        return const [
+          FblaSection(id: 'tx_north', name: 'North Texas', stateCode: 'TX', order: 0),
+          FblaSection(id: 'tx_south', name: 'South Texas', stateCode: 'TX', order: 1),
+          FblaSection(id: 'tx_central', name: 'Central Texas', stateCode: 'TX', order: 2),
+        ];
+      case 'FL':
+        return const [
+          FblaSection(id: 'fl_north', name: 'Northern Florida', stateCode: 'FL', order: 0),
+          FblaSection(id: 'fl_south', name: 'Southern Florida', stateCode: 'FL', order: 1),
+        ];
+      case 'NY':
+        return const [
+          FblaSection(id: 'ny_upstate', name: 'Upstate New York', stateCode: 'NY', order: 0),
+          FblaSection(id: 'ny_metro', name: 'Metro New York', stateCode: 'NY', order: 1),
+        ];
+      case 'GA':
+        return const [
+          FblaSection(id: 'ga_north', name: 'Northern Georgia', stateCode: 'GA', order: 0),
+          FblaSection(id: 'ga_south', name: 'Southern Georgia', stateCode: 'GA', order: 1),
+        ];
+      default:
+        return [FblaSection(id: '${stateCode.toLowerCase()}_default', name: 'Default Section', stateCode: stateCode, order: 0)];
+    }
+  }
+
+  /// Stream of featured Instagram posts (curated; admins add URLs to Firestore).
+  /// Each document should have: url, source ('national'|'state'|'chapter'), optional caption, order, addedAt (Timestamp).
+  Stream<List<FeaturedInstagramPost>> get featuredInstagramPostsStream {
+    return _db
+        .collection('featured_instagram_posts')
+        .orderBy('addedAt', descending: true)
+        .limit(50)
+        .snapshots()
+        .map((snapshot) {
+          final list = snapshot.docs
+              .map((doc) =>
+                  FeaturedInstagramPost.fromFirestore(doc, doc.data()))
+              .toList();
+          list.sort((a, b) => a.order.compareTo(b.order));
+          return list;
+        });
   }
 }

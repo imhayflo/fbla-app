@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/database_service.dart';
+import '../models/fbla_section.dart';
+import '../utils/validators.dart';
+import '../utils/constants.dart';
 import 'home_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -17,13 +21,42 @@ class _SignupScreenState extends State<SignupScreen> {
   final _confirmPasswordController = TextEditingController();
   final _schoolController = TextEditingController();
   final _chapterController = TextEditingController();
+  final _chapterInstagramController = TextEditingController();
   final _phoneController = TextEditingController();
   final _authService = AuthService();
+  final _dbService = DatabaseService();
+
+  String? _selectedStateCode;
+  FblaSection? _selectedSection;
+  List<FblaSection> _sections = [];
+  bool _sectionsLoading = false;
 
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String? _error;
+
+  Future<void> _loadSectionsForState(String? stateCode) async {
+    if (stateCode == null || stateCode.isEmpty) {
+      setState(() {
+        _sections = [];
+        _selectedSection = null;
+        _sectionsLoading = false;
+      });
+      return;
+    }
+    setState(() {
+      _sectionsLoading = true;
+      _selectedSection = null;
+    });
+    final list = await _dbService.getFblaSectionsForState(stateCode);
+    if (mounted) {
+      setState(() {
+        _sections = list;
+        _sectionsLoading = false;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -33,12 +66,25 @@ class _SignupScreenState extends State<SignupScreen> {
     _confirmPasswordController.dispose();
     _schoolController.dispose();
     _chapterController.dispose();
+    _chapterInstagramController.dispose();
     _phoneController.dispose();
     super.dispose();
   }
 
   Future<void> _signUp() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedStateCode == null || _selectedStateCode!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select your state')),
+      );
+      return;
+    }
+    if (_selectedSection == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select your section')),
+      );
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -52,7 +98,12 @@ class _SignupScreenState extends State<SignupScreen> {
         name: _nameController.text.trim(),
         school: _schoolController.text.trim(),
         chapter: _chapterController.text.trim(),
+        state: _selectedStateCode!,
+        section: _selectedSection!.id,
         phone: _phoneController.text.trim(),
+        chapterInstagramHandle: _chapterInstagramController.text.trim().isEmpty
+            ? null
+            : _chapterInstagramController.text.trim().replaceFirst(RegExp(r'^@'), ''),
       );
 
       if (mounted) {
@@ -159,12 +210,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your name';
-                        }
-                        return null;
-                      },
+                      validator: (value) => validateRequiredName(value, fieldName: 'your name'),
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -179,15 +225,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your email';
-                        }
-                        if (!value.contains('@')) {
-                          return 'Please enter a valid email';
-                        }
-                        return null;
-                      },
+                      validator: validateEmail,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -202,6 +240,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
+                      validator: validatePhoneOptional,
                     ),
 
                     const SizedBox(height: 24),
@@ -226,12 +265,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your school';
-                        }
-                        return null;
-                      },
+                      validator: (value) => validateRequired(value, 'your school'),
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -245,12 +279,92 @@ class _SignupScreenState extends State<SignupScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
+                      validator: (value) => validateRequired(value, 'your chapter'),
+                    ),
+                    const SizedBox(height: 16),
+                    // State dropdown (required) — regional sections load when state is selected
+                    DropdownButtonFormField<String>(
+                      value: _selectedStateCode,
+                      decoration: InputDecoration(
+                        labelText: 'State *',
+                        prefixIcon: const Icon(Icons.map_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      hint: const Text('Select your state'),
+                      items: kUsStates
+                          .map((s) => DropdownMenuItem<String>(
+                                value: s['code'],
+                                child: Text(s['name']!),
+                              ))
+                          .toList(),
+                      onChanged: (value) {
+                        setState(() => _selectedStateCode = value);
+                        _loadSectionsForState(value);
+                      },
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your chapter';
+                          return 'Please select your state';
                         }
                         return null;
                       },
+                    ),
+                    const SizedBox(height: 16),
+                    // Section dropdown (required, regional sections from API — select state first)
+                    DropdownButtonFormField<FblaSection>(
+                      value: _selectedSection,
+                      decoration: InputDecoration(
+                        labelText: 'Regional Section *',
+                        prefixIcon: _sectionsLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: Padding(
+                                  padding: EdgeInsets.all(2),
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                              )
+                            : const Icon(Icons.category_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      hint: Text(_selectedStateCode == null
+                          ? 'Select state first'
+                          : _sectionsLoading
+                              ? 'Loading sections...'
+                              : 'Select your regional section'),
+                      items: _sections
+                          .map((s) => DropdownMenuItem<FblaSection>(
+                                value: s,
+                                child: Text(s.name),
+                              ))
+                          .toList(),
+                      onChanged: (_selectedStateCode == null || _sectionsLoading)
+                          ? null
+                          : (value) {
+                              setState(() => _selectedSection = value);
+                            },
+                      validator: (value) {
+                        if (value == null) {
+                          return 'Please select your regional section';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _chapterInstagramController,
+                      textInputAction: TextInputAction.next,
+                      decoration: InputDecoration(
+                        labelText: 'Chapter Instagram (Optional)',
+                        hintText: 'e.g., mychapterfbla',
+                        prefixIcon: const Icon(Icons.camera_alt_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
                     ),
 
                     const SizedBox(height: 24),
@@ -287,15 +401,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter a password';
-                        }
-                        if (value.length < 6) {
-                          return 'Password must be at least 6 characters';
-                        }
-                        return null;
-                      },
+                      validator: validatePassword,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -323,15 +429,8 @@ class _SignupScreenState extends State<SignupScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please confirm your password';
-                        }
-                        if (value != _passwordController.text) {
-                          return 'Passwords do not match';
-                        }
-                        return null;
-                      },
+                      validator: (value) =>
+                          validateConfirmPassword(value, _passwordController.text),
                     ),
 
                     const SizedBox(height: 32),

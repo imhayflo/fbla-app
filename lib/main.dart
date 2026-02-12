@@ -132,6 +132,7 @@ class _HomeScreenWithSyncState extends State<_HomeScreenWithSync>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _ensureProfileExists();
+    _ensureSocialConfigExists();
     // Perform sync in background without blocking UI
     _performInitialSync();
   }
@@ -142,6 +143,16 @@ class _HomeScreenWithSyncState extends State<_HomeScreenWithSync>
       await _dbService.ensureUserProfileExists();
     } catch (e) {
       print('Error ensuring profile exists: $e');
+    }
+  }
+
+  /// Ensure default social/Instagram config and FBLA sections exist so Social tab and signup work.
+  Future<void> _ensureSocialConfigExists() async {
+    try {
+      await _dbService.ensureSocialConfigExists();
+      await _dbService.ensureFblaSectionsExist();
+    } catch (e) {
+      print('Error ensuring social config exists: $e');
     }
   }
 
