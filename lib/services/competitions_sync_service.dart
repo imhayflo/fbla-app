@@ -179,12 +179,12 @@ class CompetitionsSyncService {
 
   String _inferCategoryFromEventType(String eventType) {
     final t = eventType.toLowerCase();
-    if (t.contains('objective test')) return 'Academic';
-    if (t.contains('presentation')) return 'Leadership';
-    if (t.contains('role play')) return 'Business';
-    if (t.contains('production')) return 'Technology';
-    if (t.contains('chapter')) return 'Leadership';
-    return 'General';
+    if (t.contains('objective test')) return 'Objective Tests';
+    if (t.contains('presentation')) return 'Presentation Events';
+    if (t.contains('role play')) return 'Role Play Events';
+    if (t.contains('production')) return 'Production Events';
+    if (t.contains('chapter')) return 'Chapter Events';
+    return 'Objective Tests'; // Default to Objective Tests for unrecognized types
   }
 
   String _generateId(String name, String level) {

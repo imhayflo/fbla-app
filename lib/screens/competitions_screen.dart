@@ -24,21 +24,21 @@ class _CompetitionsScreenState extends State<CompetitionsScreen> {
       ),
       body: Column(
         children: [
-          // Category Filter
+          // Event Type Filter
           SizedBox(
             height: 50,
             child: ListView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              children: ['All', 'Business', 'Leadership', 'Technology', 'Academic', 'General']
-                  .map((category) => Padding(
+              children: ['All', 'Objective Tests', 'Presentation Events', 'Role Play Events', 'Chapter Events', 'Production Events']
+                  .map((eventType) => Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: FilterChip(
-                          label: Text(category),
-                          selected: _selectedCategory == category,
+                          label: Text(eventType),
+                          selected: _selectedCategory == eventType,
                           onSelected: (selected) {
                             setState(() {
-                              _selectedCategory = category;
+                              _selectedCategory = eventType;
                             });
                           },
                         ),
