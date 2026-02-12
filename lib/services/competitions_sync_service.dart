@@ -3,29 +3,42 @@ import 'package:html/parser.dart' as html_parser;
 import 'package:html/dom.dart';
 import '../models/competition.dart';
 
+/// Scrapes FBLA competitive events from the official high school and middle
+/// school pages. For each event we store description and the "Event Details &
+/// Guidelines" PDF link (test competencies), which is the first link in the
+/// modal opened by "Event Details & Guidelines".
+///
+/// Official competition lists (for reference):
+/// - High School: 25-26 High School CE At-A-Glance (S3/Connect)
+/// - Middle School: https://www.fbla.org/media/2025/08/25-26-MS-CE-List.pdf
 class CompetitionsSyncService {
+  /// High school competitive events (same content as with #fbla-ce-resources).
   static const String _highSchoolUrl =
       'https://www.fbla.org/high-school/competitive-events/';
   static const String _middleSchoolUrl =
       'https://www.fbla.org/middle-school/competitive-events/';
 
-  /// Fetches competitive events from both High School and Middle School pages
+  static final _headers = {
+    'User-Agent':
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  };
+
+  /// Fetches competitive events from both High School and Middle School FBLA pages.
+  /// For each event: name, description, category, level, and the Event Details &
+  /// Guidelines link (PDF that includes test competencies for objective tests).
   Future<List<Competition>> fetchFBLACompetitions() async {
     final List<Competition> allCompetitions = [];
     final seenIds = <String>{};
 
     for (final url in [_highSchoolUrl, _middleSchoolUrl]) {
       try {
-        final response = await http.get(
-          Uri.parse(url),
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; FBLA-Member-App/1.0)',
-          },
-        );
+        final response = await http.get(Uri.parse(url), headers: _headers);
 
         if (response.statusCode == 200) {
           final document = html_parser.parse(response.body);
-          final level = url.contains('middle-school') ? 'Middle School' : 'High School';
+          final level = url.contains('middle-school')
+              ? 'Middle School'
+              : 'High School';
           final events = _parseCompetitionsPage(document, level);
 
           for (final comp in events) {
@@ -35,7 +48,8 @@ class CompetitionsSyncService {
             }
           }
         } else {
-          print('Failed to fetch competitions from $url: ${response.statusCode}');
+          print(
+              'Failed to fetch competitions from $url: ${response.statusCode}');
         }
       } catch (e) {
         print('Error fetching competitions from $url: $e');
@@ -45,183 +59,74 @@ class CompetitionsSyncService {
     return allCompetitions;
   }
 
+  /// Parses the FBLA competitive events page: event cards with hidden modals
+  /// containing description and "Event Details & Guidelines" (PDF) link.
   List<Competition> _parseCompetitionsPage(Document document, String level) {
     final List<Competition> competitions = [];
 
-    // Look for event cards - FBLA typically uses cards or list items
-    final cards = document.querySelectorAll(
-      '.fbla-ce-card, .competitive-event, .ce-card, [class*="competitive"], [class*="ce-"]',
-    );
+    final cards = document.querySelectorAll('.fbla-competitive-event-card');
 
-    if (cards.isNotEmpty) {
-      for (final card in cards) {
-        try {
-          final comp = _parseCompetitionCard(card, level);
-          if (comp != null) competitions.add(comp);
-        } catch (e) {
-          continue;
-        }
-      }
-    }
-
-    // Fallback: look for structured content with h3/h4 + description pattern
-    if (competitions.isEmpty) {
-      final headings = document.querySelectorAll('h3, h4');
-      for (final heading in headings) {
-        try {
-          final text = heading.text.trim();
-          if (text.isEmpty || text.length > 100) continue;
-          if (_isResourceOrFilter(text)) continue;
-
-          // Get description from next sibling or parent's paragraphs
-          String description = '';
-          Element? next = heading.nextElementSibling;
-          int attempts = 0;
-          while (next != null && attempts < 5) {
-            if (next.localName == 'p') {
-              description = next.text.trim();
-              if (description.length > 50) break;
-            }
-            next = next.nextElementSibling;
-            attempts++;
-          }
-
-          if (description.isEmpty) {
-            final parent = heading.parent;
-            if (parent != null) {
-              final p = parent.querySelector('p');
-              if (p != null) description = p.text.trim();
-            }
-          }
-
-          // Determine category from event type (check for Event Type line)
-          String category = _inferCategory(text);
-          String eventType = 'Competition';
-
-          // Look for Event Type in nearby text
-          final parentText = heading.parent?.text ?? '';
-          if (parentText.contains('Objective Tests')) {
-            eventType = 'Objective Tests';
-            category = category.isEmpty ? 'Academic' : category;
-          } else if (parentText.contains('Presentation')) {
-            eventType = 'Presentation';
-            category = category.isEmpty ? 'Leadership' : category;
-          } else if (parentText.contains('Role Play')) {
-            eventType = 'Role Play';
-            category = category.isEmpty ? 'Business' : category;
-          } else if (parentText.contains('Production')) {
-            eventType = 'Production';
-            category = category.isEmpty ? 'Technology' : category;
-          } else if (parentText.contains('Chapter Events')) {
-            eventType = 'Chapter';
-            category = category.isEmpty ? 'Leadership' : category;
-          }
-
-          if (category.isEmpty) category = 'General';
-
-          final maxTeamSize = parentText.contains('Team') ? 3 : 1;
-          final id = _generateId(text, level);
-
-          competitions.add(Competition(
-            id: id,
-            name: text,
-            category: category,
-            description: description.isNotEmpty ? description : 'FBLA competitive event. See FBLA.org for details.',
-            level: level,
-            date: DateTime(DateTime.now().year, 6, 1), // NLC season placeholder
-            maxTeamSize: maxTeamSize,
-            registeredCount: 0,
-          ));
-        } catch (e) {
-          continue;
-        }
-      }
-    }
-
-    // Alternative: parse from cards/containers with data attributes or specific structure
-    if (competitions.isEmpty) {
-      // Look for elements that have both a title and description - common card pattern
-      final potentialCards = document.querySelectorAll(
-        'div[class*="card"], div[class*="event"], article, .entry, .post',
-      );
-      for (final card in potentialCards) {
-        final titleEl = card.querySelector('h3, h4, h5, .event-title, [class*="title"]');
-        final name = titleEl?.text.trim() ?? '';
-        if (name.isEmpty || name.length > 100 || _isResourceOrFilter(name)) continue;
-
-        final descEl = card.querySelector('p');
-        final description = descEl?.text.trim() ?? '';
-        final fullText = card.text;
-        final category = _inferCategoryFromText(fullText);
-        final maxTeamSize = fullText.contains('Team') ? 3 : 1;
-        final id = _generateId(name, level);
-        if (competitions.any((c) => c.id == id)) continue;
-
-        competitions.add(Competition(
-          id: id,
-          name: name,
-          category: category,
-          description: description.length > 30 ? description : 'FBLA competitive event. Visit FBLA.org for full guidelines.',
-          level: level,
-          date: DateTime(DateTime.now().year, 6, 1),
-          maxTeamSize: maxTeamSize,
-          registeredCount: 0,
-        ));
-      }
-    }
-
-    // Last resort: regex-based extraction from body text
-    if (competitions.isEmpty) {
-      final bodyText = document.body?.innerHtml ?? '';
-      final eventPattern = RegExp(
-        r'<h[34][^>]*>([^<]+)</h[34]>',
-        caseSensitive: false,
-      );
-      final matches = eventPattern.allMatches(bodyText);
-      final seen = <String>{};
-      for (final m in matches) {
-        final name = m.group(1)?.trim().replaceAll(RegExp(r'\s+'), ' ') ?? '';
-        if (name.isEmpty || name.length > 80 || name.length < 3) continue;
-        if (_isResourceOrFilter(name)) continue;
-        // Exclude section headers (Resources, Announcements, etc.)
-        if (name.contains('2025') || name.contains('Resources') || name.contains('Guidelines')) continue;
-        if (seen.contains(name)) continue;
-        seen.add(name);
-
-        final id = _generateId(name, level);
-        competitions.add(Competition(
-          id: id,
-          name: name,
-          category: _inferCategory(name),
-          description: 'FBLA competitive event. Visit FBLA.org for full guidelines and details.',
-          level: level,
-          date: DateTime(DateTime.now().year, 6, 1),
-          maxTeamSize: 1,
-          registeredCount: 0,
-        ));
+    for (final card in cards) {
+      try {
+        final comp = _parseEventCard(card, level);
+        if (comp != null) competitions.add(comp);
+      } catch (e) {
+        continue;
       }
     }
 
     return competitions;
   }
 
-  Competition? _parseCompetitionCard(Element card, String level) {
-    final titleEl = card.querySelector('h3, h4, .title, [class*="title"]');
+  Competition? _parseEventCard(Element card, String level) {
+    final titleEl = card.querySelector('.fbla-competitive-event-card--title');
     final name = titleEl?.text.trim() ?? '';
-    if (name.isEmpty) return null;
+    if (name.isEmpty || _isResourceOrFilter(name)) return null;
 
-    final descEl = card.querySelector('p, .description, [class*="desc"]');
-    final description = descEl?.text.trim() ?? 'FBLA competitive event. See FBLA.org for details.';
+    String description = '';
+    String? guidelinesUrl;
 
-    final fullText = card.text;
-    String category = 'General';
-    if (fullText.contains('Objective Tests')) category = 'Academic';
-    else if (fullText.contains('Presentation')) category = 'Leadership';
-    else if (fullText.contains('Role Play')) category = 'Business';
-    else if (fullText.contains('Production')) category = 'Technology';
-    else if (fullText.contains('Chapter')) category = 'Leadership';
+    final modal = card.querySelector('.fbla-competitive-events-modal');
+    if (modal != null) {
+      final descEl = modal.querySelector('.fbla-competitive-events-modal--desc p');
+      description = descEl?.text.trim() ?? '';
 
-    final maxTeamSize = fullText.contains('Team') ? 3 : 1;
+      // First link in resources is "Event Details & Guidelines" → test competencies PDF.
+      final resources = modal.querySelector('.fbla-competitive-events-modal--resources');
+      final link = resources?.querySelector('a[href]');
+      final href = link?.attributes['href'];
+      if (href != null && href.isNotEmpty) {
+        guidelinesUrl = href.startsWith('http') ? href : 'https://www.fbla.org$href';
+      }
+    }
+
+    if (description.isEmpty) {
+      description = 'FBLA competitive event. See Event Details & Guidelines for full information.';
+    }
+
+    // Only add real competitions. Resource cards have category text "Resources".
+    // Check every element with "category" in class (card uses --category, modal uses --category too).
+    final categoryEls = card.querySelectorAll('[class*="category"]');
+    String categoryText = '';
+    for (final el in categoryEls) {
+      final t = el.text.trim();
+      final lower = t.toLowerCase();
+      if (lower == 'resource' || lower == 'resources' || lower.startsWith('resources ')) {
+        return null; // This card is a resource, not a competition.
+      }
+      // Use the card's category (not the modal's) for display — prefer --card--category.
+      if (categoryText.isEmpty && (el.attributes['class'] ?? '').contains('fbla-competitive-event-card')) {
+        categoryText = t;
+      }
+    }
+    if (categoryText.isEmpty) {
+      final categoryEl = card.querySelector('.fbla-competitive-event-card--category') ??
+          card.querySelector('.fbla-competitive-event-card-category');
+      categoryText = categoryEl?.text.trim() ?? '';
+    }
+    final category = _inferCategoryFromEventType(categoryText);
+
+    final maxTeamSize = categoryText.toLowerCase().contains('team') ? 3 : 1;
     final id = _generateId(name, level);
 
     return Competition(
@@ -233,6 +138,7 @@ class CompetitionsSyncService {
       date: DateTime(DateTime.now().year, 6, 1),
       maxTeamSize: maxTeamSize,
       registeredCount: 0,
+      guidelinesUrl: guidelinesUrl,
     );
   }
 
@@ -244,34 +150,40 @@ class CompetitionsSyncService {
         lower.contains('event type') ||
         lower.contains('career cluster') ||
         lower.contains('nace competency') ||
+        lower.contains('nace crosswalk') ||
         lower.contains('announcements') ||
         lower.contains('view resources') ||
         lower.contains('upcoming national') ||
         lower.contains('guidelines') ||
-        lower.startsWith('filter');
+        lower.contains('all guidelines with rating sheets') ||
+        lower.contains('choose your event') ||
+        lower.contains('competitive event operations manual') ||
+        lower.contains('competitive event topics') ||
+        lower.contains('at-a-glance') ||
+        lower.contains('competitive events changes') ||
+        lower.contains('competitive events descriptions') ||
+        lower.contains('competitive events list') ||
+        lower.contains('production test reference') ||
+        lower.contains('mba research') ||
+        lower.contains('preparation resources') ||
+        lower.contains('format guide') ||
+        lower.contains('all rating sheets') ||
+        lower.startsWith('filter') ||
+        text == 'All Competitive Events' ||
+        text == 'Chapter Events' ||
+        text == 'Objective Tests' ||
+        text == 'Presentation Events' ||
+        text == 'Production Events' ||
+        text == 'Role Play Events';
   }
 
-  String _inferCategoryFromText(String text) {
-    final t = text.toLowerCase();
-    if (t.contains('objective tests')) return 'Academic';
+  String _inferCategoryFromEventType(String eventType) {
+    final t = eventType.toLowerCase();
+    if (t.contains('objective test')) return 'Academic';
     if (t.contains('presentation')) return 'Leadership';
     if (t.contains('role play')) return 'Business';
     if (t.contains('production')) return 'Technology';
-    if (t.contains('chapter events')) return 'Leadership';
-    return _inferCategory(text);
-  }
-
-  String _inferCategory(String name) {
-    final n = name.toLowerCase();
-    if (n.contains('accounting') || n.contains('finance') || n.contains('economics') ||
-        n.contains('banking') || n.contains('insurance')) return 'Business';
-    if (n.contains('coding') || n.contains('programming') || n.contains('computer') ||
-        n.contains('cyber') || n.contains('data') || n.contains('digital') ||
-        n.contains('technology') || n.contains('animation') || n.contains('website')) return 'Technology';
-    if (n.contains('leadership') || n.contains('management') || n.contains('parliamentary') ||
-        n.contains('speaking') || n.contains('interview') || n.contains('ethics')) return 'Leadership';
-    if (n.contains('marketing') || n.contains('advertising') || n.contains('retail')) return 'Business';
-    if (n.contains('journalism') || n.contains('broadcast') || n.contains('communication')) return 'Leadership';
+    if (t.contains('chapter')) return 'Leadership';
     return 'General';
   }
 

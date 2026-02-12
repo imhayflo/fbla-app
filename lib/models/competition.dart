@@ -5,10 +5,12 @@ class Competition {
   final String name;
   final String category;
   final String description;
-  final String level; // 'Regional', 'State', 'National'
+  final String level; // 'Regional', 'State', 'National' or 'High School', 'Middle School'
   final DateTime date;
   final int maxTeamSize;
   final int registeredCount;
+  /// URL to Event Details & Guidelines (PDF) — includes test competencies for objective tests.
+  final String? guidelinesUrl;
 
   Competition({
     required this.id,
@@ -19,6 +21,7 @@ class Competition {
     required this.date,
     this.maxTeamSize = 1,
     this.registeredCount = 0,
+    this.guidelinesUrl,
   });
 
   String get participants => '$registeredCount/$maxTeamSize';
@@ -34,6 +37,7 @@ class Competition {
       date: (data['date'] as Timestamp).toDate(),
       maxTeamSize: data['maxTeamSize'] ?? 1,
       registeredCount: data['registeredCount'] ?? 0,
+      guidelinesUrl: data['guidelinesUrl'] as String?,
     );
   }
 
@@ -46,6 +50,7 @@ class Competition {
       'date': Timestamp.fromDate(date),
       'maxTeamSize': maxTeamSize,
       'registeredCount': registeredCount,
+      if (guidelinesUrl != null) 'guidelinesUrl': guidelinesUrl,
     };
   }
 }

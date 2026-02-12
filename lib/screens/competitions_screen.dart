@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/database_service.dart';
 import '../models/competition.dart';
 
@@ -317,6 +318,17 @@ class _CompetitionDetailsSheetState extends State<_CompetitionDetailsSheet> {
     _isRegistered = widget.isRegistered;
   }
 
+  Future<void> _openGuidelinesUrl(BuildContext context, String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open: $url')),
+      );
+    }
+  }
+
   Future<void> _register() async {
     if (_isRegistered) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -468,6 +480,40 @@ class _CompetitionDetailsSheetState extends State<_CompetitionDetailsSheet> {
                     widget.competition.description,
                     style: theme.textTheme.bodyLarge,
                   ),
+                  if (widget.competition.guidelinesUrl != null &&
+                      widget.competition.guidelinesUrl!.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    Text(
+                      'Event Details & Guidelines',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: () => _openGuidelinesUrl(
+                          context, widget.competition.guidelinesUrl!),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.picture_as_pdf_outlined,
+                            size: 20,
+                            color: theme.colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'View guidelines & test competencies (PDF)',
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: theme.colorScheme.primary,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 32),
                   SizedBox(
                     width: double.infinity,

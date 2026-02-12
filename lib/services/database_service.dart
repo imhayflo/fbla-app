@@ -259,6 +259,14 @@ class DatabaseService {
         return;
       }
 
+      final fetchedIds = competitions.map((c) => c.id).toSet();
+      final existingSnapshot = await _db.collection('competitions').get();
+      final existingById = {for (final d in existingSnapshot.docs) d.id: d};
+      final toDelete = existingSnapshot.docs
+          .where((d) => !fetchedIds.contains(d.id))
+          .map((d) => d.reference)
+          .toList();
+
       final batch = _db.batch();
       int addedCount = 0;
       int updatedCount = 0;
@@ -266,9 +274,9 @@ class DatabaseService {
       for (final comp in competitions) {
         try {
           final docRef = _db.collection('competitions').doc(comp.id);
-          final existing = await docRef.get();
+          final existing = existingById[comp.id];
 
-          if (!existing.exists) {
+          if (existing == null || !existing.exists) {
             batch.set(docRef, comp.toMap());
             addedCount++;
           } else {
@@ -277,6 +285,7 @@ class DatabaseService {
               'category': comp.category,
               'description': comp.description,
               'level': comp.level,
+              if (comp.guidelinesUrl != null) 'guidelinesUrl': comp.guidelinesUrl,
             });
             updatedCount++;
           }
@@ -285,13 +294,18 @@ class DatabaseService {
         }
       }
 
-      if (addedCount > 0 || updatedCount > 0) {
-        await batch.commit();
-        await _db.collection('metadata').doc('competitionsSync').set({
-          'lastSync': FieldValue.serverTimestamp(),
-        });
-        print('Synced $addedCount new FBLA competitions');
+      for (final ref in toDelete) {
+        batch.delete(ref);
       }
+
+      await batch.commit();
+      await _db.collection('metadata').doc('competitionsSync').set({
+        'lastSync': FieldValue.serverTimestamp(),
+      });
+      if (toDelete.isNotEmpty) {
+        print('Removed ${toDelete.length} outdated FBLA competitions');
+      }
+      print('Synced $addedCount new, $updatedCount updated FBLA competitions');
     } catch (e) {
       print('Error syncing FBLA competitions: $e');
     }

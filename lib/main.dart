@@ -175,42 +175,24 @@ class _HomeScreenWithSyncState extends State<_HomeScreenWithSync>
     }
   }
 
-  /// Sync competitions if needed
+  /// Sync competitions on every app open.
   Future<void> _syncCompetitionsIfNeeded() async {
     try {
-      final doc = await _dbService.getCompetitionsSyncTime();
-      final lastSync = doc != null ? (doc['lastSync'] as dynamic) : null;
-      DateTime? lastSyncDate;
-      if (lastSync != null && lastSync is Timestamp) {
-        lastSyncDate = lastSync.toDate();
-      }
-      final now = DateTime.now();
-      if (lastSyncDate == null || now.difference(lastSyncDate).inHours >= 1) {
-        print('Starting FBLA competitions sync...');
-        await _dbService.syncFBLACompetitions();
-        print('FBLA competitions sync completed');
-      }
+      print('Starting FBLA competitions sync...');
+      await _dbService.syncFBLACompetitions();
+      print('FBLA competitions sync completed');
     } catch (e) {
       print('Error syncing FBLA competitions: $e');
     }
   }
 
-  /// Sync news if needed
+  /// Sync news on every app open.
   Future<void> _syncNewsIfNeeded() async {
     try {
-      final lastSync = await _dbService.getLastNewsSyncTime();
-      final now = DateTime.now();
-
-      // Sync if never synced before, or if last sync was more than 1 hour ago
-      if (lastSync == null ||
-          now.difference(lastSync).inHours >= 1) {
-        print('Starting FBLA news sync...');
-        await _dbService.syncFBLANews();
-        await _dbService.updateLastNewsSyncTime();
-        print('FBLA news sync completed');
-      } else {
-        print('Skipping sync - last sync was ${now.difference(lastSync).inMinutes} minutes ago');
-      }
+      print('Starting FBLA news sync...');
+      await _dbService.syncFBLANews();
+      await _dbService.updateLastNewsSyncTime();
+      print('FBLA news sync completed');
     } catch (e) {
       print('Error syncing FBLA news: $e');
       // Don't throw - allow app to continue even if sync fails
