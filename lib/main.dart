@@ -174,9 +174,9 @@ class _HomeScreenWithSyncState extends State<_HomeScreenWithSync>
   /// Perform initial sync on app startup (non-blocking)
   Future<void> _performInitialSync() async {
     try {
-      // Run news and competitions sync in parallel
+      // Run news, competitions, and calendar sync in parallel
       await Future.any([
-        Future.wait([_syncNewsIfNeeded(), _syncCompetitionsIfNeeded()]),
+        Future.wait([_syncNewsIfNeeded(), _syncCompetitionsIfNeeded(), _syncCalendarIfNeeded()]),
         Future.delayed(const Duration(seconds: 45), () {
           print('Sync timeout after 45 seconds');
         }),
@@ -210,10 +210,23 @@ class _HomeScreenWithSyncState extends State<_HomeScreenWithSync>
     }
   }
 
+  /// Sync calendar on every app open.
+  Future<void> _syncCalendarIfNeeded() async {
+    try {
+      print('Starting FBLA calendar sync...');
+      await _dbService.syncFBLACalendar();
+      print('FBLA calendar sync completed');
+    } catch (e) {
+      print('Error syncing FBLA calendar: $e');
+      // Don't throw - allow app to continue even if sync fails
+    }
+  }
+
   /// Sync if needed (when app comes to foreground)
   Future<void> _syncIfNeeded() async {
     _syncNewsIfNeeded();
     _syncCompetitionsIfNeeded();
+    _syncCalendarIfNeeded();
   }
 
   @override

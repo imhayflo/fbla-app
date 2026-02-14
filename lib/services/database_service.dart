@@ -8,10 +8,14 @@ import '../models/social_config.dart';
 import '../models/fbla_section.dart';
 import 'news_sync_service.dart';
 import 'competitions_sync_service.dart';
+import 'calendar_sync_service.dart';
 
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // Track calendar sync state
+  static bool isCalendarSyncing = false;
 
   String? get _uid => _auth.currentUser?.uid;
 
@@ -313,6 +317,85 @@ class DatabaseService {
       print('Synced $addedCount new, $updatedCount updated FBLA competitions');
     } catch (e) {
       print('Error syncing FBLA competitions: $e');
+    }
+  }
+
+  /// Syncs FBLA calendar events from the official FBLA events calendar.
+  /// Fetches events for the current year and next year from https://www.fbla.org/events/month/
+  Future<void> syncFBLACalendar() async {
+    isCalendarSyncing = true;
+    try {
+      try {
+        await _db.collection('_test').limit(1).get();
+      } catch (e) {
+        print('Firebase not configured - calendar sync skipped: $e');
+        isCalendarSyncing = false;
+        return;
+      }
+
+      final syncService = CalendarSyncService();
+      final events = await syncService.fetchUpcomingFBLCalendar();
+
+      if (events.isEmpty) {
+        print('No calendar events fetched from FBLA');
+        isCalendarSyncing = false;
+        return;
+      }
+
+      final fetchedIds = events.map((e) => e.id).toSet();
+      final existingSnapshot = await _db.collection('events').get();
+      final existingById = {for (final d in existingSnapshot.docs) d.id: d};
+      final toDelete = existingSnapshot.docs
+          .where((d) => !fetchedIds.contains(d.id) && d.id.startsWith('fbla_'))
+          .map((d) => d.reference)
+          .toList();
+
+      final batch = _db.batch();
+      int addedCount = 0;
+      int updatedCount = 0;
+
+      for (final event in events) {
+        try {
+          final docRef = _db.collection('events').doc(event.id);
+          final existing = existingById[event.id];
+
+          if (existing == null || !existing.exists) {
+            batch.set(docRef, event.toMap());
+            addedCount++;
+          } else {
+            // Only update if it's an FBLA-sourced event
+            batch.update(docRef, {
+              'title': event.title,
+              'description': event.description,
+              'date': Timestamp.fromDate(event.date),
+              'endDate': event.endDate != null ? Timestamp.fromDate(event.endDate!) : null,
+              'location': event.location,
+              'type': event.type,
+              'link': event.link,
+            });
+            updatedCount++;
+          }
+        } catch (e) {
+          print('Error syncing event ${event.id}: $e');
+        }
+      }
+
+      for (final ref in toDelete) {
+        batch.delete(ref);
+      }
+
+      await batch.commit();
+      await _db.collection('metadata').doc('calendarSync').set({
+        'lastSync': FieldValue.serverTimestamp(),
+      });
+      if (toDelete.isNotEmpty) {
+        print('Removed ${toDelete.length} outdated FBLA calendar events');
+      }
+      print('Synced $addedCount new, $updatedCount updated FBLA calendar events');
+    } catch (e) {
+      print('Error syncing FBLA calendar: $e');
+    } finally {
+      isCalendarSyncing = false;
     }
   }
 

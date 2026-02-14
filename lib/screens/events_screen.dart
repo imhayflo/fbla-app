@@ -22,12 +22,43 @@ class _EventsScreenState extends State<EventsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Events Calendar'),
+        title: const Text('Calendar'),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              _dbService.syncFBLACalendar();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Syncing calendar...')),
+              );
+            },
+          ),
+        ],
       ),
       body: StreamBuilder<List<Event>>(
         stream: _dbService.eventsStream,
         builder: (context, eventSnapshot) {
+          // Show loading while syncing or waiting or if events are empty
+          if (DatabaseService.isCalendarSyncing ||
+              eventSnapshot.connectionState == ConnectionState.waiting ||
+              (eventSnapshot.data?.isEmpty ?? true)) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 24),
+                  Text(
+                    'Loading Calendar...',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(height: 8),
+                  Text('Fetching events from FBLA'),
+                ],
+              ),
+            );
+          }
           return StreamBuilder<List<Competition>>(
             stream: _dbService.competitionsStream,
             builder: (context, compSnapshot) {
@@ -394,7 +425,9 @@ class _EventCalendarCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${dateFormat.format(event.date)} • ${event.location}',
+                      event.endDate != null && event.endDate != event.date
+                          ? '${dateFormat.format(event.date)} - ${dateFormat.format(event.endDate!)}'
+                          : dateFormat.format(event.date),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.6),
                       ),
@@ -641,12 +674,12 @@ class _EventDetailsSheetState extends State<_EventDetailsSheet> {
                   ? '${dateFormat.format(widget.event.date)} - ${dateFormat.format(widget.event.endDate!)}'
                   : dateFormat.format(widget.event.date),
             ),
-            const SizedBox(height: 16),
-            _DetailRow(icon: Icons.location_on, label: 'Location', value: widget.event.location),
-            const SizedBox(height: 24),
-            Text('Description', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text(widget.event.description, style: theme.textTheme.bodyLarge),
+            if (widget.event.description.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              Text('Description', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(widget.event.description, style: theme.textTheme.bodyLarge),
+            ],
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,

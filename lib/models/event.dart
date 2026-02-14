@@ -9,6 +9,7 @@ class Event {
   final String location;
   final String type;
   final int participantCount;
+  final String? link;
 
   Event({
     required this.id,
@@ -19,6 +20,7 @@ class Event {
     required this.location,
     required this.type,
     this.participantCount = 0,
+    this.link,
   });
 
   factory Event.fromFirestore(DocumentSnapshot doc) {
@@ -32,6 +34,7 @@ class Event {
       location: data['location'] ?? '',
       type: data['type'] ?? 'Event',
       participantCount: data['participantCount'] ?? 0,
+      link: data['link'],
     );
   }
 
@@ -44,6 +47,7 @@ class Event {
       'location': location,
       'type': type,
       'participantCount': participantCount,
+      'link': link,
     };
   }
 }
