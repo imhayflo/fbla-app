@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fbla_member_app/models/member.dart';
-import 'package:fbla_member_app/models/social_config.dart';
 import 'package:fbla_member_app/services/database_service.dart';
 import 'package:fbla_member_app/services/social_service.dart';
+import 'package:fbla_member_app/models/social_config.dart';
+
 
 class SocialScreen extends StatefulWidget {
   const SocialScreen({super.key});
@@ -14,18 +15,6 @@ class SocialScreen extends StatefulWidget {
 class _SocialScreenState extends State<SocialScreen> {
   final DatabaseService _dbService = DatabaseService();
   final SocialService _socialService = SocialService();
-  SocialConfig? _socialConfig;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSocialConfig();
-  }
-
-  Future<void> _loadSocialConfig() async {
-    final config = await _dbService.getSocialConfig();
-    if (mounted) setState(() => _socialConfig = config);
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,50 +58,50 @@ class _SocialScreenState extends State<SocialScreen> {
               stream: _dbService.memberStream,
               builder: (context, memberSnapshot) {
                 final member = memberSnapshot.data;
-                final nationalHandle =
-                    _socialConfig?.nationalInstagramHandle ?? 'fbla_national';
-                final stateHandle = _getStateHandle(member?.state);
-                final chapterHandle = member?.chapterInstagramHandle ?? '';
+
+                // Chapter IG: prefer URL if you add it later; fall back to handle -> build URL.
+                final chapterUrl = _resolveChapterInstagramUrl(member);
 
                 return Column(
                   children: [
                     _InstagramProfileTile(
                       title: 'National FBLA',
                       subtitle: 'Official national FBLA',
-                      handle: nationalHandle,
-                      socialService: _socialService,
+                      subtitleLine: '@fbla_national',
                       icon: Icons.flag,
+                      onPressed: () => _socialService.openNationalInstagram(),
                     ),
-                    if (stateHandle.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      _InstagramProfileTile(
-                        title: 'Your State FBLA',
-                        subtitle: member?.state != null &&
-                                member!.state.isNotEmpty
-                            ? '${member.state} FBLA'
-                            : 'State FBLA',
-                        handle: stateHandle,
-                        socialService: _socialService,
-                        icon: Icons.map,
+                    const SizedBox(height: 12),
+                    _InstagramProfileTile(
+                      title: 'Your State FBLA',
+                      subtitle: member?.state != null && member!.state.isNotEmpty
+                          ? '${member.state} FBLA'
+                          : 'State FBLA',
+                      subtitleLine: _stateSubtitleLine(member?.state),
+                      icon: Icons.map,
+                      onPressed: () => _socialService.openStateInstagram(
+                        member?.state,
                       ),
-                    ],
-                    if (chapterHandle.isNotEmpty) ...[
+                    ),
+                    if (chapterUrl != null && chapterUrl.isNotEmpty) ...[
                       const SizedBox(height: 12),
                       _InstagramProfileTile(
                         title: 'Your Chapter',
                         subtitle: member?.chapter ?? 'Chapter',
-                        handle: chapterHandle,
-                        socialService: _socialService,
+                        subtitleLine: _chapterSubtitleLine(member),
                         icon: Icons.groups,
+                        onPressed: () =>
+                            _socialService.openChapterInstagramUrl(chapterUrl),
                       ),
                     ],
                   ],
                 );
               },
             ),
+
             const SizedBox(height: 24),
 
-            // Featured posts (curated from Firestore)
+            // Featured posts (still curated from Firestore)
             Text(
               'Featured Posts',
               style: theme.textTheme.titleLarge?.copyWith(
@@ -127,6 +116,7 @@ class _SocialScreenState extends State<SocialScreen> {
               ),
             ),
             const SizedBox(height: 16),
+
             StreamBuilder<List<FeaturedInstagramPost>>(
               stream: _dbService.featuredInstagramPostsStream,
               builder: (context, snapshot) {
@@ -138,6 +128,7 @@ class _SocialScreenState extends State<SocialScreen> {
                     ),
                   );
                 }
+
                 final posts = snapshot.data ?? [];
                 if (posts.isEmpty) {
                   return Card(
@@ -172,15 +163,18 @@ class _SocialScreenState extends State<SocialScreen> {
                     ),
                   );
                 }
+
                 return Column(
                   children: posts
-                      .map((post) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: _FeaturedPostCard(
-                              post: post,
-                              socialService: _socialService,
-                            ),
-                          ))
+                      .map(
+                        (post) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _FeaturedPostCard(
+                            post: post,
+                            socialService: _socialService,
+                          ),
+                        ),
+                      )
                       .toList(),
                 );
               },
@@ -191,12 +185,29 @@ class _SocialScreenState extends State<SocialScreen> {
     );
   }
 
-  String _getStateHandle(String? state) {
-    if (state == null || state.isEmpty) return '';
-    final key = state.trim().toUpperCase();
-    final fromConfig = _socialConfig?.stateInstagramHandles[key] ??
-        _socialConfig?.stateInstagramHandles[state.trim()];
-    return fromConfig ?? _socialConfig?.defaultStateInstagramHandle ?? '';
+  String? _resolveChapterInstagramUrl(Member? member) {
+    // If you later add member.chapterInstagramUrl, check it here first.
+    // For now, keep compatibility with chapterInstagramHandle:
+    final handle = (member?.chapterInstagramHandle ?? '').trim();
+    if (handle.isEmpty) return null;
+    final clean = handle.replaceFirst(RegExp(r'^@'), '');
+    if (clean.isEmpty) return null;
+    return 'https://www.instagram.com/$clean/';
+  }
+
+  String _stateSubtitleLine(String? state) {
+    // We don’t know the exact state handle when using hardcoded URLs,
+    // so show a generic label. If you want, you can add a map of state->handle
+    // and display it here.
+    final s = (state ?? '').trim();
+    if (s.isEmpty) return 'State FBLA Instagram';
+    return '$s FBLA Instagram';
+  }
+
+  String _chapterSubtitleLine(Member? member) {
+    final handle = (member?.chapterInstagramHandle ?? '').trim();
+    if (handle.isEmpty) return 'Chapter Instagram';
+    return handle.startsWith('@') ? handle : '@$handle';
   }
 }
 
@@ -261,7 +272,8 @@ class _ShareAchievementsCard extends StatelessWidget {
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                              content: Text('Load your profile to share.')),
+                            content: Text('Load your profile to share.'),
+                          ),
                         );
                       }
                     },
@@ -326,15 +338,17 @@ class _ShareAchievementsCard extends StatelessWidget {
                 style: Theme.of(sheetContext).textTheme.titleMedium,
               ),
             ),
-            ...achievements.map((a) => ListTile(
-                  leading: const Icon(Icons.emoji_events_outlined),
-                  title: Text(a.title),
-                  subtitle: Text(a.subtitle),
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    socialService.shareAchievement(a, memberName: memberName);
-                  },
-                )),
+            ...achievements.map(
+              (a) => ListTile(
+                leading: const Icon(Icons.emoji_events_outlined),
+                title: Text(a.title),
+                subtitle: Text(a.subtitle),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  socialService.shareAchievement(a, memberName: memberName);
+                },
+              ),
+            ),
           ],
         ),
       ),
@@ -372,8 +386,10 @@ class _AchievementShareTile extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
         trailing: FilledButton(
-          onPressed: () =>
-              socialService.shareAchievement(achievement, memberName: memberName),
+          onPressed: () => socialService.shareAchievement(
+            achievement,
+            memberName: memberName,
+          ),
           child: const Text('Share'),
         ),
       ),
@@ -385,16 +401,16 @@ class _InstagramProfileTile extends StatelessWidget {
   const _InstagramProfileTile({
     required this.title,
     required this.subtitle,
-    required this.handle,
-    required this.socialService,
+    required this.subtitleLine,
     required this.icon,
+    required this.onPressed,
   });
 
   final String title;
   final String subtitle;
-  final String handle;
-  final SocialService socialService;
+  final String subtitleLine;
   final IconData icon;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -406,9 +422,9 @@ class _InstagramProfileTile extends StatelessWidget {
           child: Icon(icon, color: theme.colorScheme.onSecondaryContainer),
         ),
         title: Text(title),
-        subtitle: Text('@$handle'),
+        subtitle: Text(subtitleLine),
         trailing: FilledButton.tonal(
-          onPressed: () => socialService.openInstagramProfile(handle),
+          onPressed: onPressed,
           child: const Text('View on Instagram'),
         ),
       ),
@@ -451,7 +467,9 @@ class _FeaturedPostCard extends StatelessWidget {
         ),
         subtitle: Text(
           post.caption ??
-              (post.url.length > 50 ? '${post.url.substring(0, 50)}...' : post.url),
+              (post.url.length > 50
+                  ? '${post.url.substring(0, 50)}...'
+                  : post.url),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
