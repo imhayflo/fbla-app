@@ -6,7 +6,9 @@ import '../models/event.dart';
 import '../models/competition.dart';
 
 class EventsScreen extends StatefulWidget {
-  const EventsScreen({super.key});
+  final DateTime? initialDate;
+
+  const EventsScreen({super.key, this.initialDate});
 
   @override
   State<EventsScreen> createState() => _EventsScreenState();
@@ -14,9 +16,16 @@ class EventsScreen extends StatefulWidget {
 
 class _EventsScreenState extends State<EventsScreen> {
   final DatabaseService _dbService = DatabaseService();
-  DateTime _focusedDay = DateTime.now();
-  DateTime _selectedDay = DateTime.now();
+  late DateTime _focusedDay;
+  late DateTime _selectedDay;
   CalendarFormat _calendarFormat = CalendarFormat.month;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusedDay = widget.initialDate ?? DateTime.now();
+    _selectedDay = widget.initialDate ?? DateTime.now();
+  }
 
   @override
   Widget build(BuildContext context) {

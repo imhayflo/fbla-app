@@ -19,19 +19,23 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  DateTime? _initialEventDate;
+  String? _initialAnnouncementId;
 
-  final List<Widget> _screens = [
+  List<Widget> get _screens => [
     const DashboardTab(),
-    const EventsScreen(),
-    const AnnouncementsScreen(),
+    EventsScreen(initialDate: _initialEventDate),
+    AnnouncementsScreen(initialAnnouncementId: _initialAnnouncementId),
     const CompetitionsScreen(),
     const SocialScreen(),
     const ProfileScreen(),
   ];
 
-  void _onItemTapped(int index) {
+  void _onItemTapped(int index, {DateTime? eventDate, String? announcementId}) {
     setState(() {
       _selectedIndex = index;
+      _initialEventDate = eventDate;
+      _initialAnnouncementId = announcementId;
     });
   }
 
@@ -41,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: _screens[_selectedIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
-        onDestinationSelected: _onItemTapped,
+        onDestinationSelected: (index) => _onItemTapped(index),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.dashboard_outlined),
@@ -162,11 +166,17 @@ class DashboardTab extends StatelessWidget {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: _StatCard(
-                            title: 'Competitions',
-                            value: '${member?.achievements.length ?? 0}',
-                            icon: Icons.emoji_events,
-                            color: Colors.amber,
+                          child: StreamBuilder<List<String>>(
+                            stream: dbService.userRegisteredCompetitionsStream,
+                            builder: (context, regCompsSnapshot) {
+                              final regCompCount = regCompsSnapshot.data?.length ?? 0;
+                              return _StatCard(
+                                title: 'Competitions',
+                                value: '$regCompCount',
+                                icon: Icons.emoji_events,
+                                color: Colors.amber,
+                              );
+                            },
                           ),
                         ),
                       ],
@@ -184,13 +194,34 @@ class DashboardTab extends StatelessWidget {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: _StatCard(
-                            title: 'Rank',
-                            value: member?.rank != null && member!.rank > 0
-                                ? '#${member.rank}'
-                                : '-',
-                            icon: Icons.leaderboard,
-                            color: Colors.green,
+                          child: StreamBuilder<List<Member>>(
+                            stream: dbService.getAllMembersSortedByPoints(),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData) {
+                                return _StatCard(
+                                  title: 'Rank',
+                                  value: '-',
+                                  icon: Icons.leaderboard,
+                                  color: Colors.green,
+                                );
+                              }
+                              final members = snapshot.data!;
+                              // Find current user's rank
+                              final currentUid = member?.uid;
+                              int userRank = 0;
+                              for (int i = 0; i < members.length; i++) {
+                                if (members[i].uid == currentUid) {
+                                  userRank = i + 1;
+                                  break;
+                                }
+                              }
+                              return _StatCard(
+                                title: 'Rank',
+                                value: userRank > 0 ? '#$userRank' : '-',
+                                icon: Icons.leaderboard,
+                                color: Colors.green,
+                              );
+                            },
                           ),
                         ),
                       ],
@@ -263,7 +294,7 @@ class DashboardTab extends StatelessWidget {
                             child: InkWell(
                               onTap: () {
                                 final homeState = context.findAncestorStateOfType<_HomeScreenState>();
-                                homeState?._onItemTapped(1);
+                                homeState?._onItemTapped(1, eventDate: event.date);
                               },
                               child: _EventCard(
                                 title: event.title,
@@ -336,12 +367,12 @@ class DashboardTab extends StatelessWidget {
                   child: InkWell(
                     onTap: () {
                       final homeState = context.findAncestorStateOfType<_HomeScreenState>();
-                      homeState?._onItemTapped(2);
+                      homeState?._onItemTapped(2, announcementId: latestAnnouncement.id);
                     },
                     child: ListTile(
                       leading: CircleAvatar(
                         backgroundColor: colorScheme.primaryContainer,
-                        child: Icon(Icons.info,
+                        child: Icon(Icons.campaign,
                             color: colorScheme.onPrimaryContainer),
                       ),
                       title: Text(

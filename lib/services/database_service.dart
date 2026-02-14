@@ -75,6 +75,38 @@ class DatabaseService {
     });
   }
 
+  // Get all members sorted by points (descending), ties broken alphabetically
+  Stream<List<Member>> getAllMembersSortedByPoints() {
+    return _db
+        .collection('users')
+        .snapshots()
+        .map((snapshot) {
+          final members = snapshot.docs
+              .map((doc) => Member.fromFirestore(doc))
+              .toList();
+          // Sort by points descending, then by name ascending for ties
+          members.sort((a, b) {
+            final pointsCompare = b.points.compareTo(a.points);
+            if (pointsCompare != 0) return pointsCompare;
+            return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          });
+          return members;
+        });
+  }
+
+  // Get user's rank based on current points
+  Future<int> getUserRank(String uid) async {
+    final members = await getAllMembersSortedByPoints().first;
+    for (int i = 0; i < members.length; i++) {
+      // Find by UID since names could have duplicates
+      final doc = await _db.collection('users').doc(members[i].uid).get();
+      if (doc.id == uid) {
+        return i + 1; // Rank is 1-based
+      }
+    }
+    return 0;
+  }
+
   // ==================== EVENTS ====================
 
   // Get all events
