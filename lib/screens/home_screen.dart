@@ -214,6 +214,8 @@ class DashboardTab extends StatelessWidget {
                 TextButton(
                   onPressed: () {
                     // Navigate to events tab
+                    final homeState = context.findAncestorStateOfType<_HomeScreenState>();
+                    homeState?._onItemTapped(1);
                   },
                   child: const Text('View All'),
                 ),
@@ -258,13 +260,18 @@ class DashboardTab extends StatelessWidget {
                   children: upcomingEvents
                       .map((event) => Padding(
                             padding: const EdgeInsets.only(bottom: 12),
-                            child: _EventCard(
-                              title: event.title,
-                              date: event.endDate != null
-                                  ? '${dateFormat.format(event.date)} - ${dateFormat.format(event.endDate!)}'
-                                  : dateFormat.format(event.date),
-                              location: event.location,
-                              type: event.type,
+                            child: InkWell(
+                              onTap: () {
+                                final homeState = context.findAncestorStateOfType<_HomeScreenState>();
+                                homeState?._onItemTapped(1);
+                              },
+                              child: _EventCard(
+                                title: event.title,
+                                date: event.endDate != null
+                                    ? '${dateFormat.format(event.date)} - ${dateFormat.format(event.endDate!)}'
+                                    : dateFormat.format(event.date),
+                                type: event.type,
+                              ),
                             ),
                           ))
                       .toList(),
@@ -273,19 +280,21 @@ class DashboardTab extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            // Recent Announcements
+            // Recent News
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Recent Announcements',
+                  'Recent News',
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 TextButton(
                   onPressed: () {
-                    // Navigate to announcements tab
+                    // Navigate to news (announcements) tab
+                    final homeState = context.findAncestorStateOfType<_HomeScreenState>();
+                    homeState?._onItemTapped(2);
                   },
                   child: const Text('View All'),
                 ),
@@ -324,23 +333,29 @@ class DashboardTab extends StatelessWidget {
 
                 final latestAnnouncement = announcements.first;
                 return Card(
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: colorScheme.primaryContainer,
-                      child: Icon(Icons.info,
-                          color: colorScheme.onPrimaryContainer),
+                  child: InkWell(
+                    onTap: () {
+                      final homeState = context.findAncestorStateOfType<_HomeScreenState>();
+                      homeState?._onItemTapped(2);
+                    },
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: colorScheme.primaryContainer,
+                        child: Icon(Icons.info,
+                            color: colorScheme.onPrimaryContainer),
+                      ),
+                      title: Text(
+                        latestAnnouncement.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(
+                        latestAnnouncement.content,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
                     ),
-                    title: Text(
-                      latestAnnouncement.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    subtitle: Text(
-                      latestAnnouncement.content,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    trailing: const Icon(Icons.chevron_right),
                   ),
                 );
               },
@@ -398,13 +413,11 @@ class _StatCard extends StatelessWidget {
 class _EventCard extends StatelessWidget {
   final String title;
   final String date;
-  final String location;
   final String type;
 
   const _EventCard({
     required this.title,
     required this.date,
-    required this.location,
     required this.type,
   });
 
@@ -471,26 +484,6 @@ class _EventCard extends StatelessWidget {
                         date,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withOpacity(0.6),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.location_on,
-                        size: 16,
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          location,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
-                          ),
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],

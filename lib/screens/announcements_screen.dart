@@ -232,6 +232,16 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                 final uri = Uri.parse(announcement.externalUrl!);
                 if (await canLaunchUrl(uri)) {
                   await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  // Add points for reading the article
+                  await _dbService.addPoints(5);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('+5 points for reading!'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
                 } else {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(

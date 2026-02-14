@@ -67,6 +67,14 @@ class DatabaseService {
     await _db.collection('users').doc(_uid).update(data);
   }
 
+  // Add points to user's account
+  Future<void> addPoints(int points) async {
+    if (_uid == null) return;
+    await _db.collection('users').doc(_uid).update({
+      'points': FieldValue.increment(points),
+    });
+  }
+
   // ==================== EVENTS ====================
 
   // Get all events
