@@ -3,6 +3,7 @@ import 'package:fbla_member_app/models/member.dart';
 import 'package:fbla_member_app/models/social_config.dart';
 import 'package:fbla_member_app/services/database_service.dart';
 import 'package:fbla_member_app/services/social_service.dart';
+import 'package:fbla_member_app/utils/constants.dart';
 
 class SocialScreen extends StatefulWidget {
   const SocialScreen({super.key});
@@ -65,6 +66,10 @@ class _SocialScreenState extends State<SocialScreen> {
                     ? _socialConfig?.stateInstagramHandles[stateKey]
                     : _socialConfig?.defaultStateInstagramHandle;
                 final chapterHandle = member?.chapterInstagramHandle ?? '';
+                final stateName = stateCodeToName(member?.state ?? '');
+                final stateFblaTitle = stateName.isNotEmpty
+                    ? '$stateName FBLA'
+                    : 'Your State FBLA';
 
                 return Column(
                   children: [
@@ -80,7 +85,7 @@ class _SocialScreenState extends State<SocialScreen> {
                     ),
                     const SizedBox(height: 12),
                     _SocialTile(
-                      title: 'Your State FBLA',
+                      title: stateFblaTitle,
                       handle: stateHandle ?? _socialConfig?.defaultStateInstagramHandle,
                       icon: Icons.map,
                       onPressed: () =>
