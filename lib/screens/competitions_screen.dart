@@ -360,6 +360,37 @@ class _CompetitionDetailsSheetState extends State<_CompetitionDetailsSheet> {
     }
   }
 
+  Future<void> _unregister() async {
+    if (!_isRegistered) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Not registered for this competition')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      await widget.dbService.unregisterFromCompetition(widget.competition.id);
+      setState(() => _isRegistered = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unregistered from competition')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -518,7 +549,7 @@ class _CompetitionDetailsSheetState extends State<_CompetitionDetailsSheet> {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
-                      onPressed: _isLoading ? null : _register,
+                      onPressed: _isLoading ? null : (_isRegistered ? _unregister : _register),
                       icon: _isLoading
                           ? const SizedBox(
                               width: 20,
@@ -528,13 +559,13 @@ class _CompetitionDetailsSheetState extends State<_CompetitionDetailsSheet> {
                                 color: Colors.white,
                               ),
                             )
-                          : Icon(_isRegistered ? Icons.check : Icons.add),
+                          : Icon(_isRegistered ? Icons.close : Icons.add),
                       label: Text(
-                        _isRegistered ? 'Marked as my Competition' : 'Mark as my Competition',
+                        _isRegistered ? 'Unmark as my Competition' : 'Mark as my Competition',
                       ),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        backgroundColor: _isRegistered ? Colors.green : null,
+                        backgroundColor: _isRegistered ? Colors.red : null,
                       ),
                     ),
                   ),

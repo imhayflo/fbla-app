@@ -491,6 +491,24 @@ class DatabaseService {
     await batch.commit();
   }
 
+  // Unregister from competition
+  Future<void> unregisterFromCompetition(String competitionId) async {
+    if (_uid == null) return;
+
+    final batch = _db.batch();
+
+    batch.delete(
+      _db.collection('users').doc(_uid).collection('registeredCompetitions').doc(competitionId),
+    );
+
+    batch.update(
+      _db.collection('competitions').doc(competitionId),
+      {'registeredCount': FieldValue.increment(-1)},
+    );
+
+    await batch.commit();
+  }
+
   // ==================== LEADERBOARD ====================
 
   // Get top members by points
