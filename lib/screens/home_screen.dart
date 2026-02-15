@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:fbla_member_app/screens/events_screen.dart';
 import 'package:fbla_member_app/screens/announcements_screen.dart';
 import 'package:fbla_member_app/screens/profile_screen.dart';
@@ -23,7 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _initialAnnouncementId;
 
   List<Widget> get _screens => [
-    const DashboardTab(),
+    DashboardTab(navigateToTab: _onItemTapped),
     EventsScreen(initialDate: _initialEventDate),
     AnnouncementsScreen(initialAnnouncementId: _initialAnnouncementId),
     const CompetitionsScreen(),
@@ -84,7 +85,9 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class DashboardTab extends StatelessWidget {
-  const DashboardTab({super.key});
+  final void Function(int index, {DateTime? eventDate, String? announcementId}) navigateToTab;
+
+  const DashboardTab({super.key, required this.navigateToTab});
 
   @override
   Widget build(BuildContext context) {
@@ -246,6 +249,7 @@ class DashboardTab extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () {
+                    // Navigate to events tab
                     final homeState = context.findAncestorStateOfType<_HomeScreenState>();
                     homeState?._onItemTapped(1);
                   },
@@ -294,8 +298,7 @@ class DashboardTab extends StatelessWidget {
                             padding: const EdgeInsets.only(bottom: 12),
                             child: InkWell(
                               onTap: () {
-                                final homeState = context.findAncestorStateOfType<_HomeScreenState>();
-                                homeState?._onItemTapped(1, eventDate: event.date);
+                                navigateToTab(1, eventDate: event.date);
                               },
                               child: _EventCard(
                                 title: event.title,
@@ -324,6 +327,7 @@ class DashboardTab extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () {
+                    // Navigate to news (announcements) tab
                     final homeState = context.findAncestorStateOfType<_HomeScreenState>();
                     homeState?._onItemTapped(2);
                   },
@@ -366,8 +370,7 @@ class DashboardTab extends StatelessWidget {
                 return Card(
                   child: InkWell(
                     onTap: () {
-                      final homeState = context.findAncestorStateOfType<_HomeScreenState>();
-                      homeState?._onItemTapped(2, announcementId: latestAnnouncement.id);
+                      _showAnnouncementDetails(context, latestAnnouncement);
                     },
                     child: ListTile(
                       leading: CircleAvatar(
@@ -395,6 +398,105 @@ class DashboardTab extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _showAnnouncementDetails(BuildContext context, Announcement announcement) {
+    final theme = Theme.of(context);
+    final dateFormat = DateFormat('MMMM d, yyyy');
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: _getPriorityColor(announcement.priority).withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                announcement.category,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: _getPriorityColor(announcement.priority),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(announcement.title),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (announcement.imageUrl != null) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    announcement.imageUrl!,
+                    height: 100,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+              Row(
+                children: [
+                  Icon(Icons.calendar_today, size: 14, color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                  const SizedBox(width: 4),
+                  Text(
+                    dateFormat.format(announcement.date),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(announcement.content, style: theme.textTheme.bodyMedium),
+              if (announcement.externalUrl != null) ...[
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () async {
+                    final uri = Uri.parse(announcement.externalUrl!);
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  },
+                  icon: const Icon(Icons.open_in_new),
+                  label: const Text('Read Full Article'),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getPriorityColor(String priority) {
+    switch (priority.toLowerCase()) {
+      case 'high':
+        return Colors.red;
+      case 'medium':
+        return Colors.orange;
+      default:
+        return Colors.green;
+    }
   }
 }
 

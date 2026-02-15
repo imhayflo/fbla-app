@@ -89,8 +89,8 @@ class _EventsScreenState extends State<EventsScreen> {
                       return Column(
                         children: [
                           TableCalendar<dynamic>(
-                            firstDay: DateTime.utc(DateTime.now().year - 1, 1, 1),
-                            lastDay: DateTime.utc(DateTime.now().year + 1, 12, 31),
+                            firstDay: DateTime.utc(2026, 1, 1),
+                            lastDay: DateTime.utc(2026, 12, 31),
                             focusedDay: _focusedDay,
                             selectedDayPredicate: (day) =>
                                 isSameDay(_selectedDay, day),
@@ -100,22 +100,61 @@ class _EventsScreenState extends State<EventsScreen> {
                               return allEventDates[dateKey] ?? [];
                             },
                             calendarBuilders: CalendarBuilders(
+                              defaultBuilder: (context, day, focusedDay) {
+                                // Check if there's any registered event on this day
+                                final dateKey = DateTime(day.year, day.month, day.day);
+                                final events = allEventDates[dateKey] ?? [];
+                                
+                                // Check if any event is registered
+                                final hasRegisteredEvent = events.any((event) => 
+                                  _isEventRegistered(event, regEventIds, regCompIds));
+                                
+                                if (hasRegisteredEvent) {
+                                  return Container(
+                                    margin: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      '${day.day}',
+                                      style: const TextStyle(color: Colors.white),
+                                    ),
+                                  );
+                                }
+                                return null; // Use default appearance
+                              },
                               markerBuilder: (context, date, events) {
                                 if (events.isEmpty) return null;
+                                // Check if any event is registered
+                                final hasRegisteredEvent = events.any((event) => 
+                                  _isEventRegistered(event, regEventIds, regCompIds));
+                                
+                                // Only show dots for non-registered events (in black)
+                                final nonRegisteredEvents = events.where((event) => 
+                                  !_isEventRegistered(event, regEventIds, regCompIds)).toList();
+                                
+                                if (nonRegisteredEvents.isEmpty && hasRegisteredEvent) {
+                                  // All events are registered - no dots needed since cell is red
+                                  return null;
+                                }
+                                
                                 return Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
-                                  children: events.map((event) {
-                                    final isRegistered = _isEventRegistered(event, regEventIds, regCompIds);
-                                    return Container(
-                                      margin: const EdgeInsets.symmetric(horizontal: 1),
-                                      width: 6,
-                                      height: 6,
-                                      decoration: BoxDecoration(
-                                        color: isRegistered ? Colors.red : Colors.black,
-                                        shape: BoxShape.circle,
-                                      ),
-                                    );
-                                  }).toList(),
+                                  children: [
+                                    ...nonRegisteredEvents.map((event) {
+                                      return Container(
+                                        margin: const EdgeInsets.symmetric(horizontal: 1),
+                                        width: 6,
+                                        height: 6,
+                                        decoration: const BoxDecoration(
+                                          color: Colors.black,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      );
+                                    }),
+                                  ],
                                 );
                               },
                             ),

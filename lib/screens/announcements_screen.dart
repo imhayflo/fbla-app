@@ -61,19 +61,6 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
       appBar: AppBar(
         title: const Text('Announcements'),
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: _isRefreshing
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.refresh),
-            onPressed: _isRefreshing ? null : _refreshNews,
-            tooltip: 'Refresh news',
-          ),
-        ],
       ),
       body: RefreshIndicator(
         onRefresh: _refreshNews,
@@ -210,14 +197,10 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                 announcement.content,
                 style: theme.textTheme.bodyLarge,
               ),
-              const SizedBox(height: 24),
-              const Divider(),
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Icon(Icons.calendar_today,
-                      size: 16,
-                      color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                  Icon(Icons.calendar_today, size: 14, color: theme.colorScheme.onSurface.withOpacity(0.6)),
                   const SizedBox(width: 4),
                   Text(
                     dateFormat.format(announcement.date),
@@ -227,21 +210,8 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(Icons.calendar_today,
-                      size: 16,
-                      color: theme.colorScheme.onSurface.withOpacity(0.6)),
-                  const SizedBox(width: 4),
-                  Text(
-                    dateFormat.format(announcement.date),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                  ),
-                ],
-              ),
+              const SizedBox(height: 24),
+              const Divider(),
             ],
           ),
         ),
