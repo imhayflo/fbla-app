@@ -20,7 +20,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   final _schoolController = TextEditingController();
   final _chapterController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _chapterInstagramController = TextEditingController();
   final DatabaseService _dbService = DatabaseService();
 
   String? _selectedStateCode;
@@ -37,7 +36,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     _schoolController.text = widget.member.school;
     _chapterController.text = widget.member.chapter;
     _phoneController.text = widget.member.phone;
-    _chapterInstagramController.text = widget.member.chapterInstagramHandle;
     _selectedStateCode = widget.member.state.isNotEmpty ? widget.member.state : null;
     if (_selectedStateCode != null) _loadSectionsForState(_selectedStateCode);
   }
@@ -48,7 +46,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     _schoolController.dispose();
     _chapterController.dispose();
     _phoneController.dispose();
-    _chapterInstagramController.dispose();
     super.dispose();
   }
 
@@ -110,9 +107,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
         'state': _selectedStateCode,
         'section': _selectedSection!.id,
         'phone': _phoneController.text.trim(),
-        'chapterInstagramHandle': _chapterInstagramController.text
-            .trim()
-            .replaceFirst(RegExp(r'^@'), ''),
       });
       if (mounted) {
         setState(() => _saving = false);
@@ -265,15 +259,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 validator: validatePhoneOptional,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _chapterInstagramController,
-                decoration: InputDecoration(
-                  labelText: 'Chapter Instagram (Optional)',
-                  prefixIcon: const Icon(Icons.camera_alt_outlined),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
               ),
               const SizedBox(height: 32),
               FilledButton(

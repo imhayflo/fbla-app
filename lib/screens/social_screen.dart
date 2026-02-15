@@ -83,28 +83,6 @@ class _SocialScreenState extends State<SocialScreen> {
                         handle: nationalHandle,
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    _SocialTile(
-                      title: stateFblaTitle,
-                      handle: stateHandle ?? _socialConfig?.defaultStateInstagramHandle,
-                      icon: Icons.map,
-                      onPressed: () =>
-                          _socialService.openInstagramProfile(
-                        handle: stateHandle ?? _socialConfig?.defaultStateInstagramHandle,
-                      ),
-                    ),
-                    if (chapterHandle.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      _SocialTile(
-                        title: 'Your Chapter',
-                        handle: chapterHandle,
-                        icon: Icons.groups,
-                        onPressed: () =>
-                            _socialService.openInstagramProfile(
-                          handle: chapterHandle,
-                        ),
-                      ),
-                    ],
                   ],
                 );
               },
@@ -158,31 +136,6 @@ class _SocialScreenState extends State<SocialScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            Text(
-              'Featured Posts',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            StreamBuilder<List<FeaturedInstagramPost>>(
-              stream: _dbService.featuredInstagramPostsStream,
-              builder: (context, snapshot) {
-                final posts = snapshot.data ?? [];
-                return Column(
-                  children: posts
-                      .map((post) => Padding(
-                            padding:
-                                const EdgeInsets.only(bottom: 12),
-                            child: _FeaturedPostCard(
-                              post: post,
-                              socialService: _socialService,
-                            ),
-                          ))
-                      .toList(),
-                );
-              },
-            ),
           ],
         ),
       ),
