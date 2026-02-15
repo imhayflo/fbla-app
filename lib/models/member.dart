@@ -36,7 +36,6 @@ class Member {
     this.chapterInstagramHandle = '',
   });
 
-  // Get initials for avatar
   String get initials {
     final parts = name.split(' ');
     if (parts.length >= 2) {

@@ -99,7 +99,6 @@ class DashboardTab extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Welcome Card with User Data
             StreamBuilder<Member?>(
               stream: dbService.memberStream,
               builder: (context, snapshot) {
@@ -136,7 +135,6 @@ class DashboardTab extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            // Quick Stats
             Text(
               'Your Activity',
               style: theme.textTheme.titleLarge?.copyWith(
@@ -212,9 +210,7 @@ class DashboardTab extends StatelessWidget {
                   ),
                 ),
                 TextButton(
-                  onPressed: () {
-                    // Navigate to events tab
-                  },
+                  onPressed: () {},
                   child: const Text('View All'),
                 ),
               ],
@@ -284,9 +280,7 @@ class DashboardTab extends StatelessWidget {
                   ),
                 ),
                 TextButton(
-                  onPressed: () {
-                    // Navigate to announcements tab
-                  },
+                  onPressed: () {},
                   child: const Text('View All'),
                 ),
               ],

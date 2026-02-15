@@ -14,14 +14,10 @@ class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  // Track calendar sync state
   static bool isCalendarSyncing = false;
 
   String? get _uid => _auth.currentUser?.uid;
 
-  // ==================== USER/MEMBER ====================
-
-  // Ensure user has a profile document (creates minimal one if missing)
   Future<void> ensureUserProfileExists() async {
     if (_uid == null) return;
     final doc = await _db.collection('users').doc(_uid!).get();
@@ -45,7 +41,6 @@ class DatabaseService {
     });
   }
 
-  // Get current user's profile
   Stream<Member?> get memberStream {
     if (_uid == null) return Stream.value(null);
     return _db
@@ -55,21 +50,16 @@ class DatabaseService {
         .map((doc) => doc.exists ? Member.fromFirestore(doc) : null);
   }
 
-  // Get user profile by ID
   Future<Member?> getMember(String uid) async {
     final doc = await _db.collection('users').doc(uid).get();
     return doc.exists ? Member.fromFirestore(doc) : null;
   }
 
-  // Update user profile
   Future<void> updateMember(Map<String, dynamic> data) async {
     if (_uid == null) return;
     await _db.collection('users').doc(_uid).update(data);
   }
 
-  // ==================== EVENTS ====================
-
-  // Get all events
   Stream<List<Event>> get eventsStream {
     return _db
         .collection('events')
@@ -79,7 +69,6 @@ class DatabaseService {
             snapshot.docs.map((doc) => Event.fromFirestore(doc)).toList());
   }
 
-  // Get user's registered events
   Stream<List<String>> get userRegisteredEventsStream {
     if (_uid == null) return Stream.value([]);
     return _db
@@ -90,25 +79,19 @@ class DatabaseService {
         .map((snapshot) => snapshot.docs.map((doc) => doc.id).toList());
   }
 
-  // Register for event
   Future<void> registerForEvent(String eventId) async {
     if (_uid == null) return;
 
     final batch = _db.batch();
-
-    // Add to user's registered events
     batch.set(
       _db.collection('users').doc(_uid).collection('registeredEvents').doc(eventId),
       {'registeredAt': FieldValue.serverTimestamp()},
     );
-
-    // Increment event participant count
     batch.update(
       _db.collection('events').doc(eventId),
       {'participantCount': FieldValue.increment(1)},
     );
 
-    // Increment user's events attended
     batch.update(
       _db.collection('users').doc(_uid!),
       {'eventsAttended': FieldValue.increment(1)},
@@ -117,7 +100,6 @@ class DatabaseService {
     await batch.commit();
   }
 
-  // Unregister from event
   Future<void> unregisterFromEvent(String eventId) async {
     if (_uid == null) return;
 
@@ -152,16 +134,12 @@ class DatabaseService {
             snapshot.docs.map((doc) => Announcement.fromFirestore(doc)).toList());
   }
 
-  // Sync FBLA news from their website
   Future<void> syncFBLANews() async {
     try {
-      // Check if Firebase is properly initialized
       try {
-        // Try to access Firestore to verify it's configured
         await _db.collection('_test').limit(1).get();
       } catch (e) {
         print('Firebase not configured - news sync will fetch but not save: $e');
-        // Still fetch news so users can see it, but don't try to save
         final newsService = NewsSyncService();
         await newsService.fetchFBLANews();
         print('Fetched FBLA news (not saved to database - Firebase not configured)');
@@ -182,7 +160,6 @@ class DatabaseService {
 
       for (final newsItem in newsItems) {
         try {
-          // Check if this news item already exists
           final existingQuery = await _db
               .collection('announcements')
               .where('externalUrl', isEqualTo: newsItem.externalUrl)
@@ -195,7 +172,6 @@ class DatabaseService {
             batch.set(docRef, newsItem.toMap());
             addedCount++;
           } else {
-            // Update existing news item (in case title/content changed)
             final existingDoc = existingQuery.docs.first;
             batch.update(existingDoc.reference, {
               'title': newsItem.title,
@@ -207,7 +183,6 @@ class DatabaseService {
           }
         } catch (e) {
           print('Error processing news item ${newsItem.id}: $e');
-          // Continue with other items
         }
       }
 
@@ -217,11 +192,9 @@ class DatabaseService {
       }
     } catch (e) {
       print('Error syncing FBLA news: $e');
-      // Don't rethrow - allow app to continue even if sync fails
     }
   }
 
-  // Get last sync time
   Future<DateTime?> getLastNewsSyncTime() async {
     try {
       final doc = await _db.collection('metadata').doc('newsSync').get();
@@ -244,13 +217,9 @@ class DatabaseService {
       });
     } catch (e) {
       print('Error updating last sync time (Firebase may not be configured): $e');
-      // Don't throw - this is not critical
     }
   }
 
-  // ==================== COMPETITIONS ====================
-
-  // Sync FBLA competitions from their website
   Future<void> syncFBLACompetitions() async {
     try {
       try {
@@ -320,8 +289,6 @@ class DatabaseService {
     }
   }
 
-  /// Syncs FBLA calendar events from the official FBLA events calendar.
-  /// Fetches events for the current year and next year from https://www.fbla.org/events/month/
   Future<void> syncFBLACalendar() async {
     isCalendarSyncing = true;
     try {
@@ -408,7 +375,6 @@ class DatabaseService {
     }
   }
 
-  // Get all competitions
   Stream<List<Competition>> get competitionsStream {
     return _db
         .collection('competitions')
@@ -429,7 +395,6 @@ class DatabaseService {
         .map((snapshot) => snapshot.docs.map((doc) => doc.id).toList());
   }
 
-  // Register for competition
   Future<void> registerForCompetition(String competitionId) async {
     if (_uid == null) return;
 
@@ -451,9 +416,6 @@ class DatabaseService {
     await batch.commit();
   }
 
-  // ==================== LEADERBOARD ====================
-
-  // Get top members by points
   Stream<List<Member>> get leaderboardStream {
     return _db
         .collection('users')
@@ -464,9 +426,6 @@ class DatabaseService {
             snapshot.docs.map((doc) => Member.fromFirestore(doc)).toList());
   }
 
-  // ==================== SOCIAL / INSTAGRAM ====================
-
-  /// Ensures default social config exists in Firestore (idempotent). Call on app start so Social tab works without manual setup.
   Future<void> ensureSocialConfigExists() async {
     try {
       await _db.collection('_test').limit(1).get();
@@ -478,6 +437,7 @@ class DatabaseService {
     if (doc.exists) return;
     await ref.set({
       'nationalInstagramHandle': 'fbla_national',
+      'nationalInstagramUrl': 'https://www.instagram.com/fbla_national/',
       'defaultStateInstagramHandle': 'fbla_national',
       'stateInstagramHandles': {
         'CA': 'californiafbla',
@@ -491,11 +451,12 @@ class DatabaseService {
         'NC': 'ncfbla',
         'MI': 'michiganfbla',
       },
+      'nationalLinkedInUrl': 'https://www.linkedin.com/company/future-business-leaders-america',
+      'nationalFacebookUrl': 'https://www.facebook.com/FutureBusinessLeaders',
     });
-    print('Social config (instagram) created with defaults');
+    print('Social config created with defaults (Instagram, LinkedIn, Facebook)');
   }
 
-  /// Fetches social config (national + state Instagram handles). Uses defaults if doc missing.
   Future<SocialConfig> getSocialConfig() async {
     try {
       final doc =
@@ -509,7 +470,6 @@ class DatabaseService {
     return const SocialConfig();
   }
 
-  /// Ensures default FBLA regional sections exist in Firestore (idempotent). Sections are regional per state (e.g. Bay Section in CA).
   Future<void> ensureFblaSectionsExist() async {
     try {
       await _db.collection('_test').limit(1).get();
@@ -542,8 +502,6 @@ class DatabaseService {
     print('FBLA regional sections created with defaults');
   }
 
-  /// Fetches FBLA regional sections for a state from Firestore (API). Used for signup/update profile section dropdown.
-  /// [stateCode] e.g. CA, TX. If null or empty, returns empty list (user must select state first).
   Future<List<FblaSection>> getFblaSectionsForState(String? stateCode) async {
     if (stateCode == null || stateCode.isEmpty) return [];
     try {
@@ -566,7 +524,6 @@ class DatabaseService {
     } catch (e) {
       print('Error loading FBLA sections for $stateCode: $e');
     }
-    // Fallback regional sections for a few states when Firestore is empty or no index
     return _defaultSectionsForState(stateCode);
   }
 
@@ -605,8 +562,6 @@ class DatabaseService {
     }
   }
 
-  /// Stream of featured Instagram posts (curated; admins add URLs to Firestore).
-  /// Each document should have: url, source ('national'|'state'|'chapter'), optional caption, order, addedAt (Timestamp).
   Stream<List<FeaturedInstagramPost>> get featuredInstagramPostsStream {
     return _db
         .collection('featured_instagram_posts')

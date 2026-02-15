@@ -49,7 +49,6 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
     } catch (e) {
-      // Show user-friendly message for common Firebase/auth errors
       String message = e.toString();
       if (message.contains('firebase') ||
           message.contains('network') ||
@@ -118,7 +117,6 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               const SizedBox(height: 40),
 
-              // Logo and Title
               Center(
                 child: Column(
                   children: [
@@ -156,7 +154,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 48),
 
-              // Error message
               if (_error != null)
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -267,7 +264,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 32),
 
-              // Sign up link
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

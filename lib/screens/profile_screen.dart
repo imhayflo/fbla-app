@@ -5,6 +5,8 @@ import '../services/social_service.dart';
 import '../models/member.dart';
 import 'login_screen.dart';
 import 'update_profile_screen.dart';
+import 'settings_screen.dart';
+import 'help_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -159,7 +161,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           return SingleChildScrollView(
             child: Column(
               children: [
-                // Profile Header
                 Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
@@ -228,7 +229,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
 
-                // Member Information
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -324,7 +324,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         const SizedBox(height: 24),
                       ],
 
-                      // Actions
                       Text(
                         'Actions',
                         style: theme.textTheme.titleLarge?.copyWith(
@@ -354,9 +353,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         icon: Icons.settings,
                         title: 'Settings',
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Settings coming soon!')),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SettingsScreen(),
+                            ),
                           );
                         },
                       ),
@@ -365,9 +366,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         icon: Icons.help_outline,
                         title: 'Help & Support',
                         onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Help & Support coming soon!')),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const HelpScreen(),
+                            ),
                           );
                         },
                       ),

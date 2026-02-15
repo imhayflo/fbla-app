@@ -24,7 +24,6 @@ class _CompetitionsScreenState extends State<CompetitionsScreen> {
       ),
       body: Column(
         children: [
-          // Event Type Filter
           SizedBox(
             height: 50,
             child: ListView(
@@ -46,7 +45,6 @@ class _CompetitionsScreenState extends State<CompetitionsScreen> {
                   .toList(),
             ),
           ),
-          // Competitions List
           Expanded(
             child: StreamBuilder<List<Competition>>(
               stream: _dbService.competitionsStream,

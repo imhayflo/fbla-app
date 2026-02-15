@@ -12,8 +12,6 @@ void main() async {
 
   try {
     if (DefaultFirebaseOptions.hasPlaceholderValues) {
-      // Use platform config (google-services.json, GoogleService-Info.plist, web)
-      // when flutterfire configure has not been run.
       await Firebase.initializeApp();
     } else {
       await Firebase.initializeApp(
@@ -93,7 +91,6 @@ class FBLAApp extends StatelessWidget {
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
         builder: (context, snapshot) {
-          // Show loading while checking auth state
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
               body: Center(
@@ -101,8 +98,6 @@ class FBLAApp extends StatelessWidget {
               ),
             );
           }
-          
-          // If user is logged in, show home screen with auto-sync
           if (snapshot.hasData) {
             return _HomeScreenWithSync();
           }
@@ -115,7 +110,6 @@ class FBLAApp extends StatelessWidget {
   }
 }
 
-/// Wrapper widget that handles automatic news syncing
 class _HomeScreenWithSync extends StatefulWidget {
   const _HomeScreenWithSync();
 
@@ -146,7 +140,6 @@ class _HomeScreenWithSyncState extends State<_HomeScreenWithSync>
     }
   }
 
-  /// Ensure default social/Instagram config and FBLA sections exist so Social tab and signup work.
   Future<void> _ensureSocialConfigExists() async {
     try {
       await _dbService.ensureSocialConfigExists();
@@ -165,16 +158,13 @@ class _HomeScreenWithSyncState extends State<_HomeScreenWithSync>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    // Sync when app comes to foreground (after being in background)
     if (state == AppLifecycleState.resumed) {
       _syncIfNeeded();
     }
   }
 
-  /// Perform initial sync on app startup (non-blocking)
   Future<void> _performInitialSync() async {
     try {
-      // Run news, competitions, and calendar sync in parallel
       await Future.any([
         Future.wait([_syncNewsIfNeeded(), _syncCompetitionsIfNeeded(), _syncCalendarIfNeeded()]),
         Future.delayed(const Duration(seconds: 45), () {
@@ -186,7 +176,6 @@ class _HomeScreenWithSyncState extends State<_HomeScreenWithSync>
     }
   }
 
-  /// Sync competitions on every app open.
   Future<void> _syncCompetitionsIfNeeded() async {
     try {
       print('Starting FBLA competitions sync...');
@@ -197,7 +186,6 @@ class _HomeScreenWithSyncState extends State<_HomeScreenWithSync>
     }
   }
 
-  /// Sync news on every app open.
   Future<void> _syncNewsIfNeeded() async {
     try {
       print('Starting FBLA news sync...');
@@ -206,11 +194,9 @@ class _HomeScreenWithSyncState extends State<_HomeScreenWithSync>
       print('FBLA news sync completed');
     } catch (e) {
       print('Error syncing FBLA news: $e');
-      // Don't throw - allow app to continue even if sync fails
     }
   }
 
-  /// Sync calendar on every app open.
   Future<void> _syncCalendarIfNeeded() async {
     try {
       print('Starting FBLA calendar sync...');
@@ -231,7 +217,6 @@ class _HomeScreenWithSyncState extends State<_HomeScreenWithSync>
 
   @override
   Widget build(BuildContext context) {
-    // Always show HomeScreen - sync happens in background
     return const HomeScreen();
   }
 }

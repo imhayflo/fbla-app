@@ -24,7 +24,6 @@ class AuthService {
     String? chapterInstagramHandle,
   }) async {
     try {
-      // Create user account
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
@@ -56,7 +55,6 @@ class AuthService {
     }
   }
 
-  // Sign in with email and password
   Future<UserCredential> signIn({
     required String email,
     required String password,
@@ -71,13 +69,10 @@ class AuthService {
     }
   }
 
-  // Sign out
   Future<void> signOut() async {
     await _auth.signOut();
   }
 
-  /// Delete the current user account. Requires [password] for re-authentication.
-  /// Deletes Firestore user document and subcollections, then Firebase Auth user.
   Future<void> deleteAccount(String password) async {
     final user = _auth.currentUser;
     if (user == null) throw Exception('Not signed in');
@@ -112,7 +107,6 @@ class AuthService {
     }
   }
 
-  // Handle Firebase Auth exceptions
   String _handleAuthException(FirebaseAuthException e) {
     switch (e.code) {
       case 'weak-password':

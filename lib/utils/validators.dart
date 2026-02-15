@@ -1,11 +1,7 @@
-/// Shared input validation for forms (signup, login, etc.).
-
-/// RFC 5322–style email regex (simplified but catches most invalid emails).
 final RegExp _emailRegex = RegExp(
   r'^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$',
 );
 
-/// Returns an error message if [value] is not a valid email, otherwise null.
 String? validateEmail(String? value) {
   if (value == null || value.isEmpty) {
     return 'Please enter your email';
@@ -18,7 +14,6 @@ String? validateEmail(String? value) {
   return null;
 }
 
-/// Returns an error message if [value] is empty or too short for a name.
 String? validateRequiredName(String? value, {String fieldName = 'Name'}) {
   if (value == null || value.trim().isEmpty) {
     return 'Please enter $fieldName';
@@ -37,7 +32,6 @@ String? validateRequired(String? value, String fieldName) {
   return null;
 }
 
-/// Returns an error message if [value] is not a valid password (min length 6).
 String? validatePassword(String? value) {
   if (value == null || value.isEmpty) {
     return 'Please enter a password';
@@ -59,7 +53,6 @@ String? validateConfirmPassword(String? confirm, String password) {
   return null;
 }
 
-/// Optional phone: if provided, allow only digits, spaces, +, -, (), and reasonable length.
 String? validatePhoneOptional(String? value) {
   if (value == null || value.trim().isEmpty) return null;
   final cleaned = value.replaceAll(RegExp(r'[\s\-\(\)\+]'), '');

@@ -1,8 +1,6 @@
-/// FBLA regional section (e.g. Bay Section in California). Loaded from Firestore, filtered by state.
 class FblaSection {
   final String id;
   final String name;
-  /// State code this section belongs to (e.g. CA, TX).
   final String stateCode;
   final int order;
 

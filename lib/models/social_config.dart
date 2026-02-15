@@ -1,19 +1,22 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Server-driven config for social/Instagram: national handle, state→handle map,
-/// and optional featured post URLs to display (curated from National/State/Chapter).
 class SocialConfig {
-  /// National FBLA Instagram username (https://www.instagram.com/fbla_national/).
   final String nationalInstagramHandle;
-  /// Map of state code/name → Instagram username (e.g. "CA" → "californiafbla").
+  final String? nationalInstagramUrl;
   final Map<String, String> stateInstagramHandles;
-  /// Default state handle when state is not in the map.
   final String defaultStateInstagramHandle;
+  final String? defaultStateInstagramUrl;
+  final String? nationalLinkedInUrl;
+  final String? nationalFacebookUrl;
 
   const SocialConfig({
     this.nationalInstagramHandle = 'fbla_national',
+    this.nationalInstagramUrl,
     this.stateInstagramHandles = const {},
     this.defaultStateInstagramHandle = 'fbla_national',
+    this.defaultStateInstagramUrl,
+    this.nationalLinkedInUrl,
+    this.nationalFacebookUrl,
   });
 
   factory SocialConfig.fromMap(Map<String, dynamic>? data) {
@@ -29,18 +32,21 @@ class SocialConfig {
     }
     return SocialConfig(
       nationalInstagramHandle: data['nationalInstagramHandle'] as String? ?? 'fbla_national',
+      nationalInstagramUrl: data['nationalInstagramUrl'] as String?,
       stateInstagramHandles: stateHandles,
       defaultStateInstagramHandle:
           data['defaultStateInstagramHandle'] as String? ?? 'fbla_national',
+      defaultStateInstagramUrl: data['defaultStateInstagramUrl'] as String?,
+      nationalLinkedInUrl: data['nationalLinkedInUrl'] as String?,
+      nationalFacebookUrl: data['nationalFacebookUrl'] as String?,
     );
   }
 }
 
-/// A featured Instagram post (URL stored in Firestore; admins can add from National/State/Chapter).
 class FeaturedInstagramPost {
   final String id;
   final String url;
-  final String source; // 'national' | 'state' | 'chapter'
+  final String source;
   final String? caption;
   final int order;
   final DateTime? addedAt;

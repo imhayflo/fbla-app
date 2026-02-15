@@ -39,7 +39,6 @@ class _EventsScreenState extends State<EventsScreen> {
       body: StreamBuilder<List<Event>>(
         stream: _dbService.eventsStream,
         builder: (context, eventSnapshot) {
-          // Show loading while syncing or waiting or if events are empty
           if (DatabaseService.isCalendarSyncing ||
               eventSnapshot.connectionState == ConnectionState.waiting ||
               (eventSnapshot.data?.isEmpty ?? true)) {
@@ -569,7 +568,6 @@ class _CompetitionCalendarCard extends StatelessWidget {
   }
 }
 
-// Reuse existing sheet components - simplified inline versions
 class _EventDetailsSheet extends StatefulWidget {
   final Event event;
   final bool isRegistered;

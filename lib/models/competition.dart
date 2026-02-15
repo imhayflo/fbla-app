@@ -5,11 +5,10 @@ class Competition {
   final String name;
   final String category;
   final String description;
-  final String level; // 'Regional', 'State', 'National' or 'High School', 'Middle School'
+  final String level;
   final DateTime date;
   final int maxTeamSize;
   final int registeredCount;
-  /// URL to Event Details & Guidelines (PDF) — includes test competencies for objective tests.
   final String? guidelinesUrl;
 
   Competition({

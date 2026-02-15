@@ -160,7 +160,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
               const SizedBox(height: 32),
 
-              // Error message
               if (_error != null)
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -190,7 +189,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Personal Information Section
                     Text(
                       'Personal Information',
                       style: theme.textTheme.titleMedium?.copyWith(
@@ -282,7 +280,6 @@ class _SignupScreenState extends State<SignupScreen> {
                       validator: (value) => validateRequired(value, 'your chapter'),
                     ),
                     const SizedBox(height: 16),
-                    // State dropdown (required) — regional sections load when state is selected
                     DropdownButtonFormField<String>(
                       value: _selectedStateCode,
                       decoration: InputDecoration(
@@ -369,7 +366,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     const SizedBox(height: 24),
 
-                    // Password Section
                     Text(
                       'Create Password',
                       style: theme.textTheme.titleMedium?.copyWith(
@@ -464,7 +460,6 @@ class _SignupScreenState extends State<SignupScreen> {
 
                     const SizedBox(height: 16),
 
-                    // Login link
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
