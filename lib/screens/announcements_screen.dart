@@ -6,7 +6,9 @@ import '../services/database_service.dart';
 import '../models/announcement.dart';
 
 class AnnouncementsScreen extends StatefulWidget {
-  const AnnouncementsScreen({super.key});
+  final String? initialAnnouncementId;
+
+  const AnnouncementsScreen({super.key, this.initialAnnouncementId});
 
   @override
   State<AnnouncementsScreen> createState() => _AnnouncementsScreenState();
@@ -15,6 +17,8 @@ class AnnouncementsScreen extends StatefulWidget {
 class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
   final DatabaseService _dbService = DatabaseService();
   bool _isRefreshing = false;
+  final ScrollController _scrollController = ScrollController();
+  bool _hasScrolled = false;
 
   Future<void> _refreshNews() async {
     setState(() {
@@ -123,9 +127,25 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
+            controller: _scrollController,
             itemCount: announcements.length,
             itemBuilder: (context, index) {
               final announcement = announcements[index];
+              
+              // Scroll to initial announcement if provided
+              if (!_hasScrolled && widget.initialAnnouncementId != null) {
+                if (announcement.id == widget.initialAnnouncementId) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _scrollController.animateTo(
+                      index * 100.0, // Approximate height per item
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                    );
+                  });
+                  _hasScrolled = true;
+                }
+              }
+              
               return _AnnouncementCard(
                 announcement: announcement,
                 onTap: () => _showAnnouncementDetails(context, announcement),
@@ -195,12 +215,12 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Icon(Icons.person,
+                  Icon(Icons.calendar_today,
                       size: 16,
                       color: theme.colorScheme.onSurface.withOpacity(0.6)),
                   const SizedBox(width: 4),
                   Text(
-                    announcement.author,
+                    dateFormat.format(announcement.date),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.6),
                     ),
@@ -232,6 +252,16 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                 final uri = Uri.parse(announcement.externalUrl!);
                 if (await canLaunchUrl(uri)) {
                   await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  // Add points for reading the article
+                  await _dbService.addPoints(5);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('+5 points for reading!'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
                 } else {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -384,22 +414,6 @@ class _AnnouncementCard extends StatelessWidget {
                     dateFormat.format(announcement.date),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.5),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Icon(
-                    Icons.person,
-                    size: 14,
-                    color: theme.colorScheme.onSurface.withOpacity(0.5),
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      announcement.author,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.5),
-                      ),
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],

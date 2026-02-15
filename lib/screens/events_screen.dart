@@ -6,7 +6,9 @@ import '../models/event.dart';
 import '../models/competition.dart';
 
 class EventsScreen extends StatefulWidget {
-  const EventsScreen({super.key});
+  final DateTime? initialDate;
+
+  const EventsScreen({super.key, this.initialDate});
 
   @override
   State<EventsScreen> createState() => _EventsScreenState();
@@ -14,9 +16,16 @@ class EventsScreen extends StatefulWidget {
 
 class _EventsScreenState extends State<EventsScreen> {
   final DatabaseService _dbService = DatabaseService();
-  DateTime _focusedDay = DateTime.now();
-  DateTime _selectedDay = DateTime.now();
+  late DateTime _focusedDay;
+  late DateTime _selectedDay;
   CalendarFormat _calendarFormat = CalendarFormat.month;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusedDay = widget.initialDate ?? DateTime.now();
+    _selectedDay = widget.initialDate ?? DateTime.now();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,56 +72,96 @@ class _EventsScreenState extends State<EventsScreen> {
             builder: (context, compSnapshot) {
               final events = eventSnapshot.data ?? [];
               final competitions = compSnapshot.data ?? [];
-              final eventDates = _getEventDates(events, competitions);
 
-              return Column(
-                children: [
-                  TableCalendar<dynamic>(
-                    firstDay: DateTime.utc(DateTime.now().year - 1, 1, 1),
-                    lastDay: DateTime.utc(DateTime.now().year + 1, 12, 31),
-                    focusedDay: _focusedDay,
-                    selectedDayPredicate: (day) =>
-                        isSameDay(_selectedDay, day),
-                    calendarFormat: _calendarFormat,
-                    eventLoader: (day) {
-                      final dateKey = DateTime(day.year, day.month, day.day);
-                      return eventDates[dateKey] ?? [];
+              // Get registered events to determine marker colors
+              return StreamBuilder<List<String>>(
+                stream: _dbService.userRegisteredEventsStream,
+                builder: (context, regEventsSnapshot) {
+                  return StreamBuilder<List<String>>(
+                    stream: _dbService.userRegisteredCompetitionsStream,
+                    builder: (context, regCompsSnapshot) {
+                      final regEventIds = regEventsSnapshot.data ?? [];
+                      final regCompIds = regCompsSnapshot.data ?? [];
+                      
+                      // Get all events for showing markers (black dots)
+                      final allEventDates = _getEventDates(events, competitions);
+
+                      return Column(
+                        children: [
+                          TableCalendar<dynamic>(
+                            firstDay: DateTime.utc(DateTime.now().year - 1, 1, 1),
+                            lastDay: DateTime.utc(DateTime.now().year + 1, 12, 31),
+                            focusedDay: _focusedDay,
+                            selectedDayPredicate: (day) =>
+                                isSameDay(_selectedDay, day),
+                            calendarFormat: _calendarFormat,
+                            eventLoader: (day) {
+                              final dateKey = DateTime(day.year, day.month, day.day);
+                              return allEventDates[dateKey] ?? [];
+                            },
+                            calendarBuilders: CalendarBuilders(
+                              markerBuilder: (context, date, events) {
+                                if (events.isEmpty) return null;
+                                return Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: events.map((event) {
+                                    final isRegistered = _isEventRegistered(event, regEventIds, regCompIds);
+                                    return Container(
+                                      margin: const EdgeInsets.symmetric(horizontal: 1),
+                                      width: 6,
+                                      height: 6,
+                                      decoration: BoxDecoration(
+                                        color: isRegistered ? Colors.red : Colors.black,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    );
+                                  }).toList(),
+                                );
+                              },
+                            ),
+                            onDaySelected: (selectedDay, focusedDay) {
+                              setState(() {
+                                _selectedDay = selectedDay;
+                                _focusedDay = focusedDay;
+                              });
+                            },
+                            onFormatChanged: (format) {
+                              setState(() => _calendarFormat = format);
+                            },
+                            calendarStyle: CalendarStyle(
+                              markersMaxCount: 3,
+                              markerSize: 8,
+                              markerDecoration: BoxDecoration(
+                                color: Colors.black,
+                                shape: BoxShape.circle,
+                              ),
+                              selectedDecoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              todayDecoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primary
+                                    .withOpacity(0.5),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                          const Divider(height: 1),
+                          Expanded(
+                            child: _SelectedDayEventsList(
+                              selectedDay: _selectedDay,
+                              events: events,
+                              competitions: competitions,
+                              dbService: _dbService,
+                            ),
+                          ),
+                        ],
+                      );
                     },
-                    onDaySelected: (selectedDay, focusedDay) {
-                      setState(() {
-                        _selectedDay = selectedDay;
-                        _focusedDay = focusedDay;
-                      });
-                    },
-                    onFormatChanged: (format) {
-                      setState(() => _calendarFormat = format);
-                    },
-                    calendarStyle: CalendarStyle(
-                      markersMaxCount: 3,
-                      markerSize: 8,
-                      selectedDecoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      todayDecoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withOpacity(0.5),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                  const Divider(height: 1),
-                  Expanded(
-                    child: _SelectedDayEventsList(
-                      selectedDay: _selectedDay,
-                      events: events,
-                      competitions: competitions,
-                      dbService: _dbService,
-                    ),
-                  ),
-                ],
+                  );
+                },
               );
             },
           );
@@ -143,6 +192,15 @@ class _EventsScreenState extends State<EventsScreen> {
     }
 
     return result;
+  }
+
+  bool _isEventRegistered(dynamic event, List<String> regEventIds, List<String> regCompIds) {
+    if (event is Event) {
+      return regEventIds.contains(event.id);
+    } else if (event is Competition) {
+      return regCompIds.contains(event.id);
+    }
+    return false;
   }
 }
 
@@ -401,13 +459,13 @@ class _EventCalendarCard extends StatelessWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.green.shade100,
+                              color: Colors.red.shade100,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              'Registered',
+                              'Marked',
                               style: theme.textTheme.labelSmall?.copyWith(
-                                color: Colors.green.shade800,
+                                color: Colors.red.shade800,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -528,13 +586,13 @@ class _CompetitionCalendarCard extends StatelessWidget {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.green.shade100,
+                              color: Colors.red.shade100,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              'Registered',
+                              'Marked',
                               style: theme.textTheme.labelSmall?.copyWith(
-                                color: Colors.green.shade800,
+                                color: Colors.red.shade800,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -605,7 +663,7 @@ class _EventDetailsSheetState extends State<_EventDetailsSheet> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_isRegistered ? 'Registered!' : 'Unregistered'),
+            content: Text(_isRegistered ? 'Marked on calendar!' : 'Unmarked'),
           ),
         );
       }
@@ -690,10 +748,10 @@ class _EventDetailsSheetState extends State<_EventDetailsSheet> {
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
                     : Icon(_isRegistered ? Icons.check : Icons.event_available),
-                label: Text(_isRegistered ? 'Registered' : 'Register for Event'),
+                label: Text(_isRegistered ? 'Marked' : 'Mark on My Calendar'),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: _isRegistered ? Colors.green : null,
+                  backgroundColor: _isRegistered ? Colors.red : null,
                 ),
               ),
             ),
@@ -737,7 +795,7 @@ class _CompetitionDetailsSheetState extends State<_CompetitionDetailsSheet> {
       setState(() => _isRegistered = true);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registered for competition!')),
+          const SnackBar(content: Text('Marked on calendar!')),
         );
       }
     } catch (e) {
@@ -844,10 +902,10 @@ class _CompetitionDetailsSheetState extends State<_CompetitionDetailsSheet> {
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
                     : Icon(_isRegistered ? Icons.check : Icons.add),
-                label: Text(_isRegistered ? 'Registered' : 'Register for Competition'),
+                label: Text(_isRegistered ? 'Marked' : 'Mark on My Calendar'),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  backgroundColor: _isRegistered ? Colors.green : null,
+                  backgroundColor: _isRegistered ? Colors.red : null,
                 ),
               ),
             ),

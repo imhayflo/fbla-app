@@ -19,19 +19,23 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  DateTime? _initialEventDate;
+  String? _initialAnnouncementId;
 
-  final List<Widget> _screens = [
+  List<Widget> get _screens => [
     const DashboardTab(),
-    const EventsScreen(),
-    const AnnouncementsScreen(),
+    EventsScreen(initialDate: _initialEventDate),
+    AnnouncementsScreen(initialAnnouncementId: _initialAnnouncementId),
     const CompetitionsScreen(),
     const SocialScreen(),
     const ProfileScreen(),
   ];
 
-  void _onItemTapped(int index) {
+  void _onItemTapped(int index, {DateTime? eventDate, String? announcementId}) {
     setState(() {
       _selectedIndex = index;
+      _initialEventDate = eventDate;
+      _initialAnnouncementId = announcementId;
     });
   }
 
@@ -41,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: _screens[_selectedIndex],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
-        onDestinationSelected: _onItemTapped,
+        onDestinationSelected: (index) => _onItemTapped(index),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.dashboard_outlined),
@@ -91,6 +95,10 @@ class DashboardTab extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+        leading: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Image.asset('assets/fbla_logo.png', fit: BoxFit.contain),
+        ),
         title: const Text('FBLA Dashboard'),
         elevation: 0,
       ),
@@ -160,11 +168,17 @@ class DashboardTab extends StatelessWidget {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: _StatCard(
-                            title: 'Competitions',
-                            value: '${member?.achievements.length ?? 0}',
-                            icon: Icons.emoji_events,
-                            color: Colors.amber,
+                          child: StreamBuilder<List<String>>(
+                            stream: dbService.userRegisteredCompetitionsStream,
+                            builder: (context, regCompsSnapshot) {
+                              final regCompCount = regCompsSnapshot.data?.length ?? 0;
+                              return _StatCard(
+                                title: 'Competitions',
+                                value: '$regCompCount',
+                                icon: Icons.emoji_events,
+                                color: Colors.amber,
+                              );
+                            },
                           ),
                         ),
                       ],
@@ -182,13 +196,34 @@ class DashboardTab extends StatelessWidget {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: _StatCard(
-                            title: 'Rank',
-                            value: member?.rank != null && member!.rank > 0
-                                ? '#${member.rank}'
-                                : '-',
-                            icon: Icons.leaderboard,
-                            color: Colors.green,
+                          child: StreamBuilder<List<Member>>(
+                            stream: dbService.getAllMembersSortedByPoints(),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData) {
+                                return _StatCard(
+                                  title: 'Rank',
+                                  value: '-',
+                                  icon: Icons.leaderboard,
+                                  color: Colors.green,
+                                );
+                              }
+                              final members = snapshot.data!;
+                              // Find current user's rank
+                              final currentUid = member?.uid;
+                              int userRank = 0;
+                              for (int i = 0; i < members.length; i++) {
+                                if (members[i].uid == currentUid) {
+                                  userRank = i + 1;
+                                  break;
+                                }
+                              }
+                              return _StatCard(
+                                title: 'Rank',
+                                value: userRank > 0 ? '#$userRank' : '-',
+                                icon: Icons.leaderboard,
+                                color: Colors.green,
+                              );
+                            },
                           ),
                         ),
                       ],
@@ -210,7 +245,10 @@ class DashboardTab extends StatelessWidget {
                   ),
                 ),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    final homeState = context.findAncestorStateOfType<_HomeScreenState>();
+                    homeState?._onItemTapped(1);
+                  },
                   child: const Text('View All'),
                 ),
               ],
@@ -254,13 +292,18 @@ class DashboardTab extends StatelessWidget {
                   children: upcomingEvents
                       .map((event) => Padding(
                             padding: const EdgeInsets.only(bottom: 12),
-                            child: _EventCard(
-                              title: event.title,
-                              date: event.endDate != null
-                                  ? '${dateFormat.format(event.date)} - ${dateFormat.format(event.endDate!)}'
-                                  : dateFormat.format(event.date),
-                              location: event.location,
-                              type: event.type,
+                            child: InkWell(
+                              onTap: () {
+                                final homeState = context.findAncestorStateOfType<_HomeScreenState>();
+                                homeState?._onItemTapped(1, eventDate: event.date);
+                              },
+                              child: _EventCard(
+                                title: event.title,
+                                date: event.endDate != null
+                                    ? '${dateFormat.format(event.date)} - ${dateFormat.format(event.endDate!)}'
+                                    : dateFormat.format(event.date),
+                                type: event.type,
+                              ),
                             ),
                           ))
                       .toList(),
@@ -269,18 +312,21 @@ class DashboardTab extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            // Recent Announcements
+            // Recent News
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Recent Announcements',
+                  'Recent News',
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    final homeState = context.findAncestorStateOfType<_HomeScreenState>();
+                    homeState?._onItemTapped(2);
+                  },
                   child: const Text('View All'),
                 ),
               ],
@@ -318,23 +364,29 @@ class DashboardTab extends StatelessWidget {
 
                 final latestAnnouncement = announcements.first;
                 return Card(
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: colorScheme.primaryContainer,
-                      child: Icon(Icons.info,
-                          color: colorScheme.onPrimaryContainer),
+                  child: InkWell(
+                    onTap: () {
+                      final homeState = context.findAncestorStateOfType<_HomeScreenState>();
+                      homeState?._onItemTapped(2, announcementId: latestAnnouncement.id);
+                    },
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: colorScheme.primaryContainer,
+                        child: Icon(Icons.campaign,
+                            color: colorScheme.onPrimaryContainer),
+                      ),
+                      title: Text(
+                        latestAnnouncement.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(
+                        latestAnnouncement.content,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
                     ),
-                    title: Text(
-                      latestAnnouncement.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    subtitle: Text(
-                      latestAnnouncement.content,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    trailing: const Icon(Icons.chevron_right),
                   ),
                 );
               },
@@ -392,13 +444,11 @@ class _StatCard extends StatelessWidget {
 class _EventCard extends StatelessWidget {
   final String title;
   final String date;
-  final String location;
   final String type;
 
   const _EventCard({
     required this.title,
     required this.date,
-    required this.location,
     required this.type,
   });
 
@@ -465,26 +515,6 @@ class _EventCard extends StatelessWidget {
                         date,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withOpacity(0.6),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.location_on,
-                        size: 16,
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          location,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withOpacity(0.6),
-                          ),
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],

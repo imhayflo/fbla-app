@@ -528,7 +528,7 @@ class _CompetitionDetailsSheetState extends State<_CompetitionDetailsSheet> {
                             )
                           : Icon(_isRegistered ? Icons.check : Icons.add),
                       label: Text(
-                        _isRegistered ? 'Registered' : 'Register for Competition',
+                        _isRegistered ? 'Marked as my Competition' : 'Mark as my Competition',
                       ),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),

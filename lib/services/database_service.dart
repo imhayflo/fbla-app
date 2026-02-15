@@ -60,6 +60,41 @@ class DatabaseService {
     await _db.collection('users').doc(_uid).update(data);
   }
 
+  Future<void> addPoints(int points) async {
+    if (_uid == null) return;
+    await _db.collection('users').doc(_uid).update({
+      'points': FieldValue.increment(points),
+    });
+  }
+
+  Stream<List<Member>> getAllMembersSortedByPoints() {
+    return _db
+        .collection('users')
+        .snapshots()
+        .map((snapshot) {
+          final members = snapshot.docs
+              .map((doc) => Member.fromFirestore(doc))
+              .toList();
+          members.sort((a, b) {
+            final pointsCompare = b.points.compareTo(a.points);
+            if (pointsCompare != 0) return pointsCompare;
+            return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          });
+          return members;
+        });
+  }
+
+  Future<int> getUserRank(String uid) async {
+    final members = await getAllMembersSortedByPoints().first;
+    for (int i = 0; i < members.length; i++) {
+      final doc = await _db.collection('users').doc(members[i].uid).get();
+      if (doc.id == uid) {
+        return i + 1;
+      }
+    }
+    return 0;
+  }
+
   Stream<List<Event>> get eventsStream {
     return _db
         .collection('events')
@@ -122,9 +157,6 @@ class DatabaseService {
     await batch.commit();
   }
 
-  // ==================== ANNOUNCEMENTS ====================
-
-  // Get all announcements
   Stream<List<Announcement>> get announcementsStream {
     return _db
         .collection('announcements')
