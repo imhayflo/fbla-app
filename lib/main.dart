@@ -257,6 +257,9 @@ class _HomeScreenWithSyncState extends State<_HomeScreenWithSync>
     WidgetsBinding.instance.addObserver(this);
     _ensureProfileExists();
     _ensureSocialConfigExists();
+    // Pre-warm Firestore for faster first interaction
+    _dbService.preLoadData();
+    _dbService.warmupStreams();
     // Perform sync in background without blocking UI
     _performInitialSync();
   }
