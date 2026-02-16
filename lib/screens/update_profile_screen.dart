@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/member.dart';
-import '../models/fbla_section.dart';
 import '../services/database_service.dart';
 import '../utils/validators.dart';
-import '../utils/constants.dart';
 
 class UpdateProfileScreen extends StatefulWidget {
   final Member member;
@@ -22,10 +20,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   final _phoneController = TextEditingController();
   final DatabaseService _dbService = DatabaseService();
 
-  String? _selectedStateCode;
-  FblaSection? _selectedSection;
-  List<FblaSection> _sections = [];
-  bool _sectionsLoading = false;
   bool _saving = false;
   String? _error;
 
@@ -36,8 +30,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     _schoolController.text = widget.member.school;
     _chapterController.text = widget.member.chapter;
     _phoneController.text = widget.member.phone;
-    _selectedStateCode = widget.member.state.isNotEmpty ? widget.member.state : null;
-    if (_selectedStateCode != null) _loadSectionsForState(_selectedStateCode);
   }
 
   @override
@@ -49,52 +41,8 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     super.dispose();
   }
 
-  Future<void> _loadSectionsForState(String? stateCode) async {
-    if (stateCode == null || stateCode.isEmpty) {
-      setState(() {
-        _sections = [];
-        _selectedSection = null;
-        _sectionsLoading = false;
-      });
-      return;
-    }
-    setState(() {
-      _sectionsLoading = true;
-      _selectedSection = null;
-    });
-    final list = await _dbService.getFblaSectionsForState(stateCode);
-    FblaSection? preserve;
-    if (widget.member.section.isNotEmpty) {
-      for (final s in list) {
-        if (s.id == widget.member.section) {
-          preserve = s;
-          break;
-        }
-      }
-    }
-    if (mounted) {
-      setState(() {
-        _sections = list;
-        _selectedSection = preserve ?? (list.isNotEmpty ? list.first : null);
-        _sectionsLoading = false;
-      });
-    }
-  }
-
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedStateCode == null || _selectedStateCode!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select your state')),
-      );
-      return;
-    }
-    if (_selectedSection == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select your section')),
-      );
-      return;
-    }
     setState(() {
       _saving = true;
       _error = null;
@@ -104,8 +52,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
         'name': _nameController.text.trim(),
         'school': _schoolController.text.trim(),
         'chapter': _chapterController.text.trim(),
-        'state': _selectedStateCode,
-        'section': _selectedSection!.id,
         'phone': _phoneController.text.trim(),
       });
       if (mounted) {
@@ -192,62 +138,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 validator: (v) => validateRequired(v, 'your chapter'),
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _selectedStateCode,
-                decoration: InputDecoration(
-                  labelText: 'State *',
-                  prefixIcon: const Icon(Icons.map_outlined),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                hint: const Text('Select state'),
-                items: kUsStates
-                    .map((s) => DropdownMenuItem<String>(
-                          value: s['code'],
-                          child: Text(s['name']!),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() => _selectedStateCode = value);
-                  _loadSectionsForState(value);
-                },
-                validator: (v) =>
-                    v == null || v.isEmpty ? 'Please select your state' : null,
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<FblaSection>(
-                value: _selectedSection,
-                decoration: InputDecoration(
-                  labelText: 'Regional Section *',
-                  prefixIcon: _sectionsLoading
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: Padding(
-                            padding: EdgeInsets.all(2),
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        )
-                      : const Icon(Icons.category_outlined),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                hint: Text(_selectedStateCode == null
-                    ? 'Select state first'
-                    : _sectionsLoading
-                        ? 'Loading...'
-                        : 'Select section'),
-                items: _sections
-                    .map((s) => DropdownMenuItem<FblaSection>(
-                          value: s,
-                          child: Text(s.name),
-                        ))
-                    .toList(),
-                onChanged: (_selectedStateCode == null || _sectionsLoading)
-                    ? null
-                    : (value) => setState(() => _selectedSection = value),
-                validator: (v) =>
-                    v == null ? 'Please select your section' : null,
               ),
               const SizedBox(height: 16),
               TextFormField(

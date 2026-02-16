@@ -252,25 +252,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         title: 'Chapter',
                         value: member.chapter,
                       ),
-                      if (member.state.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        _InfoCard(
-                          icon: Icons.map,
-                          title: 'State',
-                          value: member.state,
-                        ),
-                      ],
-                      if (member.section.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        _InfoCard(
-                          icon: Icons.category,
-                          title: 'Section',
-                          value: member.section
-                              .split('_')
-                              .map((e) => e.isNotEmpty ? '${e[0].toUpperCase()}${e.substring(1).toLowerCase()}' : '')
-                              .join(' '),
-                        ),
-                      ],
                       const SizedBox(height: 12),
                       _InfoCard(
                         icon: Icons.email,
