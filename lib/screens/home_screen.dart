@@ -23,14 +23,32 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime? _initialEventDate;
   String? _initialAnnouncementId;
 
-  List<Widget> get _screens => [
-    DashboardTab(navigateToTab: _onItemTapped),
-    EventsScreen(initialDate: _initialEventDate),
-    AnnouncementsScreen(initialAnnouncementId: _initialAnnouncementId),
-    const CompetitionsScreen(),
-    const SocialScreen(),
-    const ProfileScreen(),
-  ];
+  // Pre-build all tab screens to reduce first-tap delay
+  late final List<Widget> _screens;
+  
+  @override
+  void initState() {
+    super.initState();
+    // Pre-create all screens so their StreamBuilders connect early
+    _screens = [
+      DashboardTab(navigateToTab: _onItemTapped),
+      EventsScreen(initialDate: _initialEventDate),
+      AnnouncementsScreen(initialAnnouncementId: _initialAnnouncementId),
+      const CompetitionsScreen(),
+      const SocialScreen(),
+      const ProfileScreen(),
+    ];
+    
+    // Pre-warm Firestore connections in background
+    _prewarmFirestore();
+  }
+
+  Future<void> _prewarmFirestore() async {
+    final dbService = DatabaseService();
+    // Pre-warm streams while user is on dashboard
+    dbService.preLoadData();
+    dbService.warmupStreams();
+  }
 
   void _onItemTapped(int index, {DateTime? eventDate, String? announcementId}) {
     setState(() {

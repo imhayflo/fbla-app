@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/member.dart';
@@ -16,7 +17,78 @@ class DatabaseService {
 
   static bool isCalendarSyncing = false;
 
+  // Cache for pre-loaded data
+  List<Event>? _cachedEvents;
+  List<Announcement>? _cachedAnnouncements;
+  List<Competition>? _cachedCompetitions;
+  List<String>? _cachedUserRegisteredEvents;
+  List<String>? _cachedUserRegisteredCompetitions;
+
   String? get _uid => _auth.currentUser?.uid;
+
+  /// Pre-load all data in the background to reduce first-tap delays.
+  Future<void> preLoadData() async {
+    if (_uid == null) return;
+    
+    try {
+      // Pre-load events
+      final eventsQuery = await _db.collection('events').get();
+      _cachedEvents = eventsQuery.docs.map((doc) => Event.fromFirestore(doc)).toList();
+      
+      // Pre-load announcements
+      final announcementsQuery = await _db.collection('announcements').orderBy('date', descending: true).get();
+      _cachedAnnouncements = announcementsQuery.docs.map((doc) => Announcement.fromFirestore(doc)).toList();
+      
+      // Pre-load competitions
+      final competitionsQuery = await _db.collection('competitions').get();
+      _cachedCompetitions = competitionsQuery.docs.map((doc) => Competition.fromFirestore(doc)).toList();
+      
+      // Pre-load user's registered events
+      final userDoc = await _db.collection('users').doc(_uid).get();
+      if (userDoc.exists) {
+        final data = userDoc.data();
+        _cachedUserRegisteredEvents = List<String>.from(data?['registeredEvents'] ?? []);
+        _cachedUserRegisteredCompetitions = List<String>.from(data?['registeredCompetitions'] ?? []);
+      }
+    } catch (e) {
+      // Silently fail - streams will handle errors
+    }
+  }
+
+  /// Get cached events if available
+  List<Event>? get cachedEvents => _cachedEvents;
+  List<Announcement>? get cachedAnnouncements => _cachedAnnouncements;
+  List<Competition>? get cachedCompetitions => _cachedCompetitions;
+  List<String>? get cachedUserRegisteredEvents => _cachedUserRegisteredEvents;
+  List<String>? get cachedUserRegisteredCompetitions => _cachedUserRegisteredCompetitions;
+
+  /// Warm up Firestore streams by subscribing to them - reduces first-tap delay
+  StreamSubscription<void>? _warmupSub;
+  
+  Future<void> warmupStreams() async {
+    if (_uid == null) return;
+    
+    // Subscribe to streams and immediately cancel to establish connection
+    // This forces Firestore to establish the connection in the background
+    try {
+      // Warm up member stream
+      _db.collection('users').doc(_uid).snapshots().listen((_) {}).cancel();
+      
+      // Warm up events stream
+      _db.collection('events').limit(1).snapshots().listen((_) {}).cancel();
+      
+      // Warm up announcements stream
+      _db.collection('announcements').limit(1).snapshots().listen((_) {}).cancel();
+      
+      // Warm up competitions stream
+      _db.collection('competitions').limit(1).snapshots().listen((_) {}).cancel();
+      
+      // Warm up all members stream
+      _db.collection('users').limit(1).snapshots().listen((_) {}).cancel();
+    } catch (e) {
+      // Silently fail
+    }
+  }
 
   Future<void> ensureUserProfileExists() async {
     if (_uid == null) return;

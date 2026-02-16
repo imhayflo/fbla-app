@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
 import 'package:fbla_member_app/screens/home_screen.dart';
 import 'package:fbla_member_app/screens/login_screen.dart';
 import 'package:fbla_member_app/services/database_service.dart';
@@ -10,20 +10,62 @@ import 'firebase_options.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  try {
-    if (DefaultFirebaseOptions.hasPlaceholderValues) {
-      await Firebase.initializeApp();
-    } else {
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
-    }
-  } on Exception catch (e) {
-    runApp(_FirebaseErrorApp(message: e.toString()));
-    return;
+  // Run app with splash screen first, then initialize Firebase
+  runApp(const _SplashInitApp());
+}
+
+/// Initial app that shows splash screen while initializing Firebase.
+class _SplashInitApp extends StatefulWidget {
+  const _SplashInitApp();
+
+  @override
+  State<_SplashInitApp> createState() => _SplashInitAppState();
+}
+
+class _SplashInitAppState extends State<_SplashInitApp> {
+  bool _firebaseInitialized = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeFirebase();
   }
 
-  runApp(const FBLAApp());
+  Future<void> _initializeFirebase() async {
+    try {
+      if (DefaultFirebaseOptions.hasPlaceholderValues) {
+        await Firebase.initializeApp();
+      } else {
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+      }
+      if (mounted) {
+        setState(() => _firebaseInitialized = true);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = e.toString());
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_error != null) {
+      return _FirebaseErrorApp(message: _error!);
+    }
+    
+    if (_firebaseInitialized) {
+      return const FBLAApp();
+    }
+    
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: const _SplashScreen(),
+    );
+  }
 }
 
 /// Shown when Firebase fails to initialize (e.g. not configured).
@@ -67,6 +109,72 @@ class _FirebaseErrorApp extends StatelessWidget {
   }
 }
 
+/// Splash screen shown while checking auth state.
+class _SplashScreen extends StatelessWidget {
+  const _SplashScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF1E3A8A), // FBLA Blue
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Image.asset(
+                  'assets/fbla_logo.png',
+                  width: 80,
+                  height: 80,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(
+                      Icons.school,
+                      size: 64,
+                      color: Color(0xFF1E3A8A),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'FBLA Member App',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Future Business Leaders of America',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white70,
+                ),
+              ),
+              const SizedBox(height: 48),
+              const SizedBox(
+                width: 32,
+                height: 32,
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class FBLAApp extends StatelessWidget {
   const FBLAApp({super.key});
 
@@ -88,15 +196,11 @@ class FBLAApp extends StatelessWidget {
           ),
         ),
       ),
-      home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
+      home: FutureBuilder<User?>(
+        future: _checkAuthState(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(
-                child: CircularProgressIndicator(),
-              ),
-            );
+            return const _SplashScreen();
           }
           if (snapshot.hasData) {
             return _HomeScreenWithSync();
@@ -107,6 +211,32 @@ class FBLAApp extends StatelessWidget {
         },
       ),
     );
+  }
+
+  /// Check auth state with a timeout to prevent hanging.
+  Future<User?> _checkAuthState() async {
+    try {
+      // Wait for initial auth state with timeout
+      final result = await FirebaseAuth.instance
+          .authStateChanges()
+          .first
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => FirebaseAuth.instance.currentUser,
+          );
+      
+      // Pre-load data in background after auth check
+      if (result != null) {
+        final dbService = DatabaseService();
+        dbService.preLoadData(); // Fire and forget - doesn't block UI
+        dbService.warmupStreams(); // Fire and forget - establishes Firestore connections
+      }
+      
+      return result;
+    } catch (e) {
+      // If there's an error or timeout, return null to show login
+      return null;
+    }
   }
 }
 
