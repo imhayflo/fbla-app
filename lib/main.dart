@@ -61,9 +61,13 @@ class _SplashInitAppState extends State<_SplashInitApp> {
       return const FBLAApp();
     }
     
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: const _SplashScreen(),
+    // While Firebase initializes, return an empty container
+    // The native iOS launch screen will remain visible
+    return const MaterialApp(
+      home: Scaffold(
+        backgroundColor: Color(0xFF1E3A8A),
+        body: Center(),
+      ),
     );
   }
 }
@@ -109,71 +113,6 @@ class _FirebaseErrorApp extends StatelessWidget {
   }
 }
 
-/// Splash screen shown while checking auth state.
-class _SplashScreen extends StatelessWidget {
-  const _SplashScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF1E3A8A), // FBLA Blue
-      body: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Image.asset(
-                  'assets/fbla_logo.png',
-                  width: 80,
-                  height: 80,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(
-                      Icons.school,
-                      size: 64,
-                      color: Color(0xFF1E3A8A),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'FBLA Member App',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Future Business Leaders of America',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.white70,
-                ),
-              ),
-              const SizedBox(height: 48),
-              const SizedBox(
-                width: 32,
-                height: 32,
-                child: CircularProgressIndicator(
-                  strokeWidth: 3,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class FBLAApp extends StatelessWidget {
   const FBLAApp({super.key});
@@ -200,7 +139,11 @@ class FBLAApp extends StatelessWidget {
         future: _checkAuthState(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const _SplashScreen();
+            // Keep native launch screen visible while checking auth
+            return const Scaffold(
+              backgroundColor: Color(0xFF1E3A8A),
+              body: Center(),
+            );
           }
           if (snapshot.hasData) {
             return _HomeScreenWithSync();
