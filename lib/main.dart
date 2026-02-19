@@ -274,6 +274,9 @@ class _HomeScreenWithSyncState extends State<_HomeScreenWithSync>
   }
 
   Future<void> _syncCalendarIfNeeded() async {
+    // Reset the sync flag in case it was stuck from a previous session
+    DatabaseService.isCalendarSyncing = false;
+    
     try {
       print('Starting FBLA calendar sync...');
       await _dbService.syncFBLACalendar();

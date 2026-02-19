@@ -19,6 +19,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final AuthService _authService = AuthService();
   final DatabaseService _dbService = DatabaseService();
   final SocialService _socialService = SocialService();
+  
+  int _userRank = 0;
+  bool _rankLoading = true;
+
+  Future<void> _loadUserRank(String uid) async {
+    final rank = await _dbService.getUserRank(uid);
+    if (mounted) {
+      setState(() {
+        _userRank = rank;
+        _rankLoading = false;
+      });
+    }
+  }
 
   Future<void> _signOut() async {
     final confirmed = await showDialog<bool>(
@@ -158,6 +171,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             );
           }
 
+          // Load user rank when member data is available
+          if (_rankLoading) {
+            _loadUserRank(member.uid);
+          }
+
           return SingleChildScrollView(
             child: Column(
               children: [
@@ -211,7 +229,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         children: [
                           _StatBadge(
                             label: 'Rank',
-                            value: member.rank > 0 ? '#${member.rank}' : '-',
+                            value: _rankLoading ? '-' : (_userRank > 0 ? '#$_userRank' : '-'),
                           ),
                           const SizedBox(width: 24),
                           _StatBadge(

@@ -27,7 +27,20 @@ class CalendarSyncService {
       print('Fetching events for $dateStr...');
       
       try {
-        final response = await http.get(Uri.parse(url), headers: _headers);
+        // Add timeout for each request - max 5 seconds per month
+        final response = await http.get(Uri.parse(url), headers: _headers).timeout(
+          const Duration(seconds: 5),
+          onTimeout: () {
+            print('Request timed out for $dateStr');
+            return http.Response('Timeout', 408);
+          },
+        );
+        
+        // Skip processing if request timed out
+        if (response.statusCode == 408) {
+          print('Skipping $dateStr due to timeout');
+          continue;
+        }
         
         if (response.statusCode == 200) {
           final document = html_parser.parse(response.body);

@@ -394,6 +394,12 @@ class DatabaseService {
   }
 
   Future<void> syncFBLACalendar() async {
+    // Don't sync if already syncing
+    if (isCalendarSyncing) {
+      print('Calendar sync already in progress, skipping');
+      return;
+    }
+    
     isCalendarSyncing = true;
     try {
       try {
@@ -405,7 +411,15 @@ class DatabaseService {
       }
 
       final syncService = CalendarSyncService();
-      final events = await syncService.fetchUpcomingFBLCalendar();
+      
+      // Add timeout to prevent hanging - max 30 seconds for fetching all events
+      final events = await syncService.fetchUpcomingFBLCalendar().timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          print('Calendar fetch timed out after 30 seconds');
+          return <Event>[];
+        },
+      );
 
       if (events.isEmpty) {
         print('No calendar events fetched from FBLA');

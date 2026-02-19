@@ -48,9 +48,10 @@ class _EventsScreenState extends State<EventsScreen> {
       body: StreamBuilder<List<Event>>(
         stream: _dbService.eventsStream,
         builder: (context, eventSnapshot) {
-          if (DatabaseService.isCalendarSyncing ||
-              eventSnapshot.connectionState == ConnectionState.waiting ||
-              (eventSnapshot.data?.isEmpty ?? true)) {
+          // Only show loading if we're waiting for data AND there's no cached data
+          if (eventSnapshot.connectionState == ConnectionState.waiting &&
+              (eventSnapshot.data == null || eventSnapshot.data!.isEmpty) &&
+              DatabaseService.isCalendarSyncing) {
             return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
