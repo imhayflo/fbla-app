@@ -44,7 +44,7 @@ class CalendarSyncService {
         
         if (response.statusCode == 200) {
           final document = html_parser.parse(response.body);
-          final events = _parsePage(document);
+          final events = await _parsePage(document);
           
           print('Found ${events.length} events for $dateStr');
           
@@ -68,7 +68,7 @@ class CalendarSyncService {
   }
 
   /// Parses a single page and extracts all events
-  List<Event> _parsePage(Document document) {
+  Future<List<Event>> _parsePage(Document document) async {
     final List<Event> events = [];
     
     // Try various selectors for event items
@@ -87,7 +87,7 @@ class CalendarSyncService {
       if (elements.isNotEmpty) {
         print('Found ${elements.length} events with selector: $selector');
         for (final element in elements) {
-          final event = _parseEventElement(element);
+          final event = await _parseEventElement(element);
           if (event != null) {
             events.add(event);
           }
@@ -100,7 +100,7 @@ class CalendarSyncService {
   }
 
   /// Parses a single event element
-  Event? _parseEventElement(Element element) {
+  Future<Event?> _parseEventElement(Element element) async {
     try {
       // Get title - try multiple selectors
       String? title;
@@ -177,7 +177,7 @@ class CalendarSyncService {
       // Default to current date if no date found
       startDate ??= DateTime.now();
       
-      // Get description
+      // Get description from list view first
       String description = '';
       final descSelectors = [
         '.tribe-events-list-event-description',
@@ -195,11 +195,38 @@ class CalendarSyncService {
         }
       }
       
-      // Get event link
+      // Get event link - try multiple selectors to find the best link
       String? link;
-      final linkEl = element.querySelector('a[href]');
-      if (linkEl != null) {
-        link = linkEl.attributes['href'];
+      final linkSelectors = [
+        '.tribe-events-list-event-title a',
+        '.tribe-events-event-title a',
+        '.tribe-event-title a',
+        '.event-title a',
+        '.tribe-events-title a',
+        'a.tribe-event-link',
+        'a.tribe-events-event-link',
+      ];
+      
+      for (final selector in linkSelectors) {
+        final linkEl = element.querySelector(selector);
+        if (linkEl != null) {
+          link = linkEl.attributes['href'];
+          if (link != null && link.isNotEmpty) break;
+        }
+      }
+      
+      // Fallback to any link in the element
+      if (link == null || link.isEmpty) {
+        final anyLink = element.querySelector('a[href]');
+        link = anyLink?.attributes['href'];
+      }
+      
+      // If no description from list view, fetch from detail page
+      if ((description.isEmpty || description.length < 50) && link != null && link.isNotEmpty) {
+        final detailDescription = await _fetchEventDetailDescription(link);
+        if (detailDescription != null && detailDescription.isNotEmpty) {
+          description = detailDescription;
+        }
       }
       
       // Get event type
@@ -231,6 +258,64 @@ class CalendarSyncService {
     } catch (e) {
       return null;
     }
+  }
+  
+  /// Fetches the event detail page and extracts the full description
+  Future<String?> _fetchEventDetailDescription(String url) async {
+    try {
+      final response = await http.get(Uri.parse(url), headers: _headers).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          return http.Response('Timeout', 408);
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final document = html_parser.parse(response.body);
+        
+        // Try various selectors for the event description/content
+        final detailDescSelectors = [
+          '.tribe-events-content',
+          '.tribe-events-event-description',
+          '.event-description',
+          '.entry-content',
+          '.tribe-events-single-section-description',
+          '.tribe-events-event-meta',
+          'article .entry-content',
+          '.tribe-events-event-details .tribe-events-content',
+          '[class*="description"]',
+        ];
+        
+        for (final selector in detailDescSelectors) {
+          final el = document.querySelector(selector);
+          if (el != null && el.text.trim().isNotEmpty) {
+            final text = el.text.trim();
+            // Make sure we have a substantial description (at least 50 chars)
+            if (text.length >= 50) {
+              return text;
+            }
+          }
+        }
+        
+        // Fallback: get all paragraph text from the main content area
+        final paragraphs = document.querySelectorAll('article p, .content p, main p');
+        if (paragraphs.isNotEmpty) {
+          final buffer = StringBuffer();
+          for (final p in paragraphs) {
+            final text = p.text.trim();
+            if (text.length > 20) { // Filter out short snippets
+              buffer.writeln(text);
+            }
+          }
+          if (buffer.length >= 50) {
+            return buffer.toString().trim();
+          }
+        }
+      }
+    } catch (e) {
+      print('Error fetching event detail: $e');
+    }
+    return null;
   }
 
   /// Extracts start and end dates from date text
