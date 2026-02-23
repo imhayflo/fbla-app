@@ -221,11 +221,16 @@ class CalendarSyncService {
         link = anyLink?.attributes['href'];
       }
       
-      // If no description from list view, fetch from detail page
-      if ((description.isEmpty || description.length < 50) && link != null && link.isNotEmpty) {
+      // Always fetch from detail page to get full description
+      // This ensures we get the complete event description, not just the preview
+      // Prefer the longer description if we have both
+      if (link != null && link.isNotEmpty) {
         final detailDescription = await _fetchEventDetailDescription(link);
         if (detailDescription != null && detailDescription.isNotEmpty) {
-          description = detailDescription;
+          // Use the longer description for more complete information
+          if (detailDescription.length > description.length) {
+            description = detailDescription;
+          }
         }
       }
       
@@ -290,8 +295,8 @@ class CalendarSyncService {
           final el = document.querySelector(selector);
           if (el != null && el.text.trim().isNotEmpty) {
             final text = el.text.trim();
-            // Make sure we have a substantial description (at least 50 chars)
-            if (text.length >= 50) {
+            // Make sure we have a substantial description (at least 30 chars)
+            if (text.length >= 30) {
               return text;
             }
           }
@@ -303,11 +308,11 @@ class CalendarSyncService {
           final buffer = StringBuffer();
           for (final p in paragraphs) {
             final text = p.text.trim();
-            if (text.length > 20) { // Filter out short snippets
+            if (text.length > 15) { // Filter out short snippets
               buffer.writeln(text);
             }
           }
-          if (buffer.length >= 50) {
+          if (buffer.length >= 30) {
             return buffer.toString().trim();
           }
         }
