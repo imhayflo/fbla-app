@@ -289,31 +289,51 @@ class CalendarSyncService {
           'article .entry-content',
           '.tribe-events-event-details .tribe-events-content',
           '[class*="description"]',
+          '.tribe-events-single-content',
+          '.tribe-events-event-details',
+          '.tribe-events-viewmore',
+          '.tribe-events-meta',
+          '.event-summary',
+          '.event-details',
+          'article',
+          '.post-content',
+          '.entry-summary',
+          '.single-event-content',
         ];
         
         for (final selector in detailDescSelectors) {
           final el = document.querySelector(selector);
           if (el != null && el.text.trim().isNotEmpty) {
             final text = el.text.trim();
-            // Make sure we have a substantial description (at least 30 chars)
-            if (text.length >= 30) {
+            // Make sure we have some content (at least 20 chars)
+            if (text.length >= 20) {
               return text;
             }
           }
         }
         
-        // Fallback: get all paragraph text from the main content area
-        final paragraphs = document.querySelectorAll('article p, .content p, main p');
+        // Try all paragraph text from the page as fallback
+        final paragraphs = document.querySelectorAll('p');
         if (paragraphs.isNotEmpty) {
           final buffer = StringBuffer();
           for (final p in paragraphs) {
             final text = p.text.trim();
-            if (text.length > 15) { // Filter out short snippets
+            // Skip short paragraphs and navigation/footer text
+            if (text.length > 15 && !_isNavigationText(text)) {
               buffer.writeln(text);
             }
           }
-          if (buffer.length >= 30) {
+          if (buffer.length >= 20) {
             return buffer.toString().trim();
+          }
+        }
+        
+        // Last resort: get all text content from main content areas
+        final contentSelectors = ['article', 'main', '.content', '#content'];
+        for (final selector in contentSelectors) {
+          final el = document.querySelector(selector);
+          if (el != null && el.text.trim().length > 20) {
+            return el.text.trim();
           }
         }
       }
@@ -321,6 +341,20 @@ class CalendarSyncService {
       print('Error fetching event detail: $e');
     }
     return null;
+  }
+  
+  /// Check if text is likely navigation or boilerplate text to skip
+  bool _isNavigationText(String text) {
+    final lowerText = text.toLowerCase();
+    return lowerText.contains('menu') || 
+           lowerText.contains('home') || 
+           lowerText.contains('about') ||
+           lowerText.contains('contact') ||
+           lowerText.contains('login') ||
+           lowerText.contains('search') ||
+           lowerText.contains('copyright') ||
+           lowerText.contains('follow us') ||
+           lowerText.contains('share this');
   }
 
   /// Extracts start and end dates from date text
