@@ -179,19 +179,51 @@ class CalendarSyncService {
       
       // Get description from list view first
       String description = '';
-      final descSelectors = [
-        '.tribe-events-list-event-description',
-        '.tribe-events-event-description',
-        '.tribe-events-calendar-list-event-description',
-        '.event-description',
-        '.entry-content',
-      ];
       
-      for (final selector in descSelectors) {
-        final el = element.querySelector(selector);
-        if (el != null && el.text.trim().isNotEmpty) {
-          description = el.text.trim();
-          break;
+      // First try to get description from within the event element itself
+      final inlineDesc = element.querySelector('.tribe-events-list-event-description, .tribe-events-event-description, .event-description, .tribe-events-content');
+      if (inlineDesc != null && inlineDesc.text.trim().isNotEmpty) {
+        description = inlineDesc.text.trim();
+      }
+      
+      // If no inline description, try to get from summary/excerpt
+      if (description.isEmpty) {
+        final excerptSelectors = ['.tribe-events-excerpt', '.tribe-event-summary', '.event-summary', '.entry-summary', '[class*="excerpt"]', '[class*="summary"]'];
+        for (final selector in excerptSelectors) {
+          final el = element.querySelector(selector);
+          if (el != null && el.text.trim().isNotEmpty) {
+            description = el.text.trim();
+            break;
+          }
+        }
+      }
+      
+      // Also check for description in paragraph tags within the event element
+      if (description.isEmpty) {
+        final paragraphs = element.querySelectorAll('p');
+        for (final p in paragraphs) {
+          final text = p.text.trim();
+          if (text.length > 30) {
+            description = text;
+            break;
+          }
+        }
+      }
+      
+      // If still no description, get all text content from the event element as fallback
+      if (description.isEmpty) {
+        final allText = element.text.trim();
+        // Try to extract just the description part (after title, before location/link)
+        if (allText.length > 50) {
+          // Split by common separators and find the longest text block
+          final parts = allText.split(RegExp(r'\n|\r'));
+          for (final part in parts) {
+            final trimmed = part.trim();
+            if (trimmed.length > 50 && !trimmed.contains('http')) {
+              description = trimmed;
+              break;
+            }
+          }
         }
       }
       
@@ -279,37 +311,48 @@ class CalendarSyncService {
         final document = html_parser.parse(response.body);
         
         // Try various selectors for the event description/content
+        // More aggressive matching for common event calendar plugins
         final detailDescSelectors = [
+          // The Events Calendar plugin selectors
           '.tribe-events-content',
           '.tribe-events-event-description',
-          '.event-description',
-          '.entry-content',
           '.tribe-events-single-section-description',
-          '.tribe-events-event-meta',
-          'article .entry-content',
           '.tribe-events-event-details .tribe-events-content',
-          '[class*="description"]',
           '.tribe-events-single-content',
-          '.tribe-events-event-details',
           '.tribe-events-viewmore',
-          '.tribe-events-meta',
-          '.event-summary',
-          '.event-details',
-          'article',
+          // General WordPress selectors
+          '.entry-content',
           '.post-content',
           '.entry-summary',
-          '.single-event-content',
+          'article .entry-content',
+          'article .post-content',
+          // More generic
+          '[class*="event-description"]',
+          '[class*="event-content"]',
+          '[class*="description"]',
+          '.content',
+          'main',
+          'article',
         ];
+        
+        String? bestDescription;
         
         for (final selector in detailDescSelectors) {
           final el = document.querySelector(selector);
           if (el != null && el.text.trim().isNotEmpty) {
             final text = el.text.trim();
-            // Make sure we have some content (at least 20 chars)
-            if (text.length >= 20) {
-              return text;
+            // Make sure we have substantial content (at least 50 chars)
+            if (text.length >= 50) {
+              // If this is the first good match, use it
+              if (bestDescription == null || text.length > bestDescription.length) {
+                bestDescription = text;
+              }
             }
           }
+        }
+        
+        if (bestDescription != null && bestDescription.length >= 50) {
+          return bestDescription;
         }
         
         // Try all paragraph text from the page as fallback
@@ -319,20 +362,20 @@ class CalendarSyncService {
           for (final p in paragraphs) {
             final text = p.text.trim();
             // Skip short paragraphs and navigation/footer text
-            if (text.length > 15 && !_isNavigationText(text)) {
+            if (text.length > 30 && !_isNavigationText(text)) {
               buffer.writeln(text);
             }
           }
-          if (buffer.length >= 20) {
+          if (buffer.length >= 50) {
             return buffer.toString().trim();
           }
         }
         
         // Last resort: get all text content from main content areas
-        final contentSelectors = ['article', 'main', '.content', '#content'];
+        final contentSelectors = ['article', 'main', '#main', '.main-content', '.site-content'];
         for (final selector in contentSelectors) {
           final el = document.querySelector(selector);
-          if (el != null && el.text.trim().length > 20) {
+          if (el != null && el.text.trim().length > 50) {
             return el.text.trim();
           }
         }
