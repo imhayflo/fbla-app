@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/fbla_colors.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
 import '../models/fbla_section.dart';
@@ -132,9 +133,21 @@ class _SignupScreenState extends State<SignupScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
+      backgroundColor: FblaColors.paper,
       appBar: AppBar(
         title: const Text('Create Account'),
         elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                theme.colorScheme.surface,
+                FblaColors.paper,
+                theme.colorScheme.primaryContainer.withOpacity(0.25),
+              ],
+            ),
+          ),
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(

@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import '../services/database_service.dart';
 import '../models/announcement.dart';
+import '../widgets/fbla_app_bar.dart';
 
 class AnnouncementsScreen extends StatefulWidget {
   final String? initialAnnouncementId;
@@ -58,10 +59,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Announcements'),
-        elevation: 0,
-      ),
+      appBar: FblaAppBar.standard(context, title: 'Announcements'),
       body: RefreshIndicator(
         onRefresh: _refreshNews,
         child: StreamBuilder<List<Announcement>>(

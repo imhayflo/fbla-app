@@ -5,6 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:fbla_member_app/screens/home_screen.dart';
 import 'package:fbla_member_app/screens/login_screen.dart';
 import 'package:fbla_member_app/services/database_service.dart';
+import 'package:fbla_member_app/services/accessibility_controller.dart';
+import 'package:fbla_member_app/theme/app_theme.dart';
+import 'package:fbla_member_app/theme/fbla_colors.dart';
+import 'package:fbla_member_app/widgets/accessibility_scope.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -65,7 +69,7 @@ class _SplashInitAppState extends State<_SplashInitApp> {
     // The native iOS launch screen will remain visible
     return const MaterialApp(
       home: Scaffold(
-        backgroundColor: Color(0xFF1E3A8A),
+        backgroundColor: FblaColors.navy,
         body: Center(),
       ),
     );
@@ -114,46 +118,74 @@ class _FirebaseErrorApp extends StatelessWidget {
 }
 
 
-class FBLAApp extends StatelessWidget {
+class FBLAApp extends StatefulWidget {
   const FBLAApp({super.key});
 
   @override
+  State<FBLAApp> createState() => _FBLAAppState();
+}
+
+class _FBLAAppState extends State<FBLAApp> {
+  final AccessibilityController _accessibility = AccessibilityController();
+
+  @override
+  void initState() {
+    super.initState();
+    _accessibility.load();
+  }
+
+  @override
+  void dispose() {
+    _accessibility.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'FBLA Member App',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1E3A8A), // FBLA Blue
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        cardTheme: CardThemeData(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+    return ListenableBuilder(
+      listenable: _accessibility,
+      builder: (context, _) {
+        return AccessibilityScope(
+          controller: _accessibility,
+          child: MaterialApp(
+            title: 'FBLA Member App',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light(_accessibility),
+            builder: (context, child) {
+              final mq = MediaQuery.of(context);
+              return MediaQuery(
+                data: mq.copyWith(
+                  boldText: _accessibility.boldLabels || mq.boldText,
+                  textScaler: _scaledTextScaler(mq.textScaler, _accessibility.textScaleLinear),
+                ),
+                child: child ?? const SizedBox.shrink(),
+              );
+            },
+            home: FutureBuilder<User?>(
+              future: _checkAuthState(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(
+                    backgroundColor: FblaColors.navy,
+                    body: Center(),
+                  );
+                }
+                if (snapshot.hasData) {
+                  return const _HomeScreenWithSync();
+                }
+                return const LoginScreen();
+              },
+            ),
           ),
-        ),
-      ),
-      home: FutureBuilder<User?>(
-        future: _checkAuthState(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            // Keep native launch screen visible while checking auth
-            return const Scaffold(
-              backgroundColor: Color(0xFF1E3A8A),
-              body: Center(),
-            );
-          }
-          if (snapshot.hasData) {
-            return _HomeScreenWithSync();
-          }
-          
-          // Otherwise show login screen
-          return const LoginScreen();
-        },
-      ),
+        );
+      },
     );
+  }
+
+  static TextScaler _scaledTextScaler(TextScaler base, double factor) {
+    const ref = 14.0;
+    final systemFactor = base.scale(ref) / ref;
+    return TextScaler.linear(systemFactor * factor);
   }
 
   /// Check auth state with a timeout to prevent hanging.

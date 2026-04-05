@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/auth_service.dart';
+import 'accessibility_settings_screen.dart';
+import '../widgets/fbla_app_bar.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -19,13 +21,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-        elevation: 0,
-      ),
+      appBar: FblaAppBar.standard(context, title: 'Settings'),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          Text(
+            'Accessibility',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: ListTile(
+              leading: Icon(Icons.accessibility_new, color: theme.colorScheme.primary),
+              title: const Text('Display & reading'),
+              subtitle: const Text(
+                'Contrast, color distinction, text size, and bold labels',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => const AccessibilitySettingsScreen(),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 24),
           Text(
             'Notifications',
             style: theme.textTheme.titleMedium?.copyWith(

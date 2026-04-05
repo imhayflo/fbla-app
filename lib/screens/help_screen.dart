@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:fbla_member_app/widgets/fbla_app_bar.dart';
 
 class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key});
@@ -16,10 +17,7 @@ class HelpScreen extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Help & Support'),
-        elevation: 0,
-      ),
+      appBar: FblaAppBar.standard(context, title: 'Help & Support'),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

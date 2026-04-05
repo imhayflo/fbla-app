@@ -7,6 +7,7 @@ import 'login_screen.dart';
 import 'update_profile_screen.dart';
 import 'settings_screen.dart';
 import 'help_screen.dart';
+import '../widgets/fbla_app_bar.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -143,10 +144,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        elevation: 0,
-      ),
+      appBar: FblaAppBar.standard(context, title: 'Profile'),
       body: StreamBuilder<Member?>(
         stream: _dbService.memberStream,
         builder: (context, snapshot) {

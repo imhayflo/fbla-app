@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../services/database_service.dart';
 import '../models/event.dart';
+import '../widgets/fbla_app_bar.dart';
 import '../models/competition.dart';
 
 class EventsScreen extends StatefulWidget {
@@ -30,9 +31,9 @@ class _EventsScreenState extends State<EventsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Calendar'),
-        elevation: 0,
+      appBar: FblaAppBar.standard(
+        context,
+        title: 'Calendar',
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/database_service.dart';
 import '../models/competition.dart';
+import '../widgets/fbla_app_bar.dart';
 
 class CompetitionsScreen extends StatefulWidget {
   const CompetitionsScreen({super.key});
@@ -18,10 +19,7 @@ class _CompetitionsScreenState extends State<CompetitionsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Competitions'),
-        elevation: 0,
-      ),
+      appBar: FblaAppBar.standard(context, title: 'Competitions'),
       body: Column(
         children: [
           SizedBox(

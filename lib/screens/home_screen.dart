@@ -6,6 +6,9 @@ import 'package:fbla_member_app/screens/announcements_screen.dart';
 import 'package:fbla_member_app/screens/profile_screen.dart';
 import 'package:fbla_member_app/screens/competitions_screen.dart';
 import 'package:fbla_member_app/screens/social_screen.dart';
+import 'package:fbla_member_app/screens/instructions_screen.dart';
+import 'package:fbla_member_app/theme/app_theme.dart';
+import 'package:fbla_member_app/theme/fbla_colors.dart';
 import '../services/database_service.dart';
 import '../models/member.dart';
 import '../models/event.dart';
@@ -32,6 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
     // Pre-create all screens so their StreamBuilders connect early
     _screens = [
       DashboardTab(navigateToTab: _onItemTapped),
+      const InstructionsScreen(),
       EventsScreen(initialDate: _initialEventDate),
       AnnouncementsScreen(initialAnnouncementId: _initialAnnouncementId),
       const CompetitionsScreen(),
@@ -75,6 +79,11 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Home',
           ),
           NavigationDestination(
+            icon: Icon(Icons.menu_book_outlined),
+            selectedIcon: Icon(Icons.menu_book),
+            label: 'Guide',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.calendar_today_outlined),
             selectedIcon: Icon(Icons.calendar_today),
             label: 'Calendar',
@@ -114,6 +123,7 @@ class DashboardTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final stats = theme.fblaStats;
     final dbService = DatabaseService();
     final dateFormat = DateFormat('MMM d, yyyy');
 
@@ -125,6 +135,19 @@ class DashboardTab extends StatelessWidget {
         ),
         title: const Text('FBLA Dashboard'),
         elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                colorScheme.surface,
+                FblaColors.paper,
+                colorScheme.primaryContainer.withOpacity(0.35),
+              ],
+            ),
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -137,8 +160,26 @@ class DashboardTab extends StatelessWidget {
                 final member = snapshot.data;
                 final name = member?.name.split(' ').first ?? 'Member';
 
-                return Card(
-                  color: colorScheme.primaryContainer,
+                return Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        FblaColors.navy,
+                        Color(0xFF0A4A7A),
+                        FblaColors.navyDark,
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colorScheme.primary.withOpacity(0.35),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(20),
                     child: Column(
@@ -148,15 +189,14 @@ class DashboardTab extends StatelessWidget {
                           'Welcome back, $name!',
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: colorScheme.onPrimaryContainer,
+                            color: Colors.white,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Stay connected with your FBLA chapter',
+                          'Stay connected with your chapter',
                           style: theme.textTheme.bodyLarge?.copyWith(
-                            color:
-                                colorScheme.onPrimaryContainer.withOpacity(0.8),
+                            color: Colors.white.withOpacity(0.92),
                           ),
                         ),
                       ],
@@ -187,7 +227,7 @@ class DashboardTab extends StatelessWidget {
                             title: 'Events',
                             value: '${member?.eventsAttended ?? 0}',
                             icon: Icons.event,
-                            color: colorScheme.primary,
+                            color: stats.events,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -200,7 +240,7 @@ class DashboardTab extends StatelessWidget {
                                 title: 'Competitions',
                                 value: '$regCompCount',
                                 icon: Icons.emoji_events,
-                                color: Colors.amber,
+                                color: stats.competitions,
                               );
                             },
                           ),
@@ -215,7 +255,7 @@ class DashboardTab extends StatelessWidget {
                             title: 'Points',
                             value: '${member?.points ?? 0}',
                             icon: Icons.star,
-                            color: Colors.orange,
+                            color: stats.points,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -228,7 +268,7 @@ class DashboardTab extends StatelessWidget {
                                   title: 'Rank',
                                   value: '-',
                                   icon: Icons.leaderboard,
-                                  color: Colors.green,
+                                  color: stats.rank,
                                 );
                               }
                               final members = snapshot.data!;
@@ -245,7 +285,7 @@ class DashboardTab extends StatelessWidget {
                                 title: 'Rank',
                                 value: userRank > 0 ? '#$userRank' : '-',
                                 icon: Icons.leaderboard,
-                                color: Colors.green,
+                                color: stats.rank,
                               );
                             },
                           ),
@@ -272,7 +312,7 @@ class DashboardTab extends StatelessWidget {
                   onPressed: () {
                     // Navigate to events tab
                     final homeState = context.findAncestorStateOfType<_HomeScreenState>();
-                    homeState?._onItemTapped(1);
+                    homeState?._onItemTapped(2);
                   },
                   child: const Text('View All'),
                 ),
@@ -319,7 +359,7 @@ class DashboardTab extends StatelessWidget {
                             padding: const EdgeInsets.only(bottom: 12),
                             child: InkWell(
                               onTap: () {
-                                navigateToTab(1, eventDate: event.date);
+                                navigateToTab(2, eventDate: event.date);
                               },
                               child: _EventCard(
                                 title: event.title,
@@ -350,7 +390,7 @@ class DashboardTab extends StatelessWidget {
                   onPressed: () {
                     // Navigate to news (announcements) tab
                     final homeState = context.findAncestorStateOfType<_HomeScreenState>();
-                    homeState?._onItemTapped(2);
+                    homeState?._onItemTapped(3);
                   },
                   child: const Text('View All'),
                 ),
@@ -538,6 +578,7 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
+      color: color.withOpacity(0.1),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

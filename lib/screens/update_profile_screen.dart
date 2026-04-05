@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/member.dart';
 import '../services/database_service.dart';
 import '../utils/validators.dart';
+import '../widgets/fbla_app_bar.dart';
 
 class UpdateProfileScreen extends StatefulWidget {
   final Member member;
@@ -74,10 +75,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Update Profile'),
-        elevation: 0,
-      ),
+      appBar: FblaAppBar.standard(context, title: 'Update Profile'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Form(

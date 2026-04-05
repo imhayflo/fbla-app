@@ -4,6 +4,7 @@ import 'package:fbla_member_app/models/social_config.dart';
 import 'package:fbla_member_app/services/database_service.dart';
 import 'package:fbla_member_app/services/social_service.dart';
 import 'package:fbla_member_app/utils/constants.dart';
+import 'package:fbla_member_app/widgets/fbla_app_bar.dart';
 
 class SocialScreen extends StatefulWidget {
   const SocialScreen({super.key});
@@ -34,7 +35,7 @@ class _SocialScreenState extends State<SocialScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Social')),
+      appBar: FblaAppBar.standard(context, title: 'Social'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
