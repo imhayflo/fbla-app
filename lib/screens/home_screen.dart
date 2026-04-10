@@ -22,7 +22,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 1; // Start on Guide page instead of Home
   DateTime? _initialEventDate;
   String? _initialAnnouncementId;
 

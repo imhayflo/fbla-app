@@ -11,6 +11,21 @@ import 'package:fbla_member_app/theme/fbla_colors.dart';
 import 'package:fbla_member_app/widgets/accessibility_scope.dart';
 import 'firebase_options.dart';
 
+/// Global theme mode notifier that can be accessed from settings
+final ThemeModeNotifier themeModeNotifier = ThemeModeNotifier();
+
+class ThemeModeNotifier extends ChangeNotifier {
+  ThemeModeNotifier() : super();
+
+  ThemeMode _themeMode = ThemeMode.light;
+  ThemeMode get themeMode => _themeMode;
+
+  void toggle() {
+    _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    notifyListeners();
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -132,10 +147,17 @@ class _FBLAAppState extends State<FBLAApp> {
   void initState() {
     super.initState();
     _accessibility.load();
+    // Listen to theme changes
+    themeModeNotifier.addListener(_onThemeChanged);
+  }
+
+  void _onThemeChanged() {
+    setState(() {});
   }
 
   @override
   void dispose() {
+    themeModeNotifier.removeListener(_onThemeChanged);
     _accessibility.dispose();
     super.dispose();
   }
@@ -143,7 +165,7 @@ class _FBLAAppState extends State<FBLAApp> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: _accessibility,
+      listenable: Listenable.merge([_accessibility, themeModeNotifier]),
       builder: (context, _) {
         return AccessibilityScope(
           controller: _accessibility,
@@ -151,6 +173,8 @@ class _FBLAAppState extends State<FBLAApp> {
             title: 'FBLA Member App',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.light(_accessibility),
+            darkTheme: AppTheme.dark(_accessibility),
+            themeMode: themeModeNotifier.themeMode,
             builder: (context, child) {
               final mq = MediaQuery.of(context);
               return MediaQuery(

@@ -86,7 +86,8 @@ class _EventsScreenState extends State<EventsScreen> {
                       final regCompIds = regCompsSnapshot.data ?? [];
                       
                       // Get all events for showing markers (black dots)
-                      final allEventDates = _getEventDates(events, competitions);
+                      // Only show events, not competitions (competitions don't have real dates)
+                      final allEventDates = _getEventDates(events, []);
 
                       return Column(
                         children: [

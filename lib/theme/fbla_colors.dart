@@ -69,6 +69,74 @@ class FblaColors {
     );
   }
 
+  // Dark mode color scheme
+  static ColorScheme schemeDark() {
+    return ColorScheme.fromSeed(
+      seedColor: navy,
+      primary: const Color(0xFF9ECAFF),
+      secondary: const Color(0xFFFFE066),
+      tertiary: const Color(0xFFFFB3B8),
+      surface: const Color(0xFF1A1C1E),
+      brightness: Brightness.dark,
+    ).copyWith(
+      primaryContainer: const Color(0xFF004A77),
+      onPrimaryContainer: const Color(0xFFD1E4FF),
+      secondaryContainer: const Color(0xFF5C4800),
+      onSecondaryContainer: const Color(0xFFFFE266),
+      tertiaryContainer: const Color(0xFF8B1F29),
+      onTertiaryContainer: const Color(0xFFFFDAD6),
+      surfaceContainerHighest: const Color(0xFF42474E),
+      onSurface: const Color(0xFFE2E2E6),
+      onSurfaceVariant: const Color(0xFFC2C7CE),
+      outline: const Color(0xFF8C9198),
+      outlineVariant: const Color(0xFF42474E),
+    );
+  }
+
+  static ColorScheme schemeDarkColorblindFriendly() {
+    return const ColorScheme(
+      brightness: Brightness.dark,
+      primary: Color(0xFF9ECAFF),
+      onPrimary: Color(0xFF003258),
+      primaryContainer: Color(0xFF00497D),
+      onPrimaryContainer: Color(0xFFD1E4FF),
+      secondary: Color(0xFFFFCC80),
+      onSecondary: Color(0xFF3D2E00),
+      secondaryContainer: Color(0xFF584400),
+      onSecondaryContainer: Color(0xFFFFDEAD),
+      tertiary: Color(0xFFCFBCFF),
+      onTertiary: Color(0xFF3B2D69),
+      tertiaryContainer: Color(0xFF53447F),
+      onTertiaryContainer: Color(0xFFEBE1FF),
+      error: Color(0xFFFFB4AB),
+      onError: Color(0xFF690005),
+      errorContainer: Color(0xFF93000A),
+      onErrorContainer: Color(0xFFFFDAD6),
+      surface: Color(0xFF1A1C1E),
+      onSurface: Color(0xFFE2E2E6),
+      onSurfaceVariant: Color(0xFFC2C7CE),
+      outline: Color(0xFF8C9198),
+      outlineVariant: Color(0xFF42474E),
+      shadow: Color(0xFF000000),
+      scrim: Color(0xFF000000),
+      inverseSurface: Color(0xFFE2E2E6),
+      onInverseSurface: Color(0xFF2F3033),
+      inversePrimary: Color(0xFF005A9C),
+      surfaceTint: Color(0xFF9ECAFF),
+    );
+  }
+
+  static ColorScheme schemeDarkHighContrast(ColorScheme base) {
+    return base.copyWith(
+      onSurface: Colors.white,
+      onSurfaceVariant: Colors.white,
+      outline: Colors.white,
+      surface: const Color(0xFF121212),
+      primary: const Color(0xFF9ECAFF),
+      onPrimary: const Color(0xFF003258),
+    );
+  }
+
   static List<Color> statPaletteDefault() => [
         navy,
         goldDeep,
