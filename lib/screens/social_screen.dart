@@ -60,10 +60,11 @@ class _SocialScreenState extends State<SocialScreen> {
                 final nationalHandle =
                     _socialConfig?.nationalInstagramHandle ?? 'fbla_national';
                 final nationalUrl = _socialConfig?.nationalInstagramUrl;
-                final stateKey =
-                    (member?.state ?? '').trim().toUpperCase();
+                final stateKey = (member?.state ?? '').trim().toUpperCase();
                 final stateHandle = (stateKey.isNotEmpty &&
-                        (_socialConfig?.stateInstagramHandles.containsKey(stateKey) ?? false))
+                        (_socialConfig?.stateInstagramHandles
+                                .containsKey(stateKey) ??
+                            false))
                     ? _socialConfig?.stateInstagramHandles[stateKey]
                     : _socialConfig?.defaultStateInstagramHandle;
                 final chapterHandle = member?.chapterInstagramHandle ?? '';
@@ -76,12 +77,10 @@ class _SocialScreenState extends State<SocialScreen> {
                   children: [
                     _SocialTile(
                       title: 'National FBLA',
-                      handle: nationalHandle,
+                      handle: 'fbla_national',
                       icon: Icons.flag,
-                      onPressed: () =>
-                          _socialService.openInstagramProfile(
-                        url: nationalUrl,
-                        handle: nationalHandle,
+                      onPressed: () => _socialService.openInstagramProfile(
+                        url: 'https://www.instagram.com/fbla_national/',
                       ),
                     ),
                   ],
@@ -108,7 +107,8 @@ class _SocialScreenState extends State<SocialScreen> {
               handle: 'Future Business Leaders of America',
               icon: Icons.business_center,
               onPressed: () => _socialService.openLinkedInProfile(
-                url: _socialConfig?.nationalLinkedInUrl ?? 'https://www.linkedin.com/company/future-business-leaders-america',
+                url: _socialConfig?.nationalLinkedInUrl ??
+                    'https://www.linkedin.com/company/future-business-leaders-america',
                 handle: 'future-business-leaders-america',
               ),
             ),
@@ -200,7 +200,8 @@ class _ShareAchievementsCard extends StatelessWidget {
                         socialService.shareProfile(member);
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Load your profile to share.')),
+                          const SnackBar(
+                              content: Text('Load your profile to share.')),
                         );
                       }
                     },
@@ -241,8 +242,7 @@ class _SocialTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final h = (handle ?? '').trim();
-    final display =
-        h.isEmpty ? 'Instagram' : (h.startsWith('@') ? h : '@$h');
+    final display = h.isEmpty ? 'Instagram' : (h.startsWith('@') ? h : '@$h');
 
     return Card(
       child: ListTile(
@@ -275,8 +275,7 @@ class _FeaturedPostCard extends StatelessWidget {
       child: ListTile(
         title: Text(post.caption ?? post.url),
         trailing: const Icon(Icons.open_in_new),
-        onTap: () =>
-            socialService.openInstagramPostUrl(post.url),
+        onTap: () => socialService.openInstagramPostUrl(post.url),
       ),
     );
   }

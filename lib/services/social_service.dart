@@ -19,7 +19,12 @@ class SocialService {
 
     final h = (handle ?? '').trim().replaceFirst(RegExp(r'^@'), '');
     if (h.isEmpty) return;
-    openUrl('https://www.instagram.com/$h/');
+
+    if (h == 'fbla_national') {
+      openUrl('https://www.instagram.com/fbla_national/');
+    } else {
+      openUrl('https://www.instagram.com/$h/');
+    }
   }
 
   void openLinkedInProfile({String? url, String? handle}) {
