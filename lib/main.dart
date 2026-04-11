@@ -21,7 +21,8 @@ class ThemeModeNotifier extends ChangeNotifier {
   ThemeMode get themeMode => _themeMode;
 
   void toggle() {
-    _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    _themeMode =
+        _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
     notifyListeners();
   }
 }
@@ -75,11 +76,11 @@ class _SplashInitAppState extends State<_SplashInitApp> {
     if (_error != null) {
       return _FirebaseErrorApp(message: _error!);
     }
-    
+
     if (_firebaseInitialized) {
       return const FBLAApp();
     }
-    
+
     // While Firebase initializes, return an empty container
     // The native iOS launch screen will remain visible
     return const MaterialApp(
@@ -122,7 +123,10 @@ class _FirebaseErrorApp extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
-                Text(message, style: const TextStyle(fontSize: 12), maxLines: 4, overflow: TextOverflow.ellipsis),
+                Text(message,
+                    style: const TextStyle(fontSize: 12),
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis),
               ],
             ),
           ),
@@ -131,7 +135,6 @@ class _FirebaseErrorApp extends StatelessWidget {
     );
   }
 }
-
 
 class FBLAApp extends StatefulWidget {
   const FBLAApp({super.key});
@@ -170,7 +173,7 @@ class _FBLAAppState extends State<FBLAApp> {
         return AccessibilityScope(
           controller: _accessibility,
           child: MaterialApp(
-            title: 'FBLA Member App',
+            title: 'FBLA Link',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.light(_accessibility),
             darkTheme: AppTheme.dark(_accessibility),
@@ -180,7 +183,8 @@ class _FBLAAppState extends State<FBLAApp> {
               return MediaQuery(
                 data: mq.copyWith(
                   boldText: _accessibility.boldLabels || mq.boldText,
-                  textScaler: _scaledTextScaler(mq.textScaler, _accessibility.textScaleLinear),
+                  textScaler: _scaledTextScaler(
+                      mq.textScaler, _accessibility.textScaleLinear),
                 ),
                 child: child ?? const SizedBox.shrink(),
               );
@@ -216,21 +220,20 @@ class _FBLAAppState extends State<FBLAApp> {
   Future<User?> _checkAuthState() async {
     try {
       // Wait for initial auth state with timeout
-      final result = await FirebaseAuth.instance
-          .authStateChanges()
-          .first
-          .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () => FirebaseAuth.instance.currentUser,
-          );
-      
+      final result =
+          await FirebaseAuth.instance.authStateChanges().first.timeout(
+                const Duration(seconds: 10),
+                onTimeout: () => FirebaseAuth.instance.currentUser,
+              );
+
       // Pre-load data in background after auth check
       if (result != null) {
         final dbService = DatabaseService();
         dbService.preLoadData(); // Fire and forget - doesn't block UI
-        dbService.warmupStreams(); // Fire and forget - establishes Firestore connections
+        dbService
+            .warmupStreams(); // Fire and forget - establishes Firestore connections
       }
-      
+
       return result;
     } catch (e) {
       // If there's an error or timeout, return null to show login
@@ -298,7 +301,11 @@ class _HomeScreenWithSyncState extends State<_HomeScreenWithSync>
   Future<void> _performInitialSync() async {
     try {
       await Future.any([
-        Future.wait([_syncNewsIfNeeded(), _syncCompetitionsIfNeeded(), _syncCalendarIfNeeded()]),
+        Future.wait([
+          _syncNewsIfNeeded(),
+          _syncCompetitionsIfNeeded(),
+          _syncCalendarIfNeeded()
+        ]),
         Future.delayed(const Duration(seconds: 45), () {
           print('Sync timeout after 45 seconds');
         }),
@@ -332,7 +339,7 @@ class _HomeScreenWithSyncState extends State<_HomeScreenWithSync>
   Future<void> _syncCalendarIfNeeded() async {
     // Reset the sync flag in case it was stuck from a previous session
     DatabaseService.isCalendarSyncing = false;
-    
+
     try {
       print('Starting FBLA calendar sync...');
       await _dbService.syncFBLACalendar();

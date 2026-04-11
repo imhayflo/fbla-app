@@ -1,11 +1,11 @@
 {
-    "name": "FBLA Member App",
-    "short_name": "FBLA App",
+    "name": "FBLA Link",
+    "short_name": "FBLA Link",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#1E3A8A",
     "theme_color": "#1E3A8A",
-    "description": "FBLA Member App",
+    "description": "FBLA Link",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -29,26 +29,36 @@ class DatabaseService {
   /// Pre-load all data in the background to reduce first-tap delays.
   Future<void> preLoadData() async {
     if (_uid == null) return;
-    
+
     try {
       // Pre-load events
       final eventsQuery = await _db.collection('events').get();
-      _cachedEvents = eventsQuery.docs.map((doc) => Event.fromFirestore(doc)).toList();
-      
+      _cachedEvents =
+          eventsQuery.docs.map((doc) => Event.fromFirestore(doc)).toList();
+
       // Pre-load announcements
-      final announcementsQuery = await _db.collection('announcements').orderBy('date', descending: true).get();
-      _cachedAnnouncements = announcementsQuery.docs.map((doc) => Announcement.fromFirestore(doc)).toList();
-      
+      final announcementsQuery = await _db
+          .collection('announcements')
+          .orderBy('date', descending: true)
+          .get();
+      _cachedAnnouncements = announcementsQuery.docs
+          .map((doc) => Announcement.fromFirestore(doc))
+          .toList();
+
       // Pre-load competitions
       final competitionsQuery = await _db.collection('competitions').get();
-      _cachedCompetitions = competitionsQuery.docs.map((doc) => Competition.fromFirestore(doc)).toList();
-      
+      _cachedCompetitions = competitionsQuery.docs
+          .map((doc) => Competition.fromFirestore(doc))
+          .toList();
+
       // Pre-load user's registered events
       final userDoc = await _db.collection('users').doc(_uid).get();
       if (userDoc.exists) {
         final data = userDoc.data();
-        _cachedUserRegisteredEvents = List<String>.from(data?['registeredEvents'] ?? []);
-        _cachedUserRegisteredCompetitions = List<String>.from(data?['registeredCompetitions'] ?? []);
+        _cachedUserRegisteredEvents =
+            List<String>.from(data?['registeredEvents'] ?? []);
+        _cachedUserRegisteredCompetitions =
+            List<String>.from(data?['registeredCompetitions'] ?? []);
       }
     } catch (e) {
       // Silently fail - streams will handle errors
@@ -60,29 +70,40 @@ class DatabaseService {
   List<Announcement>? get cachedAnnouncements => _cachedAnnouncements;
   List<Competition>? get cachedCompetitions => _cachedCompetitions;
   List<String>? get cachedUserRegisteredEvents => _cachedUserRegisteredEvents;
-  List<String>? get cachedUserRegisteredCompetitions => _cachedUserRegisteredCompetitions;
+  List<String>? get cachedUserRegisteredCompetitions =>
+      _cachedUserRegisteredCompetitions;
 
   /// Warm up Firestore streams by subscribing to them - reduces first-tap delay
   StreamSubscription<void>? _warmupSub;
-  
+
   Future<void> warmupStreams() async {
     if (_uid == null) return;
-    
+
     // Subscribe to streams and immediately cancel to establish connection
     // This forces Firestore to establish the connection in the background
     try {
       // Warm up member stream
       _db.collection('users').doc(_uid).snapshots().listen((_) {}).cancel();
-      
+
       // Warm up events stream
       _db.collection('events').limit(1).snapshots().listen((_) {}).cancel();
-      
+
       // Warm up announcements stream
-      _db.collection('announcements').limit(1).snapshots().listen((_) {}).cancel();
-      
+      _db
+          .collection('announcements')
+          .limit(1)
+          .snapshots()
+          .listen((_) {})
+          .cancel();
+
       // Warm up competitions stream
-      _db.collection('competitions').limit(1).snapshots().listen((_) {}).cancel();
-      
+      _db
+          .collection('competitions')
+          .limit(1)
+          .snapshots()
+          .listen((_) {})
+          .cancel();
+
       // Warm up all members stream
       _db.collection('users').limit(1).snapshots().listen((_) {}).cancel();
     } catch (e) {
@@ -111,6 +132,27 @@ class DatabaseService {
       'createdAt': FieldValue.serverTimestamp(),
       'chapterInstagramHandle': '',
     });
+
+    await _addInitialEvents();
+  }
+
+  Future<void> _addInitialEvents() async {
+    final eventId = 'california_slc_2026';
+    final existingEvent = await _db.collection('events').doc(eventId).get();
+    if (existingEvent.exists) return;
+
+    final slcEvent = Event(
+      id: eventId,
+      title: 'California FBLA State Leadership Conference',
+      description:
+          'Join California FBLA members for the annual State Leadership Conference. Compete in events, attend workshops, and network with chapter members from across the state.',
+      date: DateTime(2026, 4, 9),
+      endDate: DateTime(2026, 4, 12),
+      location: 'California',
+      type: 'State Conference',
+      participantCount: 0,
+    );
+    await _db.collection('events').doc(eventId).set(slcEvent.toMap());
   }
 
   Stream<Member?> get memberStream {
@@ -140,20 +182,16 @@ class DatabaseService {
   }
 
   Stream<List<Member>> getAllMembersSortedByPoints() {
-    return _db
-        .collection('users')
-        .snapshots()
-        .map((snapshot) {
-          final members = snapshot.docs
-              .map((doc) => Member.fromFirestore(doc))
-              .toList();
-          members.sort((a, b) {
-            final pointsCompare = b.points.compareTo(a.points);
-            if (pointsCompare != 0) return pointsCompare;
-            return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-          });
-          return members;
-        });
+    return _db.collection('users').snapshots().map((snapshot) {
+      final members =
+          snapshot.docs.map((doc) => Member.fromFirestore(doc)).toList();
+      members.sort((a, b) {
+        final pointsCompare = b.points.compareTo(a.points);
+        if (pointsCompare != 0) return pointsCompare;
+        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      });
+      return members;
+    });
   }
 
   Future<int> getUserRank(String uid) async {
@@ -191,7 +229,11 @@ class DatabaseService {
 
     final batch = _db.batch();
     batch.set(
-      _db.collection('users').doc(_uid).collection('registeredEvents').doc(eventId),
+      _db
+          .collection('users')
+          .doc(_uid)
+          .collection('registeredEvents')
+          .doc(eventId),
       {'registeredAt': FieldValue.serverTimestamp()},
     );
     batch.update(
@@ -213,7 +255,11 @@ class DatabaseService {
     final batch = _db.batch();
 
     batch.delete(
-      _db.collection('users').doc(_uid).collection('registeredEvents').doc(eventId),
+      _db
+          .collection('users')
+          .doc(_uid)
+          .collection('registeredEvents')
+          .doc(eventId),
     );
 
     batch.update(
@@ -234,8 +280,9 @@ class DatabaseService {
         .collection('announcements')
         .orderBy('date', descending: true)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Announcement.fromFirestore(doc)).toList());
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Announcement.fromFirestore(doc))
+            .toList());
   }
 
   Future<void> syncFBLANews() async {
@@ -243,10 +290,12 @@ class DatabaseService {
       try {
         await _db.collection('_test').limit(1).get();
       } catch (e) {
-        print('Firebase not configured - news sync will fetch but not save: $e');
+        print(
+            'Firebase not configured - news sync will fetch but not save: $e');
         final newsService = NewsSyncService();
         await newsService.fetchFBLANews();
-        print('Fetched FBLA news (not saved to database - Firebase not configured)');
+        print(
+            'Fetched FBLA news (not saved to database - Firebase not configured)');
         return;
       }
 
@@ -308,7 +357,8 @@ class DatabaseService {
         return timestamp?.toDate();
       }
     } catch (e) {
-      print('Error getting last sync time (Firebase may not be configured): $e');
+      print(
+          'Error getting last sync time (Firebase may not be configured): $e');
     }
     return null;
   }
@@ -320,7 +370,8 @@ class DatabaseService {
         'lastSync': FieldValue.serverTimestamp(),
       });
     } catch (e) {
-      print('Error updating last sync time (Firebase may not be configured): $e');
+      print(
+          'Error updating last sync time (Firebase may not be configured): $e');
     }
   }
 
@@ -367,7 +418,8 @@ class DatabaseService {
               'category': comp.category,
               'description': comp.description,
               'level': comp.level,
-              if (comp.guidelinesUrl != null) 'guidelinesUrl': comp.guidelinesUrl,
+              if (comp.guidelinesUrl != null)
+                'guidelinesUrl': comp.guidelinesUrl,
             });
             updatedCount++;
           }
@@ -399,7 +451,7 @@ class DatabaseService {
       print('Calendar sync already in progress, skipping');
       return;
     }
-    
+
     isCalendarSyncing = true;
     try {
       try {
@@ -411,7 +463,7 @@ class DatabaseService {
       }
 
       final syncService = CalendarSyncService();
-      
+
       // Add timeout to prevent hanging - max 30 seconds for fetching all events
       final events = await syncService.fetchUpcomingFBLCalendar().timeout(
         const Duration(seconds: 30),
@@ -453,7 +505,9 @@ class DatabaseService {
               'title': event.title,
               'description': event.description,
               'date': Timestamp.fromDate(event.date),
-              'endDate': event.endDate != null ? Timestamp.fromDate(event.endDate!) : null,
+              'endDate': event.endDate != null
+                  ? Timestamp.fromDate(event.endDate!)
+                  : null,
               'location': event.location,
               'type': event.type,
               'link': event.link,
@@ -476,7 +530,8 @@ class DatabaseService {
       if (toDelete.isNotEmpty) {
         print('Removed ${toDelete.length} outdated FBLA calendar events');
       }
-      print('Synced $addedCount new, $updatedCount updated FBLA calendar events');
+      print(
+          'Synced $addedCount new, $updatedCount updated FBLA calendar events');
     } catch (e) {
       print('Error syncing FBLA calendar: $e');
     } finally {
@@ -486,7 +541,8 @@ class DatabaseService {
 
   Future<Map<String, dynamic>?> getCompetitionsSyncTime() async {
     try {
-      final doc = await _db.collection('metadata').doc('competitionsSync').get();
+      final doc =
+          await _db.collection('metadata').doc('competitionsSync').get();
       return doc.exists ? doc.data() : null;
     } catch (e) {
       return null;
@@ -498,8 +554,9 @@ class DatabaseService {
         .collection('competitions')
         .orderBy('date', descending: false)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Competition.fromFirestore(doc)).toList());
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Competition.fromFirestore(doc))
+            .toList());
   }
 
   // Get user's registered competitions
@@ -519,7 +576,11 @@ class DatabaseService {
     final batch = _db.batch();
 
     batch.set(
-      _db.collection('users').doc(_uid).collection('registeredCompetitions').doc(competitionId),
+      _db
+          .collection('users')
+          .doc(_uid)
+          .collection('registeredCompetitions')
+          .doc(competitionId),
       {
         'registeredAt': FieldValue.serverTimestamp(),
         'status': 'pending',
@@ -541,7 +602,11 @@ class DatabaseService {
     final batch = _db.batch();
 
     batch.delete(
-      _db.collection('users').doc(_uid).collection('registeredCompetitions').doc(competitionId),
+      _db
+          .collection('users')
+          .doc(_uid)
+          .collection('registeredCompetitions')
+          .doc(competitionId),
     );
 
     batch.update(
@@ -587,16 +652,17 @@ class DatabaseService {
         'NC': 'ncfbla',
         'MI': 'michiganfbla',
       },
-      'nationalLinkedInUrl': 'https://www.linkedin.com/company/future-business-leaders-america',
+      'nationalLinkedInUrl':
+          'https://www.linkedin.com/company/future-business-leaders-america',
       'nationalFacebookUrl': 'https://www.facebook.com/FutureBusinessLeaders',
     });
-    print('Social config created with defaults (Instagram, LinkedIn, Facebook)');
+    print(
+        'Social config created with defaults (Instagram, LinkedIn, Facebook)');
   }
 
   Future<SocialConfig> getSocialConfig() async {
     try {
-      final doc =
-          await _db.collection('social_config').doc('instagram').get();
+      final doc = await _db.collection('social_config').doc('instagram').get();
       if (doc.exists && doc.data() != null) {
         return SocialConfig.fromMap(doc.data());
       }
@@ -617,18 +683,68 @@ class DatabaseService {
     // Regional sections per state (e.g. California: Bay Section, Northern, Southern)
     final defaults = [
       {'id': 'ca_bay', 'name': 'Bay Section', 'stateCode': 'CA', 'order': 0},
-      {'id': 'ca_northern', 'name': 'Northern California', 'stateCode': 'CA', 'order': 1},
-      {'id': 'ca_southern', 'name': 'Southern California', 'stateCode': 'CA', 'order': 2},
-      {'id': 'ca_central', 'name': 'Central California', 'stateCode': 'CA', 'order': 3},
+      {
+        'id': 'ca_northern',
+        'name': 'Northern California',
+        'stateCode': 'CA',
+        'order': 1
+      },
+      {
+        'id': 'ca_southern',
+        'name': 'Southern California',
+        'stateCode': 'CA',
+        'order': 2
+      },
+      {
+        'id': 'ca_central',
+        'name': 'Central California',
+        'stateCode': 'CA',
+        'order': 3
+      },
       {'id': 'tx_north', 'name': 'North Texas', 'stateCode': 'TX', 'order': 0},
       {'id': 'tx_south', 'name': 'South Texas', 'stateCode': 'TX', 'order': 1},
-      {'id': 'tx_central', 'name': 'Central Texas', 'stateCode': 'TX', 'order': 2},
-      {'id': 'fl_north', 'name': 'Northern Florida', 'stateCode': 'FL', 'order': 0},
-      {'id': 'fl_south', 'name': 'Southern Florida', 'stateCode': 'FL', 'order': 1},
-      {'id': 'ny_upstate', 'name': 'Upstate New York', 'stateCode': 'NY', 'order': 0},
-      {'id': 'ny_metro', 'name': 'Metro New York', 'stateCode': 'NY', 'order': 1},
-      {'id': 'ga_north', 'name': 'Northern Georgia', 'stateCode': 'GA', 'order': 0},
-      {'id': 'ga_south', 'name': 'Southern Georgia', 'stateCode': 'GA', 'order': 1},
+      {
+        'id': 'tx_central',
+        'name': 'Central Texas',
+        'stateCode': 'TX',
+        'order': 2
+      },
+      {
+        'id': 'fl_north',
+        'name': 'Northern Florida',
+        'stateCode': 'FL',
+        'order': 0
+      },
+      {
+        'id': 'fl_south',
+        'name': 'Southern Florida',
+        'stateCode': 'FL',
+        'order': 1
+      },
+      {
+        'id': 'ny_upstate',
+        'name': 'Upstate New York',
+        'stateCode': 'NY',
+        'order': 0
+      },
+      {
+        'id': 'ny_metro',
+        'name': 'Metro New York',
+        'stateCode': 'NY',
+        'order': 1
+      },
+      {
+        'id': 'ga_north',
+        'name': 'Northern Georgia',
+        'stateCode': 'GA',
+        'order': 0
+      },
+      {
+        'id': 'ga_south',
+        'name': 'Southern Georgia',
+        'stateCode': 'GA',
+        'order': 1
+      },
     ];
     final batch = _db.batch();
     for (final s in defaults) {
@@ -667,34 +783,83 @@ class DatabaseService {
     switch (stateCode) {
       case 'CA':
         return const [
-          FblaSection(id: 'ca_bay', name: 'Bay Section', stateCode: 'CA', order: 0),
-          FblaSection(id: 'ca_northern', name: 'Northern California', stateCode: 'CA', order: 1),
-          FblaSection(id: 'ca_southern', name: 'Southern California', stateCode: 'CA', order: 2),
-          FblaSection(id: 'ca_central', name: 'Central California', stateCode: 'CA', order: 3),
+          FblaSection(
+              id: 'ca_bay', name: 'Bay Section', stateCode: 'CA', order: 0),
+          FblaSection(
+              id: 'ca_northern',
+              name: 'Northern California',
+              stateCode: 'CA',
+              order: 1),
+          FblaSection(
+              id: 'ca_southern',
+              name: 'Southern California',
+              stateCode: 'CA',
+              order: 2),
+          FblaSection(
+              id: 'ca_central',
+              name: 'Central California',
+              stateCode: 'CA',
+              order: 3),
         ];
       case 'TX':
         return const [
-          FblaSection(id: 'tx_north', name: 'North Texas', stateCode: 'TX', order: 0),
-          FblaSection(id: 'tx_south', name: 'South Texas', stateCode: 'TX', order: 1),
-          FblaSection(id: 'tx_central', name: 'Central Texas', stateCode: 'TX', order: 2),
+          FblaSection(
+              id: 'tx_north', name: 'North Texas', stateCode: 'TX', order: 0),
+          FblaSection(
+              id: 'tx_south', name: 'South Texas', stateCode: 'TX', order: 1),
+          FblaSection(
+              id: 'tx_central',
+              name: 'Central Texas',
+              stateCode: 'TX',
+              order: 2),
         ];
       case 'FL':
         return const [
-          FblaSection(id: 'fl_north', name: 'Northern Florida', stateCode: 'FL', order: 0),
-          FblaSection(id: 'fl_south', name: 'Southern Florida', stateCode: 'FL', order: 1),
+          FblaSection(
+              id: 'fl_north',
+              name: 'Northern Florida',
+              stateCode: 'FL',
+              order: 0),
+          FblaSection(
+              id: 'fl_south',
+              name: 'Southern Florida',
+              stateCode: 'FL',
+              order: 1),
         ];
       case 'NY':
         return const [
-          FblaSection(id: 'ny_upstate', name: 'Upstate New York', stateCode: 'NY', order: 0),
-          FblaSection(id: 'ny_metro', name: 'Metro New York', stateCode: 'NY', order: 1),
+          FblaSection(
+              id: 'ny_upstate',
+              name: 'Upstate New York',
+              stateCode: 'NY',
+              order: 0),
+          FblaSection(
+              id: 'ny_metro',
+              name: 'Metro New York',
+              stateCode: 'NY',
+              order: 1),
         ];
       case 'GA':
         return const [
-          FblaSection(id: 'ga_north', name: 'Northern Georgia', stateCode: 'GA', order: 0),
-          FblaSection(id: 'ga_south', name: 'Southern Georgia', stateCode: 'GA', order: 1),
+          FblaSection(
+              id: 'ga_north',
+              name: 'Northern Georgia',
+              stateCode: 'GA',
+              order: 0),
+          FblaSection(
+              id: 'ga_south',
+              name: 'Southern Georgia',
+              stateCode: 'GA',
+              order: 1),
         ];
       default:
-        return [FblaSection(id: '${stateCode.toLowerCase()}_default', name: 'Default Section', stateCode: stateCode, order: 0)];
+        return [
+          FblaSection(
+              id: '${stateCode.toLowerCase()}_default',
+              name: 'Default Section',
+              stateCode: stateCode,
+              order: 0)
+        ];
     }
   }
 
@@ -705,12 +870,11 @@ class DatabaseService {
         .limit(50)
         .snapshots()
         .map((snapshot) {
-          final list = snapshot.docs
-              .map((doc) =>
-                  FeaturedInstagramPost.fromFirestore(doc, doc.data()))
-              .toList();
-          list.sort((a, b) => a.order.compareTo(b.order));
-          return list;
-        });
+      final list = snapshot.docs
+          .map((doc) => FeaturedInstagramPost.fromFirestore(doc, doc.data()))
+          .toList();
+      list.sort((a, b) => a.order.compareTo(b.order));
+      return list;
+    });
   }
 }
