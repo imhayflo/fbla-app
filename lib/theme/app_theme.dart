@@ -29,7 +29,7 @@ class AppTheme {
         foregroundColor: scheme.onSurface,
         surfaceTintColor: scheme.primary.withOpacity(0.12),
       ),
-      cardTheme: CardThemeData(
+      cardTheme: CardTheme(
         elevation: a.highContrast ? 1 : 0,
         shadowColor: Colors.black54,
         shape: RoundedRectangleBorder(
@@ -126,7 +126,7 @@ class AppTheme {
         foregroundColor: scheme.onSurface,
         surfaceTintColor: scheme.primary.withOpacity(0.12),
       ),
-      cardTheme: CardThemeData(
+      cardTheme: CardTheme(
         elevation: a.highContrast ? 1 : 0,
         shadowColor: Colors.black26,
         shape: RoundedRectangleBorder(
