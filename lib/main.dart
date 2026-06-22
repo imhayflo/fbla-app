@@ -80,13 +80,9 @@ class _SplashInitAppState extends State<_SplashInitApp> {
       return const FBLAApp();
     }
 
-    // While Firebase initializes, return an empty container
-    // The native iOS launch screen will remain visible
     return const MaterialApp(
-      home: Scaffold(
-        backgroundColor: FblaColors.navy,
-        body: Center(),
-      ),
+      debugShowCheckedModeBanner: false,
+      home: _PrototypeSplash(),
     );
   }
 }
@@ -192,10 +188,7 @@ class _FBLAAppState extends State<FBLAApp> {
               future: _checkAuthState(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Scaffold(
-                    backgroundColor: FblaColors.navy,
-                    body: Center(),
-                  );
+                  return const _PrototypeSplash();
                 }
                 if (snapshot.hasData) {
                   return const _HomeScreenWithSync();
@@ -238,6 +231,54 @@ class _FBLAAppState extends State<FBLAApp> {
       // If there's an error or timeout, return null to show login
       return null;
     }
+  }
+}
+
+class _PrototypeSplash extends StatelessWidget {
+  const _PrototypeSplash();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Spacer(flex: 4),
+                Image.asset(
+                  'assets/fbla_logo.png',
+                  width: 220,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  'The Official* FBLA Member App',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF111827),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const Spacer(flex: 3),
+                const Text(
+                  'Tap Anywhere to Start',
+                  style: TextStyle(
+                    color: Color(0xFF111827),
+                    fontSize: 12,
+                  ),
+                ),
+                const Spacer(),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

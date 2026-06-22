@@ -128,41 +128,42 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
       ),
       cardTheme: CardThemeData(
-        elevation: a.highContrast ? 1 : 0,
-        shadowColor: Colors.black26,
+        elevation: 0,
+        shadowColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(8),
           side: a.highContrast
               ? BorderSide(color: scheme.outline, width: 1.5)
-              : BorderSide(color: scheme.outlineVariant.withOpacity(0.5)),
+              : BorderSide(color: scheme.outlineVariant),
         ),
         color: Colors.white,
         margin: EdgeInsets.zero,
       ),
       navigationBarTheme: NavigationBarThemeData(
-        elevation: 2,
+        elevation: 0,
         backgroundColor: Colors.white,
-        indicatorColor: scheme.primaryContainer,
+        indicatorColor: scheme.primary.withOpacity(0.12),
+        height: 64,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
               color: scheme.primary,
             );
           }
           return TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             color: scheme.onSurfaceVariant,
           );
         }),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(6),
           ),
         ),
       ),
@@ -171,7 +172,7 @@ class AppTheme {
           foregroundColor: scheme.primary,
           side: BorderSide(color: scheme.primary, width: a.highContrast ? 2 : 1),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(6),
           ),
         ),
       ),
@@ -179,15 +180,15 @@ class AppTheme {
         filled: true,
         fillColor: scheme.surface,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(4),
           borderSide: BorderSide(color: scheme.outlineVariant),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(4),
           borderSide: BorderSide(color: scheme.outlineVariant),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(4),
           borderSide: BorderSide(color: scheme.primary, width: a.highContrast ? 3 : 2),
         ),
       ),

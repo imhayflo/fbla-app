@@ -130,61 +130,34 @@ class _LoginScreenState extends State<LoginScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: FblaColors.paper,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 28),
+                const SizedBox(height: 56),
                 Center(
                   child: Column(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(22),
-                          gradient: const LinearGradient(
-                            colors: [FblaColors.gold, FblaColors.goldDeep],
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.25),
-                              blurRadius: 16,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(19),
-                          child: Image.asset(
-                            'assets/fbla_logo.png',
-                            width: 100,
-                            height: 100,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
+                      Image.asset(
+                        'assets/fbla_logo.png',
+                        width: 210,
+                        fit: BoxFit.contain,
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 12),
                       Text(
-                        'FBLA Link',
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Welcome back',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                        'The Official* FBLA Member App',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 48),
                 if (_error != null)
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -210,20 +183,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 Form(
                   key: _formKey,
-                  child: Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: FblaColors.navy.withOpacity(0.12),
-                          blurRadius: 24,
-                          offset: const Offset(0, 12),
-                        ),
-                      ],
-                    ),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         TextFormField(
                           controller: _emailController,
@@ -231,11 +192,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           textInputAction: TextInputAction.next,
                           decoration: InputDecoration(
                             labelText: 'Email',
-                            hintText: 'Enter your email',
-                            prefixIcon: Icon(Icons.email_outlined,
-                                color: colorScheme.primary),
+                            hintText: 'Email',
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(4),
                             ),
                           ),
                           validator: validateEmail,
@@ -248,9 +207,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           onFieldSubmitted: (_) => _login(),
                           decoration: InputDecoration(
                             labelText: 'Password',
-                            hintText: 'Enter your password',
-                            prefixIcon: Icon(Icons.lock_outlined,
-                                color: colorScheme.primary),
+                            hintText: 'Password',
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _obscurePassword
@@ -264,7 +221,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               },
                             ),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(4),
                             ),
                           ),
                           validator: validatePassword,
@@ -277,17 +234,17 @@ class _LoginScreenState extends State<LoginScreen> {
                             child: const Text('Forgot Password?'),
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 14),
                         SizedBox(
                           width: double.infinity,
-                          height: 56,
+                          height: 42,
                           child: FilledButton(
                             onPressed: _isLoading ? null : _login,
                             style: FilledButton.styleFrom(
                               backgroundColor: FblaColors.navy,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(4),
                               ),
                             ),
                             child: _isLoading
@@ -300,18 +257,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   )
                                 : const Text(
-                                    'Log In',
+                                    'Login',
                                     style: TextStyle(
-                                        fontSize: 16,
+                                        fontSize: 14,
                                         fontWeight: FontWeight.w600),
                                   ),
                           ),
                         ),
                       ],
                     ),
-                  ),
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 18),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -336,6 +292,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: TextStyle(fontWeight: FontWeight.w600)),
                     ),
                   ],
+                ),
+                const SizedBox(height: 28),
+                Text(
+                  'The Official* FBLA Member App',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurface,
+                  ),
                 ),
               ],
             ),

@@ -8,7 +8,7 @@ class FblaColors {
   static const Color gold = Color(0xFFFFC72C);
   static const Color goldDeep = Color(0xFFC99700);
   static const Color crimson = Color(0xFFC8102E);
-  static const Color paper = Color(0xFFF7F5F0);
+  static const Color paper = Color(0xFFFFFFFF);
 
   static ColorScheme schemeDefault() {
     return ColorScheme.fromSeed(
@@ -19,9 +19,13 @@ class FblaColors {
       surface: Colors.white,
       brightness: Brightness.light,
     ).copyWith(
-      primaryContainer: const Color(0xFFD4E4F7),
+      primaryContainer: const Color(0xFFEAF1FA),
       secondaryContainer: const Color(0xFFFFF3CC),
       tertiaryContainer: const Color(0xFFF8D7DC),
+      onSurface: const Color(0xFF111827),
+      onSurfaceVariant: const Color(0xFF4B5563),
+      outline: const Color(0xFFCBD5E1),
+      outlineVariant: const Color(0xFFE5E7EB),
     );
   }
 

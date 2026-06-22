@@ -161,49 +161,26 @@ class DashboardTab extends StatelessWidget {
     final stats = theme.fblaStats;
     final dbService = DatabaseService();
     final dateFormat = DateFormat('MMM d, yyyy');
-    final isDark = theme.brightness == Brightness.dark;
-    final dashBg = isDark ? colorScheme.surface : FblaColors.paper;
-    final dashFg = isDark ? colorScheme.onSurface : FblaColors.navy;
+    final dashBg = FblaColors.navy;
+    final dashFg = Colors.white;
     final sectionHeaderStyle = theme.textTheme.titleLarge?.copyWith(
       fontWeight: FontWeight.bold,
-      color: colorScheme.onSurface,
+      color: Colors.white,
     );
 
     return Scaffold(
       backgroundColor: dashBg,
       appBar: AppBar(
-        backgroundColor: dashBg,
+        backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
-        foregroundColor: dashFg,
-        elevation: 1,
-        shadowColor: Colors.black12,
+        foregroundColor: FblaColors.navy,
+        elevation: 0,
+        shadowColor: Colors.transparent,
         leading: Padding(
-          padding: const EdgeInsets.all(8),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 6,
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(4),
-              child: Image.asset('assets/fbla_logo.png', fit: BoxFit.contain),
-            ),
-          ),
+          padding: const EdgeInsets.only(left: 12, top: 10, bottom: 10),
+          child: Image.asset('assets/fbla_logo.png', fit: BoxFit.contain),
         ),
-        title: Text(
-          'FBLA Dashboard',
-          style: theme.textTheme.titleLarge?.copyWith(
-            color: dashFg,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
+        title: const SizedBox.shrink(),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -216,44 +193,54 @@ class DashboardTab extends StatelessWidget {
                 final member = snapshot.data;
                 final name = member?.name.split(' ').first ?? 'Member';
 
-                return Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: const LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        FblaColors.navy,
-                        Color(0xFF0A4A7A),
-                        FblaColors.navyDark,
-                      ],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: colorScheme.primary.withOpacity(0.35),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
+                return SizedBox(
+                  width: double.infinity,
+                  height: 360,
                   child: Padding(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 28),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        Image.asset(
+                          'assets/fbla_logo.png',
+                          width: 210,
+                          fit: BoxFit.contain,
+                          color: Colors.white.withOpacity(0.12),
+                          colorBlendMode: BlendMode.srcATop,
+                        ),
+                        const SizedBox(height: 24),
                         Text(
-                          'Welcome back, $name!',
+                          'Welcome back,\n$name',
+                          textAlign: TextAlign.center,
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
+                            height: 1.1,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Stay connected with your chapter',
+                          'See what categories',
+                          textAlign: TextAlign.center,
                           style: theme.textTheme.bodyLarge?.copyWith(
-                            color: Colors.white.withOpacity(0.92),
+                            color: FblaColors.gold,
                           ),
+                        ),
+                        const SizedBox(height: 18),
+                        FilledButton(
+                          onPressed: () => navigateToTab(4),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFF2563EB),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 26,
+                              vertical: 10,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          child: const Text('View'),
                         ),
                       ],
                     ),

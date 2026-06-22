@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fbla_member_app/widgets/fbla_atmospheric_background.dart';
-
-/// Decorative background with a solid content layer so text and controls stay readable.
+/// Plain content layer matching the clean prototype screens.
 class FblaScreenShell extends StatelessWidget {
   final Widget child;
 
@@ -10,15 +8,9 @@ class FblaScreenShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final surface = Theme.of(context).colorScheme.surface;
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        const FblaAtmosphericBackground(),
-        ColoredBox(
-          color: surface,
-          child: child,
-        ),
-      ],
+    return ColoredBox(
+      color: surface,
+      child: child,
     );
   }
 }
