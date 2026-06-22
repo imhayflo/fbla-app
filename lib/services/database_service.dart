@@ -195,6 +195,217 @@ class DatabaseService {
     });
   }
 
+  String _chatIdFor(String otherUid) {
+    final ids = [_uid!, otherUid]..sort();
+    return ids.join('_');
+  }
+
+  Stream<List<Member>> get membersDirectoryStream {
+    final currentUid = _uid;
+    return _db.collection('users').snapshots().map((snapshot) {
+      final members =
+          snapshot.docs.map((doc) => Member.fromFirestore(doc)).toList();
+      members.removeWhere((member) => member.uid == currentUid);
+      members.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      return members;
+    });
+  }
+
+  Stream<List<Map<String, dynamic>>> get messageRequestsStream {
+    if (_uid == null) return Stream.value([]);
+    return _db
+        .collection('messageRequests')
+        .where('participants', arrayContains: _uid)
+        .snapshots()
+        .map((snapshot) {
+      final requests = snapshot.docs.map((doc) {
+        return {'id': doc.id, ...doc.data()};
+      }).toList();
+      requests.sort((a, b) {
+        final aTime = a['createdAt'] as Timestamp?;
+        final bTime = b['createdAt'] as Timestamp?;
+        return (bTime?.millisecondsSinceEpoch ?? 0)
+            .compareTo(aTime?.millisecondsSinceEpoch ?? 0);
+      });
+      return requests;
+    });
+  }
+
+  Stream<List<Map<String, dynamic>>> get conversationsStream {
+    if (_uid == null) return Stream.value([]);
+    return _db
+        .collection('conversations')
+        .where('participants', arrayContains: _uid)
+        .snapshots()
+        .map((snapshot) {
+      final conversations = snapshot.docs.map((doc) {
+        return {'id': doc.id, ...doc.data()};
+      }).toList();
+      conversations.sort((a, b) {
+        final aTime = a['updatedAt'] as Timestamp?;
+        final bTime = b['updatedAt'] as Timestamp?;
+        return (bTime?.millisecondsSinceEpoch ?? 0)
+            .compareTo(aTime?.millisecondsSinceEpoch ?? 0);
+      });
+      return conversations;
+    });
+  }
+
+  Stream<List<Map<String, dynamic>>> messagesStream(String conversationId) {
+    return _db
+        .collection('conversations')
+        .doc(conversationId)
+        .collection('messages')
+        .orderBy('createdAt', descending: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) {
+              return {'id': doc.id, ...doc.data()};
+            }).toList());
+  }
+
+  Future<void> sendMessageRequest(Member recipient) async {
+    if (_uid == null || recipient.uid == _uid) return;
+    final sender = await getMember(_uid!);
+    final chatId = _chatIdFor(recipient.uid);
+    await _db.collection('messageRequests').doc(chatId).set({
+      'participants': [_uid, recipient.uid],
+      'requesterId': _uid,
+      'requesterName': sender?.name ?? 'Member',
+      'recipientId': recipient.uid,
+      'recipientName': recipient.name,
+      'status': 'pending',
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> acceptMessageRequest(Map<String, dynamic> request) async {
+    if (_uid == null) return;
+    final id = request['id'] as String;
+    final participants = List<String>.from(request['participants'] ?? []);
+    final names = <String, dynamic>{
+      request['requesterId'] as String? ?? '': request['requesterName'] ?? 'Member',
+      request['recipientId'] as String? ?? '': request['recipientName'] ?? 'Member',
+    };
+
+    final batch = _db.batch();
+    final requestRef = _db.collection('messageRequests').doc(id);
+    final conversationRef = _db.collection('conversations').doc(id);
+    batch.update(requestRef, {
+      'status': 'accepted',
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    batch.set(conversationRef, {
+      'participants': participants,
+      'participantNames': names,
+      'lastMessage': 'Message request accepted',
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    await batch.commit();
+  }
+
+  Future<void> declineMessageRequest(String requestId) async {
+    await _db.collection('messageRequests').doc(requestId).update({
+      'status': 'declined',
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> sendChatMessage(String conversationId, String text) async {
+    if (_uid == null || text.trim().isEmpty) return;
+    final sender = await getMember(_uid!);
+    final conversationRef = _db.collection('conversations').doc(conversationId);
+    await conversationRef.collection('messages').add({
+      'senderId': _uid,
+      'senderName': sender?.name ?? 'Member',
+      'text': text.trim(),
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    await conversationRef.set({
+      'lastMessage': text.trim(),
+      'lastSenderId': _uid,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Stream<List<Map<String, dynamic>>> get pinListingsStream {
+    return _db
+        .collection('pinListings')
+        .where('status', isEqualTo: 'active')
+        .snapshots()
+        .map((snapshot) {
+      final listings = snapshot.docs.map((doc) {
+        return {'id': doc.id, ...doc.data()};
+      }).toList();
+      listings.sort((a, b) {
+        final aTime = a['createdAt'] as Timestamp?;
+        final bTime = b['createdAt'] as Timestamp?;
+        return (bTime?.millisecondsSinceEpoch ?? 0)
+            .compareTo(aTime?.millisecondsSinceEpoch ?? 0);
+      });
+      return listings;
+    });
+  }
+
+  Stream<List<Map<String, dynamic>>> get pinMarketStream {
+    return _db.collection('pinMarket').snapshots().map((snapshot) {
+      final market = snapshot.docs.map((doc) {
+        return {'id': doc.id, ...doc.data()};
+      }).toList();
+      market.sort((a, b) {
+        final aValue = (a['lastValue'] as num?)?.toDouble() ?? 0;
+        final bValue = (b['lastValue'] as num?)?.toDouble() ?? 0;
+        return bValue.compareTo(aValue);
+      });
+      return market;
+    });
+  }
+
+  Future<void> createPinListing({
+    required String pinName,
+    required String state,
+    required String condition,
+    required double askingValue,
+    required String tradeFor,
+  }) async {
+    if (_uid == null) return;
+    final owner = await getMember(_uid!);
+    final normalized = pinName.trim().toLowerCase();
+    await _db.collection('pinListings').add({
+      'ownerId': _uid,
+      'ownerName': owner?.name ?? 'Member',
+      'ownerSchool': owner?.school ?? '',
+      'pinName': pinName.trim(),
+      'state': state.trim(),
+      'condition': condition.trim(),
+      'askingValue': askingValue,
+      'tradeFor': tradeFor.trim(),
+      'status': 'active',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    await _db.collection('pinMarket').doc(normalized).set({
+      'pinName': pinName.trim(),
+      'lastValue': askingValue,
+      'listingCount': FieldValue.increment(1),
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> requestPinTrade(Map<String, dynamic> listing) async {
+    if (_uid == null || listing['ownerId'] == _uid) return;
+    final requester = await getMember(_uid!);
+    await _db.collection('pinTradeRequests').add({
+      'listingId': listing['id'],
+      'pinName': listing['pinName'] ?? '',
+      'ownerId': listing['ownerId'],
+      'ownerName': listing['ownerName'] ?? 'Member',
+      'requesterId': _uid,
+      'requesterName': requester?.name ?? 'Member',
+      'status': 'pending',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<int> getUserRank(String uid) async {
     final members = await getAllMembersSortedByPoints().first;
     for (int i = 0; i < members.length; i++) {

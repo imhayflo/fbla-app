@@ -1,3 +1,4 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -37,6 +38,15 @@ class _EventsScreenState extends State<EventsScreen> {
         context,
         title: 'Calendar',
         actions: [
+          TextButton.icon(
+            onPressed: () => _showAiPrepAdvice(
+              context,
+              events: const [],
+              competitions: const [],
+            ),
+            icon: const Icon(Icons.auto_awesome),
+            label: const Text('AI'),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
@@ -94,6 +104,21 @@ class _EventsScreenState extends State<EventsScreen> {
 
                       return Column(
                         children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: FilledButton.icon(
+                                onPressed: () => _showAiPrepAdvice(
+                                  context,
+                                  events: events,
+                                  competitions: competitions,
+                                ),
+                                icon: const Icon(Icons.auto_awesome),
+                                label: const Text('Generate AI prep advice'),
+                              ),
+                            ),
+                          ),
                           TableCalendar<dynamic>(
                             firstDay: DateTime.utc(2026, 1, 1),
                             lastDay: DateTime.utc(2026, 12, 31),
@@ -247,6 +272,306 @@ class _EventsScreenState extends State<EventsScreen> {
       return regCompIds.contains(event.id);
     }
     return false;
+  }
+
+  Future<void> _showAiPrepAdvice(
+    BuildContext context, {
+    required List<Event> events,
+    required List<Competition> competitions,
+  }) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _AiPrepAdviceSheet(
+        events: events,
+        competitions: competitions,
+      ),
+    );
+  }
+}
+
+class _AiPrepAdvice {
+  final String summary;
+  final List<String> tips;
+  final List<String> deadlines;
+  final List<String> weeklyPlan;
+  final bool usedAi;
+
+  const _AiPrepAdvice({
+    required this.summary,
+    required this.tips,
+    required this.deadlines,
+    required this.weeklyPlan,
+    required this.usedAi,
+  });
+
+  factory _AiPrepAdvice.fromMap(Map<String, dynamic> map) {
+    List<String> readList(String key) {
+      return (map[key] as List<dynamic>? ?? const [])
+          .map((item) => item.toString())
+          .where((item) => item.trim().isNotEmpty)
+          .toList();
+    }
+
+    return _AiPrepAdvice(
+      summary: map['summary'] as String? ?? 'Here is a preparation plan.',
+      tips: readList('tips'),
+      deadlines: readList('deadlines'),
+      weeklyPlan: readList('weeklyPlan'),
+      usedAi: map['usedAi'] as bool? ?? true,
+    );
+  }
+}
+
+class _AiPrepAdviceSheet extends StatefulWidget {
+  final List<Event> events;
+  final List<Competition> competitions;
+
+  const _AiPrepAdviceSheet({
+    required this.events,
+    required this.competitions,
+  });
+
+  @override
+  State<_AiPrepAdviceSheet> createState() => _AiPrepAdviceSheetState();
+}
+
+class _AiPrepAdviceSheetState extends State<_AiPrepAdviceSheet> {
+  _AiPrepAdvice? _advice;
+  bool _loading = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAdvice();
+  }
+
+  List<dynamic> get _upcomingItems {
+    final now = DateTime.now();
+    final items = <dynamic>[
+      ...widget.events.where((event) => !event.date.isBefore(now)),
+      ...widget.competitions.where((competition) => !competition.date.isBefore(now)),
+    ];
+    items.sort((a, b) {
+      final aDate = a is Event ? a.date : (a as Competition).date;
+      final bDate = b is Event ? b.date : (b as Competition).date;
+      return aDate.compareTo(bDate);
+    });
+    return items.take(6).toList();
+  }
+
+  Future<void> _loadAdvice() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final advice = await _loadBackendAdvice();
+      if (mounted) {
+        setState(() => _advice = advice);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _advice = _fallbackAdvice();
+          _error =
+              'AI request failed. This built-in prep plan is showing until the backend key is deployed.';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
+  Future<_AiPrepAdvice> _loadBackendAdvice() async {
+    final callable = FirebaseFunctions.instance.httpsCallable(
+      'getCalendarPrepAdvice',
+      options: HttpsCallableOptions(timeout: const Duration(seconds: 30)),
+    );
+    final result = await callable.call<Map<String, dynamic>>({
+      'items': _upcomingItems.map((item) {
+        if (item is Event) {
+          return {
+            'title': item.title,
+            'type': item.type,
+            'level': 'Event',
+            'date': DateFormat.yMMMd().format(item.date),
+          };
+        }
+
+        final competition = item as Competition;
+        return {
+          'title': competition.name,
+          'type': competition.category,
+          'level': competition.level,
+          'date': DateFormat.yMMMd().format(competition.date),
+        };
+      }).toList(),
+    });
+
+    return _AiPrepAdvice.fromMap(Map<String, dynamic>.from(result.data));
+  }
+
+  _AiPrepAdvice _fallbackAdvice() {
+    final focus = _upcomingItems.isEmpty
+        ? 'your next FBLA event'
+        : _upcomingItems.first is Event
+            ? (_upcomingItems.first as Event).title
+            : (_upcomingItems.first as Competition).name;
+
+    return _AiPrepAdvice(
+      summary:
+          'Build a steady preparation rhythm for $focus. Work backward from the event date instead of waiting until the last week.',
+      tips: const [
+        'Review the official event guidelines and scoring rubric.',
+        'Make a short checklist of materials, attire, forms, and deadlines.',
+        'Schedule at least two practice runs with an adviser or teammate.',
+        'Use one session for content and one session for timing and delivery.',
+      ],
+      deadlines: const [
+        '6 weeks before: read rules and choose your prep resources.',
+        '4 weeks before: finish your outline, slides, or study guide.',
+        '2 weeks before: complete a timed mock run.',
+        '1 week before: polish materials and confirm travel/logistics.',
+      ],
+      weeklyPlan: const [
+        'Week 1: understand the event and scoring criteria.',
+        'Week 2: build your main content or study notes.',
+        'Week 3: practice and collect feedback.',
+        'Week 4: final review, confidence practice, and logistics.',
+      ],
+      usedAi: false,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.75,
+      minChildSize: 0.45,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (context, scrollController) => ListView(
+        controller: scrollController,
+        padding: const EdgeInsets.all(20),
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              Icon(Icons.auto_awesome, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'AI Preparation Advice',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Planning help for upcoming FBLA events and competitions.',
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: _loading ? null : _loadAdvice,
+            icon: _loading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.psychology_outlined),
+            label: Text(_advice == null ? 'Generate advice' : 'Refresh advice'),
+          ),
+          if (_loading) ...[
+            const SizedBox(height: 20),
+            const Center(child: CircularProgressIndicator()),
+          ],
+          if (_error != null) ...[
+            const SizedBox(height: 12),
+            Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
+          ],
+          if (_advice != null) ...[
+            const SizedBox(height: 20),
+            Text(_advice!.summary, style: theme.textTheme.bodyLarge),
+            const SizedBox(height: 16),
+            _AdviceSection(title: 'Prep tips', items: _advice!.tips),
+            _AdviceSection(title: 'Example deadlines', items: _advice!.deadlines),
+            _AdviceSection(title: 'Weekly plan', items: _advice!.weeklyPlan),
+            if (!_advice!.usedAi) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Live Gemini advice comes from the Firebase backend once GEMINI_API_KEY is deployed.',
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _AdviceSection extends StatelessWidget {
+  final String title;
+  final List<String> items;
+
+  const _AdviceSection({required this.title, required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...items.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('- '),
+                  Expanded(child: Text(item)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
