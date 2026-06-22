@@ -988,6 +988,11 @@ class _CompetitionDetailsSheetState extends State<_CompetitionDetailsSheet> {
                     widget.competition.description,
                     style: theme.textTheme.bodyLarge,
                   ),
+                  const SizedBox(height: 24),
+                  _JudgeSimulatorPrompt(
+                    competition: widget.competition,
+                    onTap: () => _showJudgeSimulator(context),
+                  ),
                   if (widget.competition.guidelinesUrl != null &&
                       widget.competition.guidelinesUrl!.isNotEmpty) ...[
                     const SizedBox(height: 24),
@@ -1054,6 +1059,19 @@ class _CompetitionDetailsSheetState extends State<_CompetitionDetailsSheet> {
       ),
     );
   }
+
+  void _showJudgeSimulator(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _JudgeSimulatorSheet(
+        competition: widget.competition,
+      ),
+    );
+  }
 }
 
 class _DetailRow extends StatelessWidget {
@@ -1096,6 +1114,339 @@ class _DetailRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _JudgeSimulatorPrompt extends StatelessWidget {
+  const _JudgeSimulatorPrompt({
+    required this.competition,
+    required this.onTap,
+  });
+
+  final Competition competition;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isPresentation =
+        competition.category.toLowerCase().contains('presentation');
+    return Card(
+      color: theme.colorScheme.secondaryContainer.withOpacity(0.65),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: theme.colorScheme.secondary,
+          foregroundColor: theme.colorScheme.onSecondary,
+          child: const Icon(Icons.record_voice_over),
+        ),
+        title: const Text('AI Judge Simulator'),
+        subtitle: Text(
+          isPresentation
+              ? 'Practice likely judge questions and get scored feedback.'
+              : 'Practice explaining your event like you are in front of judges.',
+        ),
+        trailing: FilledButton.tonal(
+          onPressed: onTap,
+          child: const Text('Practice'),
+        ),
+      ),
+    );
+  }
+}
+
+class _JudgeSimulatorSheet extends StatefulWidget {
+  const _JudgeSimulatorSheet({required this.competition});
+
+  final Competition competition;
+
+  @override
+  State<_JudgeSimulatorSheet> createState() => _JudgeSimulatorSheetState();
+}
+
+class _JudgeSimulatorSheetState extends State<_JudgeSimulatorSheet> {
+  final TextEditingController _answerController = TextEditingController();
+  int _questionIndex = 0;
+  _JudgeScore? _score;
+
+  List<String> get _questions {
+    final name = widget.competition.name;
+    final category = widget.competition.category.toLowerCase();
+    final base = <String>[
+      'Give us a quick overview of your $name project or preparation.',
+      'What problem are you solving, and why does it matter?',
+      'What was your strongest decision, and what evidence supports it?',
+      'What would you improve if you had two more weeks?',
+      'How does your work connect to real business or leadership impact?',
+    ];
+
+    if (category.contains('presentation')) {
+      return [
+        'Start your presentation pitch for $name in 45 seconds.',
+        'What makes your idea or solution stand out from others?',
+        'How did you divide work, practice delivery, and prepare for questions?',
+        ...base.take(3),
+      ];
+    }
+    if (category.contains('role play')) {
+      return [
+        'Walk through how you would handle a surprise business scenario.',
+        'What information would you ask for before making a recommendation?',
+        'How would you persuade a customer or manager to accept your solution?',
+        ...base.take(3),
+      ];
+    }
+    return base;
+  }
+
+  String get _currentQuestion => _questions[_questionIndex % _questions.length];
+
+  @override
+  void dispose() {
+    _answerController.dispose();
+    super.dispose();
+  }
+
+  void _scoreAnswer() {
+    final answer = _answerController.text.trim();
+    if (answer.isEmpty) return;
+    setState(() => _score = _JudgeScore.fromAnswer(answer));
+  }
+
+  void _nextQuestion() {
+    setState(() {
+      _questionIndex += 1;
+      _score = null;
+      _answerController.clear();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.9,
+        minChildSize: 0.55,
+        maxChildSize: 0.96,
+        builder: (context, controller) => ListView(
+          controller: controller,
+          padding: const EdgeInsets.all(20),
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Row(
+              children: [
+                Icon(Icons.record_voice_over, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'AI Judge Simulator',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              widget.competition.name,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 20),
+            _JudgeBubble(text: _currentQuestion),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _answerController,
+              minLines: 5,
+              maxLines: 8,
+              decoration: const InputDecoration(
+                labelText: 'Your answer',
+                hintText: 'Type how you would answer the judge...',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: _scoreAnswer,
+                    icon: const Icon(Icons.analytics_outlined),
+                    label: const Text('Score answer'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton.outlined(
+                  tooltip: 'Next question',
+                  onPressed: _nextQuestion,
+                  icon: const Icon(Icons.skip_next),
+                ),
+              ],
+            ),
+            if (_score != null) ...[
+              const SizedBox(height: 20),
+              _ScoreCard(score: _score!),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _JudgeBubble extends StatelessWidget {
+  const _JudgeBubble({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.gavel, size: 20),
+          const SizedBox(width: 8),
+          Expanded(child: Text(text, style: theme.textTheme.bodyLarge)),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScoreCard extends StatelessWidget {
+  const _ScoreCard({required this.score});
+
+  final _JudgeScore score;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Judge feedback: ${score.overall}%',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _ScoreBar(label: 'Clarity', value: score.clarity),
+            _ScoreBar(label: 'Confidence', value: score.confidence),
+            _ScoreBar(label: 'Completeness', value: score.completeness),
+            const SizedBox(height: 12),
+            Text('Better sample answer',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                )),
+            const SizedBox(height: 6),
+            Text(score.sampleAnswer),
+            const SizedBox(height: 12),
+            Text('Next improvement',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                )),
+            const SizedBox(height: 6),
+            Text(score.tip),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ScoreBar extends StatelessWidget {
+  const _ScoreBar({required this.label, required this.value});
+
+  final String label;
+  final int value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          SizedBox(width: 110, child: Text(label)),
+          Expanded(child: LinearProgressIndicator(value: value / 100)),
+          const SizedBox(width: 8),
+          Text('$value%'),
+        ],
+      ),
+    );
+  }
+}
+
+class _JudgeScore {
+  final int clarity;
+  final int confidence;
+  final int completeness;
+  final String sampleAnswer;
+  final String tip;
+
+  const _JudgeScore({
+    required this.clarity,
+    required this.confidence,
+    required this.completeness,
+    required this.sampleAnswer,
+    required this.tip,
+  });
+
+  int get overall => ((clarity + confidence + completeness) / 3).round();
+
+  factory _JudgeScore.fromAnswer(String answer) {
+    final words = answer.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+    final sentences = RegExp(r'[.!?]').allMatches(answer).length;
+    final lower = answer.toLowerCase();
+    var clarity = 45 + (sentences >= 2 ? 18 : 0) + (words >= 45 ? 20 : words ~/ 3);
+    var confidence = 50;
+    if (lower.contains('i believe') || lower.contains('we recommend')) confidence += 15;
+    if (lower.contains('because') || lower.contains('therefore')) confidence += 12;
+    if (lower.contains('maybe') || lower.contains('i guess')) confidence -= 10;
+    var completeness = 40;
+    for (final marker in ['problem', 'solution', 'result', 'evidence', 'customer', 'business']) {
+      if (lower.contains(marker)) completeness += 8;
+    }
+
+    clarity = clarity.clamp(1, 100).toInt();
+    confidence = confidence.clamp(1, 100).toInt();
+    completeness = completeness.clamp(1, 100).toInt();
+
+    return _JudgeScore(
+      clarity: clarity,
+      confidence: confidence,
+      completeness: completeness,
+      sampleAnswer:
+          'A stronger answer starts with the main point, gives one specific example, explains the business impact, and ends with what you would do next.',
+      tip: words < 40
+          ? 'Add more specifics: name the audience, problem, decision, and result.'
+          : 'Tighten the ending with one confident recommendation or lesson learned.',
     );
   }
 }

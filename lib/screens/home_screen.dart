@@ -263,6 +263,18 @@ class DashboardTab extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
+            StreamBuilder<List<Event>>(
+              stream: dbService.eventsStream,
+              builder: (context, snapshot) {
+                final conference = _findConferenceEvent(snapshot.data ?? []);
+                if (conference == null) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 24),
+                  child: _ConferenceModeCard(event: conference),
+                );
+              },
+            ),
+
             Text('Your Activity', style: sectionHeaderStyle),
             const SizedBox(height: 16),
             StreamBuilder<Member?>(
@@ -741,4 +753,345 @@ class _EventCard extends StatelessWidget {
       ),
     );
   }
+}
+
+Event? _findConferenceEvent(List<Event> events) {
+  final now = DateTime.now();
+  final conferences = events.where((event) {
+    final text = '${event.title} ${event.type} ${event.description}'.toLowerCase();
+    final isConference = text.contains('conference') ||
+        text.contains('nlc') ||
+        text.contains('slc') ||
+        text.contains('leadership');
+    final end = event.endDate ?? event.date;
+    return isConference && end.isAfter(now.subtract(const Duration(days: 1)));
+  }).toList()
+    ..sort((a, b) => a.date.compareTo(b.date));
+
+  if (conferences.isEmpty) return null;
+  return conferences.first;
+}
+
+class _ConferenceModeCard extends StatelessWidget {
+  const _ConferenceModeCard({required this.event});
+
+  final Event event;
+
+  bool get _isActive {
+    final now = DateTime.now();
+    final start = DateTime(event.date.year, event.date.month, event.date.day);
+    final endDate = event.endDate ?? event.date;
+    final end = DateTime(endDate.year, endDate.month, endDate.day, 23, 59);
+    return !now.isBefore(start) && !now.isAfter(end);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dateFormat = DateFormat('MMM d');
+    final dateText = event.endDate == null
+        ? dateFormat.format(event.date)
+        : '${dateFormat.format(event.date)} - ${dateFormat.format(event.endDate!)}';
+
+    return Card(
+      color: _isActive
+          ? theme.colorScheme.primaryContainer
+          : theme.colorScheme.secondaryContainer.withOpacity(0.72),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: _isActive
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.secondary,
+                  foregroundColor: _isActive
+                      ? theme.colorScheme.onPrimary
+                      : theme.colorScheme.onSecondary,
+                  child: Icon(_isActive ? Icons.bolt : Icons.event_available),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _isActive ? 'Conference Mode Active' : 'Conference Mode Ready',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        '${event.title} • $dateText',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: () => _showConferenceMode(context, event),
+              icon: const Icon(Icons.explore_outlined),
+              label: const Text('Open Conference Mode'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showConferenceMode(BuildContext context, Event event) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _ConferenceModeSheet(event: event),
+    );
+  }
+}
+
+class _ConferenceModeSheet extends StatefulWidget {
+  const _ConferenceModeSheet({required this.event});
+
+  final Event event;
+
+  @override
+  State<_ConferenceModeSheet> createState() => _ConferenceModeSheetState();
+}
+
+class _ConferenceModeSheetState extends State<_ConferenceModeSheet> {
+  final Set<String> _checked = {};
+
+  List<_TimelineItem> get _timeline {
+    final start = widget.event.date;
+    return [
+      _TimelineItem(start.subtract(const Duration(days: 1)), 'Pack, print materials, and confirm travel.'),
+      _TimelineItem(start, 'Check in, review schedule, and attend opening sessions.'),
+      _TimelineItem(start.add(const Duration(days: 1)), 'Compete, attend workshops, and trade pins.'),
+      _TimelineItem((widget.event.endDate ?? start).add(const Duration(days: 1)), 'Write thank-you notes and save feedback.'),
+    ];
+  }
+
+  _TimelineItem get _nextItem {
+    final now = DateTime.now();
+    return _timeline.firstWhere(
+      (item) => item.time.isAfter(now),
+      orElse: () => _timeline.last,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dateFormat = DateFormat('EEEE, MMM d');
+
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.9,
+      minChildSize: 0.55,
+      maxChildSize: 0.96,
+      builder: (context, controller) => ListView(
+        controller: controller,
+        padding: const EdgeInsets.all(20),
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          Row(
+            children: [
+              Icon(Icons.explore_outlined, color: theme.colorScheme.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Conference Mode',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(widget.event.title, style: theme.textTheme.titleMedium),
+          Text(
+            widget.event.endDate == null
+                ? dateFormat.format(widget.event.date)
+                : '${dateFormat.format(widget.event.date)} - ${dateFormat.format(widget.event.endDate!)}',
+          ),
+          const SizedBox(height: 20),
+          _ConferenceSection(
+            icon: Icons.next_plan_outlined,
+            title: 'What is next',
+            child: Text(
+              '${DateFormat('MMM d').format(_nextItem.time)}: ${_nextItem.label}',
+            ),
+          ),
+          _ConferenceSection(
+            icon: Icons.schedule,
+            title: 'Live schedule',
+            child: Column(
+              children: _timeline
+                  .map((item) => ListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.circle, size: 10),
+                        title: Text(item.label),
+                        subtitle: Text(DateFormat('MMM d').format(item.time)),
+                      ))
+                  .toList(),
+            ),
+          ),
+          _ConferenceSection(
+            icon: Icons.checkroom_outlined,
+            title: 'Dress code checklist',
+            child: Column(
+              children: [
+                _checkTile('Business suit or blazer/slacks/skirt'),
+                _checkTile('Dress shoes'),
+                _checkTile('Name badge and conference credentials'),
+                _checkTile('Presentation materials or laptop charger'),
+              ],
+            ),
+          ),
+          _ConferenceSection(
+            icon: Icons.groups_outlined,
+            title: 'Networking goals',
+            child: Column(
+              children: [
+                _checkTile('Meet 3 members from other chapters'),
+                _checkTile('Ask one officer or adviser for advice'),
+                _checkTile('Trade or discuss pins with another state'),
+                _checkTile('Save one LinkedIn/contact follow-up'),
+              ],
+            ),
+          ),
+          _ConferenceSection(
+            icon: Icons.map_outlined,
+            title: 'Map and location',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(widget.event.location.isEmpty
+                    ? 'Location not listed yet'
+                    : widget.event.location),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () => _openMap(widget.event),
+                  icon: const Icon(Icons.map),
+                  label: const Text('Open map'),
+                ),
+              ],
+            ),
+          ),
+          _ConferenceSection(
+            icon: Icons.health_and_safety_outlined,
+            title: 'Emergency info',
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Find your adviser or chapter chaperone first.'),
+                SizedBox(height: 4),
+                Text('For urgent safety issues, call venue security or 911.'),
+                SizedBox(height: 4),
+                Text('Keep your badge, phone, and room key with you.'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _checkTile(String label) {
+    return CheckboxListTile(
+      contentPadding: EdgeInsets.zero,
+      value: _checked.contains(label),
+      onChanged: (value) {
+        setState(() {
+          if (value == true) {
+            _checked.add(label);
+          } else {
+            _checked.remove(label);
+          }
+        });
+      },
+      title: Text(label),
+      controlAffinity: ListTileControlAffinity.leading,
+    );
+  }
+
+  Future<void> _openMap(Event event) async {
+    final query = Uri.encodeComponent(
+      event.location.isEmpty ? event.title : event.location,
+    );
+    final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+}
+
+class _ConferenceSection extends StatelessWidget {
+  const _ConferenceSection({
+    required this.icon,
+    required this.title,
+    required this.child,
+  });
+
+  final IconData icon;
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: theme.colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TimelineItem {
+  final DateTime time;
+  final String label;
+
+  const _TimelineItem(this.time, this.label);
 }
