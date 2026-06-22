@@ -3,8 +3,8 @@ import 'package:fbla_member_app/models/member.dart';
 import 'package:fbla_member_app/models/social_config.dart';
 import 'package:fbla_member_app/services/database_service.dart';
 import 'package:fbla_member_app/services/social_service.dart';
-import 'package:fbla_member_app/utils/constants.dart';
 import 'package:fbla_member_app/widgets/fbla_app_bar.dart';
+import 'package:fbla_member_app/widgets/fbla_screen_shell.dart';
 
 class SocialScreen extends StatefulWidget {
   const SocialScreen({super.key});
@@ -35,8 +35,10 @@ class _SocialScreenState extends State<SocialScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: FblaAppBar.standard(context, title: 'Social'),
-      body: SingleChildScrollView(
+      body: FblaScreenShell(
+        child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -50,37 +52,26 @@ class _SocialScreenState extends State<SocialScreen> {
               'FBLA on Instagram',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 16),
             StreamBuilder<Member?>(
               stream: _dbService.memberStream,
               builder: (context, snapshot) {
-                final member = snapshot.data;
                 final nationalHandle =
                     _socialConfig?.nationalInstagramHandle ?? 'fbla_national';
-                final nationalUrl = _socialConfig?.nationalInstagramUrl;
-                final stateKey = (member?.state ?? '').trim().toUpperCase();
-                final stateHandle = (stateKey.isNotEmpty &&
-                        (_socialConfig?.stateInstagramHandles
-                                .containsKey(stateKey) ??
-                            false))
-                    ? _socialConfig?.stateInstagramHandles[stateKey]
-                    : _socialConfig?.defaultStateInstagramHandle;
-                final chapterHandle = member?.chapterInstagramHandle ?? '';
-                final stateName = stateCodeToName(member?.state ?? '');
-                final stateFblaTitle = stateName.isNotEmpty
-                    ? '$stateName FBLA'
-                    : 'Your State FBLA';
+                final nationalUrl = _socialConfig?.nationalInstagramUrl ??
+                    'https://www.instagram.com/fbla_national/';
 
                 return Column(
                   children: [
                     _SocialTile(
                       title: 'National FBLA',
-                      handle: 'fbla_national',
+                      handle: nationalHandle,
                       icon: Icons.flag,
                       onPressed: () => _socialService.openInstagramProfile(
-                        url: 'https://www.instagram.com/fbla_national/',
+                        url: nationalUrl,
                       ),
                     ),
                   ],
@@ -92,13 +83,14 @@ class _SocialScreenState extends State<SocialScreen> {
               'FBLA on LinkedIn',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Connect with FBLA on LinkedIn for career and networking.',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.7),
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 12),
@@ -117,13 +109,14 @@ class _SocialScreenState extends State<SocialScreen> {
               'FBLA on Facebook',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Like and follow FBLA on Facebook for updates and events.',
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurface.withOpacity(0.7),
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 12),
@@ -138,6 +131,7 @@ class _SocialScreenState extends State<SocialScreen> {
             ),
             const SizedBox(height: 24),
           ],
+        ),
         ),
       ),
     );
@@ -260,23 +254,3 @@ class _SocialTile extends StatelessWidget {
   }
 }
 
-class _FeaturedPostCard extends StatelessWidget {
-  const _FeaturedPostCard({
-    required this.post,
-    required this.socialService,
-  });
-
-  final FeaturedInstagramPost post;
-  final SocialService socialService;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        title: Text(post.caption ?? post.url),
-        trailing: const Icon(Icons.open_in_new),
-        onTap: () => socialService.openInstagramPostUrl(post.url),
-      ),
-    );
-  }
-}

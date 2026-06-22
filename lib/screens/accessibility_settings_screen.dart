@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fbla_member_app/widgets/accessibility_scope.dart';
 import 'package:fbla_member_app/widgets/fbla_app_bar.dart';
+import 'package:fbla_member_app/widgets/fbla_screen_shell.dart';
 
 class AccessibilitySettingsScreen extends StatelessWidget {
   const AccessibilitySettingsScreen({super.key});
@@ -14,8 +15,10 @@ class AccessibilitySettingsScreen extends StatelessWidget {
       animation: a11y,
       builder: (context, _) {
         return Scaffold(
+          backgroundColor: Colors.transparent,
           appBar: FblaAppBar.standard(context, title: 'Accessibility'),
-          body: ListView(
+          body: FblaScreenShell(
+            child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
               Text(
@@ -121,6 +124,7 @@ class AccessibilitySettingsScreen extends StatelessWidget {
                 ),
               ),
             ],
+            ),
           ),
         );
       },

@@ -7,6 +7,7 @@ import '../models/announcement.dart';
 import '../models/competition.dart';
 import '../models/social_config.dart';
 import '../models/fbla_section.dart';
+import '../models/state_competition_result.dart';
 import 'news_sync_service.dart';
 import 'competitions_sync_service.dart';
 import 'calendar_sync_service.dart';
@@ -25,6 +26,7 @@ class DatabaseService {
   List<String>? _cachedUserRegisteredCompetitions;
 
   String? get _uid => _auth.currentUser?.uid;
+  String? get currentUserId => _uid;
 
   /// Pre-load all data in the background to reduce first-tap delays.
   Future<void> preLoadData() async {
@@ -74,7 +76,6 @@ class DatabaseService {
       _cachedUserRegisteredCompetitions;
 
   /// Warm up Firestore streams by subscribing to them - reduces first-tap delay
-  StreamSubscription<void>? _warmupSub;
 
   Future<void> warmupStreams() async {
     if (_uid == null) return;
@@ -137,7 +138,7 @@ class DatabaseService {
   }
 
   Future<void> _addInitialEvents() async {
-    final eventId = 'california_slc_2026';
+    const eventId = 'california_slc_2026';
     final existingEvent = await _db.collection('events').doc(eventId).get();
     if (existingEvent.exists) return;
 
@@ -876,5 +877,110 @@ class DatabaseService {
       list.sort((a, b) => a.order.compareTo(b.order));
       return list;
     });
+  }
+
+  static const _stateResultsCollection = 'stateCompetitionResults';
+
+  /// Demo seed: Hayden Floyd, 4th at CA SLC April 2026, Mobile Application Development.
+  Future<void> ensureStateResultsSeed() async {
+    try {
+      await _db.collection('_test').limit(1).get();
+    } catch (_) {
+      return;
+    }
+
+    const seedId = 'seed_ca_2026_hayden_floyd_mobile_app_dev';
+    final seedRef = _db.collection(_stateResultsCollection).doc(seedId);
+    final existing = await seedRef.get();
+    if (existing.exists) return;
+
+    final seed = StateCompetitionResult(
+      id: seedId,
+      memberName: 'Hayden Floyd',
+      normalizedName: StateCompetitionResult.normalizeMemberName('Hayden Floyd'),
+      placement: 4,
+      eventName: 'Mobile Application Development',
+      stateCode: 'CA',
+      conferenceYear: 2026,
+      conferenceMonth: 4,
+      conferenceLabel: 'California State Leadership Conference',
+    );
+    await seedRef.set(seed.toMap());
+    print('State competition results seed created');
+  }
+
+  Future<List<String>> saveStateCompetitionResults(
+    List<StateCompetitionResult> results,
+  ) async {
+    if (results.isEmpty) return [];
+
+    final batch = _db.batch();
+    final ids = <String>[];
+
+    for (final result in results) {
+      final docRef = result.id.isNotEmpty
+          ? _db.collection(_stateResultsCollection).doc(result.id)
+          : _db.collection(_stateResultsCollection).doc();
+      final id = docRef.id;
+      ids.add(id);
+
+      final data = result.toMap();
+      data['normalizedName'] =
+          StateCompetitionResult.normalizeMemberName(result.memberName);
+      batch.set(docRef, data, SetOptions(merge: true));
+    }
+
+    await batch.commit();
+    return ids;
+  }
+
+  /// Match global state results to a member profile by normalized name.
+  Future<int> syncStatePlacementsForMember(String uid, String name) async {
+    if (uid.isEmpty || name.trim().isEmpty) return 0;
+
+    final normalized = StateCompetitionResult.normalizeMemberName(name);
+    final snapshot = await _db
+        .collection(_stateResultsCollection)
+        .where('normalizedName', isEqualTo: normalized)
+        .get();
+
+    if (snapshot.docs.isEmpty) return 0;
+
+    final batch = _db.batch();
+    var linked = 0;
+
+    for (final doc in snapshot.docs) {
+      final result = StateCompetitionResult.fromFirestore(doc);
+      if (result.linkedUserId != uid) {
+        batch.update(doc.reference, {'linkedUserId': uid});
+      }
+
+      final placementRef = _db
+          .collection('users')
+          .doc(uid)
+          .collection('statePlacements')
+          .doc(doc.id);
+      batch.set(placementRef, {
+        ...result.toMap(),
+        'sourceResultId': doc.id,
+        'syncedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      linked++;
+    }
+
+    await batch.commit();
+    return linked;
+  }
+
+  Stream<List<StateCompetitionResult>> statePlacementsStream(String uid) {
+    return _db
+        .collection('users')
+        .doc(uid)
+        .collection('statePlacements')
+        .orderBy('conferenceYear', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => StateCompetitionResult.fromFirestore(doc))
+            .toList());
   }
 }

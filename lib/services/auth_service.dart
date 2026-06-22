@@ -92,9 +92,13 @@ class AuthService {
     final batch = _db.batch();
     batch.delete(userRef);
     final registeredEvents = await userRef.collection('registeredEvents').get();
-    for (final doc in registeredEvents.docs) batch.delete(doc.reference);
+    for (final doc in registeredEvents.docs) {
+      batch.delete(doc.reference);
+    }
     final registeredCompetitions = await userRef.collection('registeredCompetitions').get();
-    for (final doc in registeredCompetitions.docs) batch.delete(doc.reference);
+    for (final doc in registeredCompetitions.docs) {
+      batch.delete(doc.reference);
+    }
     await batch.commit();
   }
 

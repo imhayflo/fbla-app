@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fbla_member_app/theme/fbla_colors.dart';
 import 'package:fbla_member_app/widgets/fbla_app_bar.dart';
+import 'package:fbla_member_app/widgets/fbla_screen_shell.dart';
 
 class InstructionsScreen extends StatelessWidget {
   const InstructionsScreen({super.key});
@@ -10,15 +11,17 @@ class InstructionsScreen extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: FblaAppBar.standard(context, title: 'How to use this app'),
-      body: SingleChildScrollView(
+      body: FblaScreenShell(
+        child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _IntroBanner(theme: theme),
             const SizedBox(height: 20),
-            _Section(
+            const _Section(
               icon: Icons.dashboard_rounded,
               iconColor: FblaColors.navy,
               title: 'Home',
@@ -28,7 +31,7 @@ class InstructionsScreen extends StatelessWidget {
                   'latest announcement. Tap an event to open the calendar on that date. '
                   'Tap the announcement to read the full post.',
             ),
-            _Section(
+            const _Section(
               icon: Icons.calendar_month_rounded,
               iconColor: FblaColors.goldDeep,
               title: 'Calendar',
@@ -36,7 +39,7 @@ class InstructionsScreen extends StatelessWidget {
                   'Browse chapter and FBLA-related dates. Use this to plan ahead for '
                   'meetings, deadlines, and conferences. Tap a day to see what is scheduled.',
             ),
-            _Section(
+            const _Section(
               icon: Icons.campaign_rounded,
               iconColor: FblaColors.crimson,
               title: 'News',
@@ -44,7 +47,7 @@ class InstructionsScreen extends StatelessWidget {
                   'Read announcements pulled in for members. Open an item for details '
                   'and any link out to the full article on the web.',
             ),
-            _Section(
+            const _Section(
               icon: Icons.emoji_events_rounded,
               iconColor: FblaColors.navy,
               title: 'Compete',
@@ -52,7 +55,7 @@ class InstructionsScreen extends StatelessWidget {
                   'Explore competitive events and materials. Register for what your '
                   'chapter offers and keep track of what you have signed up for.',
             ),
-            _Section(
+            const _Section(
               icon: Icons.share_rounded,
               iconColor: FblaColors.goldDeep,
               title: 'Social',
@@ -60,7 +63,7 @@ class InstructionsScreen extends StatelessWidget {
                   'Connect to national, state, and chapter social accounts, and share '
                   'your achievements. Handles depend on what your chapter has configured.',
             ),
-            _Section(
+            const _Section(
               icon: Icons.person_rounded,
               iconColor: FblaColors.navy,
               title: 'Profile',
@@ -97,6 +100,7 @@ class InstructionsScreen extends StatelessWidget {
             ),
           ],
         ),
+        ),
       ),
     );
   }
@@ -112,7 +116,7 @@ class _IntroBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [

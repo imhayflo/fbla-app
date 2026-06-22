@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import '../services/database_service.dart';
 import '../models/announcement.dart';
 import '../widgets/fbla_app_bar.dart';
+import '../widgets/fbla_screen_shell.dart';
 
 class AnnouncementsScreen extends StatefulWidget {
   final String? initialAnnouncementId;
@@ -17,15 +17,10 @@ class AnnouncementsScreen extends StatefulWidget {
 
 class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
   final DatabaseService _dbService = DatabaseService();
-  bool _isRefreshing = false;
   final ScrollController _scrollController = ScrollController();
   bool _hasScrolled = false;
 
   Future<void> _refreshNews() async {
-    setState(() {
-      _isRefreshing = true;
-    });
-
     try {
       await _dbService.syncFBLANews();
       await _dbService.updateLastNewsSyncTime();
@@ -47,22 +42,18 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
           ),
         );
       }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isRefreshing = false;
-        });
-      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: FblaAppBar.standard(context, title: 'Announcements'),
-      body: RefreshIndicator(
-        onRefresh: _refreshNews,
-        child: StreamBuilder<List<Announcement>>(
+      body: FblaScreenShell(
+        child: RefreshIndicator(
+          onRefresh: _refreshNews,
+          child: StreamBuilder<List<Announcement>>(
           stream: _dbService.announcementsStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -138,6 +129,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
             },
           );
         },
+        ),
         ),
       ),
     );

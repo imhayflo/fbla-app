@@ -130,24 +130,10 @@ class _LoginScreenState extends State<LoginScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              FblaColors.navy,
-              Color(0xFF0A4A7A),
-              FblaColors.paper,
-            ],
-            stops: [0.0, 0.38, 1.0],
-          ),
-        ),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+      backgroundColor: FblaColors.paper,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -185,14 +171,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         'FBLA Link',
                         style: theme.textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: colorScheme.primary,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Welcome back',
                         style: theme.textTheme.bodyLarge?.copyWith(
-                          color: Colors.white.withOpacity(0.88),
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -211,7 +197,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.error_outline, color: FblaColors.crimson),
+                        const Icon(Icons.error_outline, color: FblaColors.crimson),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
@@ -332,12 +318,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text(
                       "Don't have an account? ",
                       style: TextStyle(
-                        color: FblaColors.navy.withOpacity(0.75),
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                     TextButton(
                       style: TextButton.styleFrom(
-                        foregroundColor: FblaColors.navy,
+                        foregroundColor: colorScheme.primary,
                       ),
                       onPressed: () {
                         Navigator.push(
@@ -355,7 +341,6 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ),
-      ),
     );
   }
 }

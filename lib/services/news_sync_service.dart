@@ -77,10 +77,7 @@ class NewsSyncService {
             container = container.parent;
           }
 
-          if (container == null) {
-            // Try to find nearby elements
-            container = titleLink.parent;
-          }
+          container ??= titleLink.parent;
 
           // Extract category
           String category = 'National Center News';

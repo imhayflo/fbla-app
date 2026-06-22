@@ -3,6 +3,7 @@ import '../models/member.dart';
 import '../services/database_service.dart';
 import '../utils/validators.dart';
 import '../widgets/fbla_app_bar.dart';
+import '../widgets/fbla_screen_shell.dart';
 
 class UpdateProfileScreen extends StatefulWidget {
   final Member member;
@@ -75,8 +76,10 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: FblaAppBar.standard(context, title: 'Update Profile'),
-      body: SingleChildScrollView(
+      body: FblaScreenShell(
+        child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
@@ -167,6 +170,7 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );

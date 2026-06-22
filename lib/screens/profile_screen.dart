@@ -8,6 +8,9 @@ import 'update_profile_screen.dart';
 import 'settings_screen.dart';
 import 'help_screen.dart';
 import '../widgets/fbla_app_bar.dart';
+import '../widgets/fbla_screen_shell.dart';
+import '../widgets/state_placement_badge.dart';
+import '../models/state_competition_result.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -23,6 +26,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   
   int _userRank = 0;
   bool _rankLoading = true;
+  bool _placementsSynced = false;
 
   Future<void> _loadUserRank(String uid) async {
     final rank = await _dbService.getUserRank(uid);
@@ -144,8 +148,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: FblaAppBar.standard(context, title: 'Profile'),
-      body: StreamBuilder<Member?>(
+      body: FblaScreenShell(
+        child: StreamBuilder<Member?>(
         stream: _dbService.memberStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -174,75 +180,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _loadUserRank(member.uid);
           }
 
+          if (!_placementsSynced) {
+            _placementsSynced = true;
+            _dbService.syncStatePlacementsForMember(member.uid, member.name);
+          }
+
           return SingleChildScrollView(
             child: Column(
               children: [
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        theme.colorScheme.primary,
-                        theme.colorScheme.primary.withOpacity(0.8),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                  ),
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    children: [
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundColor: Colors.white,
-                        child: Text(
-                          member.initials,
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        member.name,
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        member.memberSince != null
-                            ? 'Member Since ${member.memberSince!.year}'
-                            : 'FBLA Member',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: Colors.white.withOpacity(0.9),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _StatBadge(
-                            label: 'Rank',
-                            value: _rankLoading ? '-' : (_userRank > 0 ? '#$_userRank' : '-'),
-                          ),
-                          const SizedBox(width: 24),
-                          _StatBadge(
-                            label: 'Points',
-                            value: '${member.points}',
-                          ),
-                          const SizedBox(width: 24),
-                          _StatBadge(
-                            label: 'Events',
-                            value: '${member.eventsAttended}',
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                StreamBuilder<List<StateCompetitionResult>>(
+                  stream: _dbService.statePlacementsStream(member.uid),
+                  builder: (context, placementSnap) {
+                    final placements = placementSnap.data ?? const [];
+                    return _ProfileHeader(
+                      member: member,
+                      theme: theme,
+                      userRank: _userRank,
+                      rankLoading: _rankLoading,
+                      placements: placements,
+                    );
+                  },
                 ),
 
                 Padding(
@@ -283,6 +240,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ],
                       const SizedBox(height: 24),
+
+                      StreamBuilder<List<StateCompetitionResult>>(
+                        stream: _dbService.statePlacementsStream(member.uid),
+                        builder: (context, placementSnap) {
+                          final placements = placementSnap.data ?? const [];
+                          if (placements.isEmpty) {
+                            return const SizedBox.shrink();
+                          }
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'State competition placements',
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Badges from official state-level FBLA results',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              ...placements.map(
+                                (p) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: StatePlacementDetailCard(result: p),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+                          );
+                        },
+                      ),
 
                       // Achievements
                       if (member.achievements.isNotEmpty) ...[
@@ -393,6 +386,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         },
       ),
+      ),
     );
   }
 
@@ -426,6 +420,120 @@ class _ProfileScreenState extends State<ProfileScreen> {
       default:
         return Colors.blue;
     }
+  }
+}
+
+class _ProfileHeader extends StatelessWidget {
+  final Member member;
+  final ThemeData theme;
+  final int userRank;
+  final bool rankLoading;
+  final List<StateCompetitionResult> placements;
+
+  const _ProfileHeader({
+    required this.member,
+    required this.theme,
+    required this.userRank,
+    required this.rankLoading,
+    required this.placements,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.primary,
+            theme.colorScheme.primary.withOpacity(0.8),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              CircleAvatar(
+                radius: 50,
+                backgroundColor: Colors.white,
+                child: Text(
+                  member.initials,
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+              ),
+              if (placements.isNotEmpty)
+                Positioned(
+                  right: -4,
+                  bottom: -4,
+                  child: StatePlacementBadge(
+                    result: placements.first,
+                    compact: true,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            member.name,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            member.memberSince != null
+                ? 'Member Since ${member.memberSince!.year}'
+                : 'FBLA Member',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: Colors.white.withOpacity(0.9),
+            ),
+          ),
+          if (placements.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: placements
+                  .map((p) => StatePlacementBadge(result: p, compact: true))
+                  .toList(),
+            ),
+          ],
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _StatBadge(
+                label: 'Rank',
+                value: rankLoading
+                    ? '-'
+                    : (userRank > 0 ? '#$userRank' : '-'),
+              ),
+              const SizedBox(width: 24),
+              _StatBadge(
+                label: 'Points',
+                value: '${member.points}',
+              ),
+              const SizedBox(width: 24),
+              _StatBadge(
+                label: 'Events',
+                value: '${member.eventsAttended}',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 

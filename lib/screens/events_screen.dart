@@ -4,6 +4,7 @@ import 'package:table_calendar/table_calendar.dart';
 import '../services/database_service.dart';
 import '../models/event.dart';
 import '../widgets/fbla_app_bar.dart';
+import '../widgets/fbla_screen_shell.dart';
 import '../models/competition.dart';
 
 class EventsScreen extends StatefulWidget {
@@ -31,6 +32,7 @@ class _EventsScreenState extends State<EventsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: FblaAppBar.standard(
         context,
         title: 'Calendar',
@@ -46,7 +48,8 @@ class _EventsScreenState extends State<EventsScreen> {
           ),
         ],
       ),
-      body: StreamBuilder<List<Event>>(
+      body: FblaScreenShell(
+        child: StreamBuilder<List<Event>>(
         stream: _dbService.eventsStream,
         builder: (context, eventSnapshot) {
           // Only show loading if we're waiting for data AND there's no cached data
@@ -115,7 +118,7 @@ class _EventsScreenState extends State<EventsScreen> {
                                 if (hasRegisteredEvent) {
                                   return Container(
                                     margin: const EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
+                                    decoration: const BoxDecoration(
                                       color: Colors.red,
                                       shape: BoxShape.circle,
                                     ),
@@ -173,7 +176,7 @@ class _EventsScreenState extends State<EventsScreen> {
                             calendarStyle: CalendarStyle(
                               markersMaxCount: 3,
                               markerSize: 8,
-                              markerDecoration: BoxDecoration(
+                              markerDecoration: const BoxDecoration(
                                 color: Colors.black,
                                 shape: BoxShape.circle,
                               ),
@@ -208,6 +211,7 @@ class _EventsScreenState extends State<EventsScreen> {
             },
           );
         },
+      ),
       ),
     );
   }

@@ -32,6 +32,7 @@ class AppTheme {
       cardTheme: CardThemeData(
         elevation: a.highContrast ? 1 : 0,
         shadowColor: Colors.black54,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: a.highContrast
@@ -124,11 +125,12 @@ class AppTheme {
         scrolledUnderElevation: 1,
         backgroundColor: scheme.surface,
         foregroundColor: scheme.onSurface,
-        surfaceTintColor: scheme.primary.withOpacity(0.12),
+        surfaceTintColor: Colors.transparent,
       ),
       cardTheme: CardThemeData(
         elevation: a.highContrast ? 1 : 0,
         shadowColor: Colors.black26,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: a.highContrast

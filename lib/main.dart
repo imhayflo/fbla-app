@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/services.dart';
 import 'package:fbla_member_app/screens/home_screen.dart';
 import 'package:fbla_member_app/screens/login_screen.dart';
 import 'package:fbla_member_app/services/database_service.dart';
@@ -279,8 +278,23 @@ class _HomeScreenWithSyncState extends State<_HomeScreenWithSync>
     try {
       await _dbService.ensureSocialConfigExists();
       await _dbService.ensureFblaSectionsExist();
+      await _dbService.ensureStateResultsSeed();
+      await _syncStatePlacementsForCurrentUser();
     } catch (e) {
       print('Error ensuring social config exists: $e');
+    }
+  }
+
+  Future<void> _syncStatePlacementsForCurrentUser() async {
+    try {
+      final uid = _dbService.currentUserId;
+      if (uid == null) return;
+      final member = await _dbService.getMember(uid);
+      if (member != null) {
+        await _dbService.syncStatePlacementsForMember(uid, member.name);
+      }
+    } catch (e) {
+      print('Error syncing state placements: $e');
     }
   }
 

@@ -56,7 +56,7 @@ String? validateConfirmPassword(String? confirm, String password) {
 String? validatePhoneOptional(String? value) {
   if (value == null || value.trim().isEmpty) return null;
   final cleaned = value.replaceAll(RegExp(r'[\s\-\(\)\+]'), '');
-  if (cleaned.length > 0 && !RegExp(r'^\d+$').hasMatch(cleaned)) {
+  if (cleaned.isNotEmpty && !RegExp(r'^\d+$').hasMatch(cleaned)) {
     return 'Please enter a valid phone number';
   }
   if (cleaned.length > 15) {

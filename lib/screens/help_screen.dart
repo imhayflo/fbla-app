@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:fbla_member_app/widgets/fbla_app_bar.dart';
+import 'package:fbla_member_app/widgets/fbla_screen_shell.dart';
 
 class HelpScreen extends StatelessWidget {
   const HelpScreen({super.key});
@@ -17,8 +18,10 @@ class HelpScreen extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: FblaAppBar.standard(context, title: 'Help & Support'),
-      body: ListView(
+      body: FblaScreenShell(
+        child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Card(
@@ -59,23 +62,23 @@ class HelpScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          _FaqTile(
+          const _FaqTile(
             question: 'What is FBLA?',
             answer: 'Future Business Leaders of America (FBLA) is the largest business career and technical student organization in the world. It helps middle school, high school, and college students prepare for careers in business.',
           ),
-          _FaqTile(
+          const _FaqTile(
             question: 'How do I update my profile?',
             answer: 'Tap Profile in the bottom bar, then tap "Update Profile" under Actions. You can change your name, school, chapter, state, section, phone, and chapter Instagram.',
           ),
-          _FaqTile(
+          const _FaqTile(
             question: 'How do I share my achievements?',
             answer: 'Go to the Social tab and use "Share your achievements," or open Profile and tap the "Share" button on any achievement card. You can post to Instagram, Facebook, or any app via the share sheet.',
           ),
-          _FaqTile(
+          const _FaqTile(
             question: 'How do I register for events?',
             answer: 'Open the Events tab, find an event, and tap it to view details. Use the register button to sign up. Your registered events appear in your dashboard.',
           ),
-          _FaqTile(
+          const _FaqTile(
             question: 'Where do competitions come from?',
             answer: 'Competition listings are synced from the official FBLA website. Use the Compete tab to browse categories and view guidelines.',
           ),
@@ -89,6 +92,7 @@ class HelpScreen extends StatelessWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }

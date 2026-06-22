@@ -10,25 +10,25 @@ class FblaAppBar {
     List<Widget>? actions,
     Widget? leading,
   }) {
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final barFg = isDark ? Colors.white : FblaColors.navy;
+    final barBg = isDark ? const Color(0xFF1C1C1E) : FblaColors.paper;
     return AppBar(
-      title: Text(title),
-      elevation: 0,
-      leading: leading,
-      actions: actions,
-      flexibleSpace: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              theme.colorScheme.surface,
-              FblaColors.paper,
-              theme.colorScheme.primaryContainer.withOpacity(0.42),
-            ],
-          ),
+      title: Text(
+        title,
+        style: TextStyle(
+          color: barFg,
+          fontWeight: FontWeight.w700,
         ),
       ),
+      backgroundColor: barBg,
+      foregroundColor: barFg,
+      surfaceTintColor: Colors.transparent,
+      elevation: 1,
+      shadowColor: Colors.black12,
+      scrolledUnderElevation: 2,
+      leading: leading,
+      actions: actions,
     );
   }
 }

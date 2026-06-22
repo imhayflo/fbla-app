@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/auth_service.dart';
 import 'accessibility_settings_screen.dart';
+import 'import_state_results_screen.dart';
+import '../services/state_results_parser_service.dart';
 import '../widgets/fbla_app_bar.dart';
+import '../widgets/fbla_screen_shell.dart';
 import '../main.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -16,6 +19,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final AuthService _authService = AuthService();
   bool _notificationsEnabled = true;
   bool _eventReminders = true;
+  final _geminiKeyController = TextEditingController();
+  bool _loadingGeminiKey = true;
+  bool _obscureGeminiKey = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadGeminiKey();
+  }
+
+  Future<void> _loadGeminiKey() async {
+    final key = await GeminiConfig.getApiKey();
+    if (mounted) {
+      setState(() {
+        if (key != null) _geminiKeyController.text = key;
+        _loadingGeminiKey = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _geminiKeyController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,8 +51,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: FblaAppBar.standard(context, title: 'Settings'),
-      body: ListView(
+      body: FblaScreenShell(
+        child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Text(
@@ -120,6 +150,79 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 24),
           Text(
+            'State competition results',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: Column(
+              children: [
+                if (_loadingGeminiKey)
+                  const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    child: TextField(
+                      controller: _geminiKeyController,
+                      obscureText: _obscureGeminiKey,
+                      decoration: InputDecoration(
+                        labelText: 'Gemini API key',
+                        hintText: 'For parsing pasted official results',
+                        border: const OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscureGeminiKey
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                          ),
+                          onPressed: () => setState(
+                            () => _obscureGeminiKey = !_obscureGeminiKey,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ListTile(
+                  leading: Icon(Icons.key, color: theme.colorScheme.primary),
+                  title: const Text('Save Gemini key'),
+                  subtitle: const Text('Stored only on this device'),
+                  onTap: () async {
+                    await GeminiConfig.saveApiKey(_geminiKeyController.text);
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('API key saved')),
+                      );
+                    }
+                  },
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: Icon(Icons.upload_file, color: theme.colorScheme.primary),
+                  title: const Text('Import state results'),
+                  subtitle: const Text(
+                    'Paste official listings; AI extracts placements by name',
+                  ),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (_) => const ImportStateResultsScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
             'Account',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
@@ -186,6 +289,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         ],
+        ),
       ),
     );
   }

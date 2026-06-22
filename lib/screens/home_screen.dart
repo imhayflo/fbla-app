@@ -9,6 +9,7 @@ import 'package:fbla_member_app/screens/social_screen.dart';
 import 'package:fbla_member_app/screens/instructions_screen.dart';
 import 'package:fbla_member_app/theme/app_theme.dart';
 import 'package:fbla_member_app/theme/fbla_colors.dart';
+import 'package:fbla_member_app/widgets/fbla_atmospheric_background.dart';
 import '../services/database_service.dart';
 import '../models/member.dart';
 import '../models/event.dart';
@@ -64,15 +65,46 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final navBg = theme.colorScheme.surface;
+    final navBorder = theme.colorScheme.outlineVariant;
+
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const FblaAtmosphericBackground(),
+          IndexedStack(
+            index: _selectedIndex,
+            children: _screens,
+          ),
+        ],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) => _onItemTapped(index),
-        destinations: const [
+      bottomNavigationBar: ClipRect(
+        child: Container(
+            decoration: BoxDecoration(
+              color: navBg,
+              border: Border(
+                top: BorderSide(color: navBorder),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            child: NavigationBarTheme(
+              data: NavigationBarThemeData(
+                backgroundColor: navBg,
+                indicatorColor: theme.colorScheme.primary.withOpacity(0.16),
+              ),
+              child: NavigationBar(
+                selectedIndex: _selectedIndex,
+                onDestinationSelected: (index) => _onItemTapped(index),
+                destinations: const [
           NavigationDestination(
             icon: Icon(Icons.dashboard_outlined),
             selectedIcon: Icon(Icons.dashboard),
@@ -108,8 +140,11 @@ class _HomeScreenState extends State<HomeScreen> {
             selectedIcon: Icon(Icons.person),
             label: 'Profile',
           ),
-        ],
-      ),
+                ],
+              ),
+            ),
+          ),
+        ),
     );
   }
 }
@@ -126,31 +161,52 @@ class DashboardTab extends StatelessWidget {
     final stats = theme.fblaStats;
     final dbService = DatabaseService();
     final dateFormat = DateFormat('MMM d, yyyy');
+    final isDark = theme.brightness == Brightness.dark;
+    final dashBg = isDark ? colorScheme.surface : FblaColors.paper;
+    final dashFg = isDark ? colorScheme.onSurface : FblaColors.navy;
+    final sectionHeaderStyle = theme.textTheme.titleLarge?.copyWith(
+      fontWeight: FontWeight.bold,
+      color: colorScheme.onSurface,
+    );
 
     return Scaffold(
+      backgroundColor: dashBg,
       appBar: AppBar(
+        backgroundColor: dashBg,
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: dashFg,
+        elevation: 1,
+        shadowColor: Colors.black12,
         leading: Padding(
           padding: const EdgeInsets.all(8),
-          child: Image.asset('assets/fbla_logo.png', fit: BoxFit.contain),
-        ),
-        title: const Text('FBLA Dashboard'),
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                colorScheme.surface,
-                FblaColors.paper,
-                colorScheme.primaryContainer.withOpacity(0.35),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 6,
+                ),
               ],
             ),
+            child: Padding(
+              padding: const EdgeInsets.all(4),
+              child: Image.asset('assets/fbla_logo.png', fit: BoxFit.contain),
+            ),
+          ),
+        ),
+        title: Text(
+          'FBLA Dashboard',
+          style: theme.textTheme.titleLarge?.copyWith(
+            color: dashFg,
+            fontWeight: FontWeight.w800,
           ),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -207,12 +263,7 @@ class DashboardTab extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            Text(
-              'Your Activity',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            Text('Your Activity', style: sectionHeaderStyle),
             const SizedBox(height: 16),
             StreamBuilder<Member?>(
               stream: dbService.memberStream,
@@ -302,12 +353,7 @@ class DashboardTab extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Upcoming Events',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                Text('Upcoming Events', style: sectionHeaderStyle),
                 TextButton(
                   onPressed: () {
                     // Navigate to events tab
@@ -323,10 +369,10 @@ class DashboardTab extends StatelessWidget {
               stream: dbService.eventsStream,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
+                  return Center(
                     child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: CircularProgressIndicator(),
+                      padding: const EdgeInsets.all(20),
+                      child: CircularProgressIndicator(color: colorScheme.primary),
                     ),
                   );
                 }
@@ -380,12 +426,7 @@ class DashboardTab extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Recent News',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                Text('Recent News', style: sectionHeaderStyle),
                 TextButton(
                   onPressed: () {
                     // Navigate to news (announcements) tab
@@ -401,10 +442,10 @@ class DashboardTab extends StatelessWidget {
               stream: dbService.announcementsStream,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
+                  return Center(
                     child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: CircularProgressIndicator(),
+                      padding: const EdgeInsets.all(20),
+                      child: CircularProgressIndicator(color: colorScheme.primary),
                     ),
                   );
                 }
@@ -577,8 +618,17 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final fill = theme.brightness == Brightness.dark
+        ? theme.colorScheme.surfaceContainerHigh
+        : Colors.white;
     return Card(
-      color: color.withOpacity(0.1),
+      color: fill,
+      surfaceTintColor: Colors.transparent,
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: color.withOpacity(0.5), width: 1.5),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

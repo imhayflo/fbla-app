@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../theme/fbla_colors.dart';
+import '../widgets/fbla_screen_shell.dart';
+import '../widgets/fbla_app_bar.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
 import '../models/fbla_section.dart';
@@ -133,24 +134,11 @@ class _SignupScreenState extends State<SignupScreen> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: FblaColors.paper,
-      appBar: AppBar(
-        title: const Text('Create Account'),
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                theme.colorScheme.surface,
-                FblaColors.paper,
-                theme.colorScheme.primaryContainer.withOpacity(0.25),
-              ],
-            ),
-          ),
-        ),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
+      backgroundColor: Colors.transparent,
+      appBar: FblaAppBar.standard(context, title: 'Create Account'),
+      body: FblaScreenShell(
+        child: SafeArea(
+          child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -167,7 +155,7 @@ class _SignupScreenState extends State<SignupScreen> {
               Text(
                 'Create your member account to get started',
                 style: theme.textTheme.bodyLarge?.copyWith(
-                  color: colorScheme.onSurface.withOpacity(0.7),
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
 
@@ -206,6 +194,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       'Personal Information',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -261,6 +250,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       'Chapter Information',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -294,7 +284,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: _selectedStateCode,
+                      initialValue: _selectedStateCode,
                       decoration: InputDecoration(
                         labelText: 'State *',
                         prefixIcon: const Icon(Icons.map_outlined),
@@ -323,7 +313,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     const SizedBox(height: 16),
                     // Section dropdown (required, regional sections from API — select state first)
                     DropdownButtonFormField<FblaSection>(
-                      value: _selectedSection,
+                      initialValue: _selectedSection,
                       decoration: InputDecoration(
                         labelText: 'Regional Section *',
                         prefixIcon: _sectionsLoading
@@ -383,6 +373,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       'Create Password',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -479,10 +470,11 @@ class _SignupScreenState extends State<SignupScreen> {
                         Text(
                           'Already have an account? ',
                           style: TextStyle(
-                            color: colorScheme.onSurface.withOpacity(0.7),
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                         TextButton(
+                          style: TextButton.styleFrom(foregroundColor: colorScheme.primary),
                           onPressed: () {
                             Navigator.pop(context);
                           },
@@ -495,6 +487,7 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );
