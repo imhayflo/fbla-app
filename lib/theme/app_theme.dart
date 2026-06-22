@@ -29,7 +29,7 @@ class AppTheme {
         foregroundColor: scheme.onSurface,
         surfaceTintColor: scheme.primary.withOpacity(0.12),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: a.highContrast ? 1 : 0,
         shadowColor: Colors.black54,
         surfaceTintColor: Colors.transparent,
@@ -127,7 +127,7 @@ class AppTheme {
         foregroundColor: scheme.onSurface,
         surfaceTintColor: Colors.transparent,
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: a.highContrast ? 1 : 0,
         shadowColor: Colors.black26,
         surfaceTintColor: Colors.transparent,
