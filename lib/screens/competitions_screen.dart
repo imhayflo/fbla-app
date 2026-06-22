@@ -25,27 +25,6 @@ class _CompetitionsScreenState extends State<CompetitionsScreen> {
       body: FblaScreenShell(
         child: Column(
         children: [
-          SizedBox(
-            height: 50,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              children: ['All', 'Objective Tests', 'Presentation Events', 'Role Play Events', 'Chapter Events', 'Production Events']
-                  .map((eventType) => Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: FilterChip(
-                          label: Text(eventType),
-                          selected: _selectedCategory == eventType,
-                          onSelected: (selected) {
-                            setState(() {
-                              _selectedCategory = eventType;
-                            });
-                          },
-                        ),
-                      ))
-                  .toList(),
-            ),
-          ),
           Expanded(
             child: StreamBuilder<List<Competition>>(
               stream: _dbService.competitionsStream,
@@ -74,37 +53,6 @@ class _CompetitionsScreenState extends State<CompetitionsScreen> {
                         .where((c) => c.category == _selectedCategory)
                         .toList();
 
-                if (filteredCompetitions.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.emoji_events_outlined,
-                          size: 64,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurface
-                              .withOpacity(0.4),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _selectedCategory == 'All'
-                              ? 'No competitions yet'
-                              : 'No $_selectedCategory competitions',
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurface
-                                        .withOpacity(0.6),
-                                  ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
                 return StreamBuilder<List<String>>(
                   stream: _dbService.userRegisteredCompetitionsStream,
                   builder: (context, regSnapshot) {
@@ -112,9 +60,27 @@ class _CompetitionsScreenState extends State<CompetitionsScreen> {
 
                     return ListView.builder(
                       padding: const EdgeInsets.all(16),
-                      itemCount: filteredCompetitions.length,
+                      itemCount:
+                          filteredCompetitions.isEmpty ? 3 : filteredCompetitions.length + 2,
                       itemBuilder: (context, index) {
-                        final competition = filteredCompetitions[index];
+                        if (index == 0) {
+                          return _EventFinderCard(
+                            onTap: () => _showEventFinder(context, competitions),
+                          );
+                        }
+                        if (index == 1) {
+                          return _CategoryFilters(
+                            selectedCategory: _selectedCategory,
+                            onChanged: (category) {
+                              setState(() => _selectedCategory = category);
+                            },
+                          );
+                        }
+                        if (filteredCompetitions.isEmpty) {
+                          return _NoCompetitionsCard(category: _selectedCategory);
+                        }
+
+                        final competition = filteredCompetitions[index - 2];
                         final isRegistered =
                             registeredIds.contains(competition.id);
                         return _CompetitionCard(
@@ -136,6 +102,23 @@ class _CompetitionsScreenState extends State<CompetitionsScreen> {
     );
   }
 
+  void _showEventFinder(BuildContext context, List<Competition> competitions) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _CompetitionFinderSheet(
+        competitions: competitions,
+        onOpenCompetition: (competition) {
+          Navigator.pop(context);
+          _showCompetitionDetails(context, competition, false);
+        },
+      ),
+    );
+  }
+
   void _showCompetitionDetails(
       BuildContext context, Competition competition, bool isRegistered) {
     showModalBottomSheet(
@@ -149,6 +132,500 @@ class _CompetitionsScreenState extends State<CompetitionsScreen> {
         isRegistered: isRegistered,
         dbService: _dbService,
       ),
+    );
+  }
+}
+
+class _EventFinderCard extends StatelessWidget {
+  const _EventFinderCard({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      color: theme.colorScheme.primaryContainer.withOpacity(0.7),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: theme.colorScheme.onPrimary,
+              child: const Icon(Icons.psychology_outlined),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Find my competitive event',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Take a quick quiz to match your strengths with events.',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+            FilledButton.tonalIcon(
+              onPressed: onTap,
+              icon: const Icon(Icons.auto_awesome),
+              label: const Text('Start'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryFilters extends StatelessWidget {
+  const _CategoryFilters({
+    required this.selectedCategory,
+    required this.onChanged,
+  });
+
+  final String selectedCategory;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    const categories = [
+      'All',
+      'Objective Tests',
+      'Presentation Events',
+      'Role Play Events',
+      'Chapter Events',
+      'Production Events',
+    ];
+    return SizedBox(
+      height: 50,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: categories
+            .map(
+              (eventType) => Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: FilterChip(
+                  label: Text(eventType),
+                  selected: selectedCategory == eventType,
+                  onSelected: (_) => onChanged(eventType),
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+}
+
+class _NoCompetitionsCard extends StatelessWidget {
+  const _NoCompetitionsCard({required this.category});
+
+  final String category;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48),
+      child: Column(
+        children: [
+          Icon(
+            Icons.emoji_events_outlined,
+            size: 64,
+            color: theme.colorScheme.onSurface.withOpacity(0.4),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            category == 'All' ? 'No competitions yet' : 'No $category competitions',
+            style: theme.textTheme.titleMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CompetitionFinderSheet extends StatefulWidget {
+  const _CompetitionFinderSheet({
+    required this.competitions,
+    required this.onOpenCompetition,
+  });
+
+  final List<Competition> competitions;
+  final ValueChanged<Competition> onOpenCompetition;
+
+  @override
+  State<_CompetitionFinderSheet> createState() => _CompetitionFinderSheetState();
+}
+
+class _CompetitionFinderSheetState extends State<_CompetitionFinderSheet> {
+  int _step = 0;
+  String? _interest;
+  String? _format;
+  String? _workStyle;
+  String? _strength;
+
+  List<_FinderQuestion> get _questions => [
+        _FinderQuestion(
+          prompt: 'What sounds most interesting?',
+          options: const [
+            'Business strategy',
+            'Technology',
+            'Finance',
+            'Marketing',
+            'Public speaking',
+            'Leadership',
+          ],
+          value: _interest,
+          onSelected: (value) => setState(() => _interest = value),
+        ),
+        _FinderQuestion(
+          prompt: 'What competition format feels best?',
+          options: const [
+            'Test',
+            'Presentation',
+            'Role play',
+            'Project',
+            'Writing or production',
+          ],
+          value: _format,
+          onSelected: (value) => setState(() => _format = value),
+        ),
+        _FinderQuestion(
+          prompt: 'How do you like to compete?',
+          options: const [
+            'Solo',
+            'With a partner',
+            'Team project',
+            'Chapter-wide',
+          ],
+          value: _workStyle,
+          onSelected: (value) => setState(() => _workStyle = value),
+        ),
+        _FinderQuestion(
+          prompt: 'Pick your strongest skill.',
+          options: const [
+            'Analyzing information',
+            'Building or designing',
+            'Persuading people',
+            'Organizing details',
+            'Thinking fast',
+          ],
+          value: _strength,
+          onSelected: (value) => setState(() => _strength = value),
+        ),
+      ];
+
+  bool get _complete => _questions.every((question) => question.value != null);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.86,
+        minChildSize: 0.5,
+        maxChildSize: 0.96,
+        builder: (context, controller) {
+          final question = _questions[_step];
+          final matches = _complete ? _rankMatches() : <_CompetitionMatch>[];
+
+          return ListView(
+            controller: controller,
+            padding: const EdgeInsets.all(20),
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Icon(Icons.psychology_outlined, color: theme.colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Competition Matchmaker',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Answer a few quick questions and get event recommendations.',
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 20),
+              LinearProgressIndicator(value: (_step + 1) / _questions.length),
+              const SizedBox(height: 16),
+              _ChatBubble(
+                text: question.prompt,
+                mine: false,
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: question.options
+                    .map(
+                      (option) => ChoiceChip(
+                        label: Text(option),
+                        selected: question.value == option,
+                        onSelected: (_) {
+                          question.onSelected(option);
+                          if (_step < _questions.length - 1) {
+                            setState(() => _step += 1);
+                          }
+                        },
+                      ),
+                    )
+                    .toList(),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _step == 0 ? null : () => setState(() => _step -= 1),
+                    icon: const Icon(Icons.arrow_back),
+                    label: const Text('Back'),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
+                    onPressed: _reset,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Reset'),
+                  ),
+                ],
+              ),
+              if (_complete) ...[
+                const SizedBox(height: 24),
+                Text(
+                  'Recommended events',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                if (matches.isEmpty)
+                  const _FinderEmptyState()
+                else
+                  ...matches.take(5).map(
+                        (match) => Card(
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              child: Text('${match.score}%'),
+                            ),
+                            title: Text(match.competition.name),
+                            subtitle: Text(match.reason),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () => widget.onOpenCompetition(match.competition),
+                          ),
+                        ),
+                      ),
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _reset() {
+    setState(() {
+      _step = 0;
+      _interest = null;
+      _format = null;
+      _workStyle = null;
+      _strength = null;
+    });
+  }
+
+  List<_CompetitionMatch> _rankMatches() {
+    final matches = widget.competitions.map((competition) {
+      final text = '${competition.name} ${competition.category} '
+              '${competition.description} ${competition.level}'
+          .toLowerCase();
+      var score = 30;
+      final reasons = <String>[];
+
+      void addIf(bool condition, int points, String reason) {
+        if (!condition) return;
+        score += points;
+        reasons.add(reason);
+      }
+
+      addIf(_format == 'Test' && competition.category.contains('Objective'), 20,
+          'matches your test preference');
+      addIf(_format == 'Presentation' && competition.category.contains('Presentation'),
+          20, 'matches your presentation preference');
+      addIf(_format == 'Role play' && competition.category.contains('Role Play'), 20,
+          'matches your role play preference');
+      addIf(_format == 'Project' &&
+          (competition.category.contains('Chapter') ||
+              text.contains('project') ||
+              text.contains('design')), 18, 'fits project-based work');
+      addIf(_format == 'Writing or production' &&
+          (competition.category.contains('Production') ||
+              text.contains('word') ||
+              text.contains('spreadsheet') ||
+              text.contains('publication')), 18, 'fits production work');
+
+      addIf(_interest == 'Technology' &&
+          (text.contains('technology') ||
+              text.contains('computer') ||
+              text.contains('coding') ||
+              text.contains('app') ||
+              text.contains('digital')), 18, 'connects to technology');
+      addIf(_interest == 'Finance' &&
+          (text.contains('finance') ||
+              text.contains('accounting') ||
+              text.contains('banking') ||
+              text.contains('securities')), 18, 'connects to finance');
+      addIf(_interest == 'Marketing' &&
+          (text.contains('marketing') ||
+              text.contains('advertising') ||
+              text.contains('sales')), 18, 'connects to marketing');
+      addIf(_interest == 'Business strategy' &&
+          (text.contains('business') ||
+              text.contains('management') ||
+              text.contains('entrepreneurship')), 18, 'connects to business strategy');
+      addIf(_interest == 'Public speaking' &&
+          (text.contains('speaking') ||
+              text.contains('presentation') ||
+              text.contains('public')), 18, 'uses public speaking');
+      addIf(_interest == 'Leadership' &&
+          (text.contains('leadership') ||
+              text.contains('chapter') ||
+              text.contains('community')), 18, 'connects to leadership');
+
+      addIf(_workStyle == 'Solo' && competition.maxTeamSize == 1, 10,
+          'works well solo');
+      addIf(_workStyle == 'With a partner' && competition.maxTeamSize <= 2, 10,
+          'works well with a partner');
+      addIf(_workStyle == 'Team project' && competition.maxTeamSize >= 3, 10,
+          'supports team competition');
+      addIf(_workStyle == 'Chapter-wide' && competition.category.contains('Chapter'),
+          12, 'fits chapter-wide involvement');
+
+      addIf(_strength == 'Analyzing information' &&
+          (competition.category.contains('Objective') ||
+              text.contains('analysis') ||
+              text.contains('case')), 12, 'rewards analysis');
+      addIf(_strength == 'Building or designing' &&
+          (text.contains('design') ||
+              text.contains('app') ||
+              text.contains('website') ||
+              text.contains('production')), 12, 'uses building/design skills');
+      addIf(_strength == 'Persuading people' &&
+          (competition.category.contains('Presentation') ||
+              text.contains('marketing') ||
+              text.contains('sales')), 12, 'rewards persuasion');
+      addIf(_strength == 'Organizing details' &&
+          (text.contains('management') ||
+              text.contains('planning') ||
+              text.contains('administrative')), 12, 'rewards organization');
+      addIf(_strength == 'Thinking fast' &&
+          (competition.category.contains('Role Play') ||
+              text.contains('impromptu') ||
+              text.contains('case')), 12, 'rewards quick thinking');
+
+      return _CompetitionMatch(
+        competition: competition,
+        score: score.clamp(1, 99).toInt(),
+        reason: reasons.take(3).join(', '),
+      );
+    }).toList();
+
+    matches.sort((a, b) => b.score.compareTo(a.score));
+    return matches;
+  }
+}
+
+class _FinderQuestion {
+  final String prompt;
+  final List<String> options;
+  final String? value;
+  final ValueChanged<String> onSelected;
+
+  const _FinderQuestion({
+    required this.prompt,
+    required this.options,
+    required this.value,
+    required this.onSelected,
+  });
+}
+
+class _CompetitionMatch {
+  final Competition competition;
+  final int score;
+  final String reason;
+
+  const _CompetitionMatch({
+    required this.competition,
+    required this.score,
+    required this.reason,
+  });
+}
+
+class _ChatBubble extends StatelessWidget {
+  const _ChatBubble({required this.text, required this.mine});
+
+  final String text;
+  final bool mine;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Align(
+      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 320),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: mine
+              ? theme.colorScheme.primaryContainer
+              : theme.colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(text),
+      ),
+    );
+  }
+}
+
+class _FinderEmptyState extends StatelessWidget {
+  const _FinderEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 20),
+      child: Center(child: Text('Sync competitions first, then try the finder.')),
     );
   }
 }
