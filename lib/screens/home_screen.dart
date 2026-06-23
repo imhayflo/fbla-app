@@ -16,7 +16,9 @@ import '../models/event.dart';
 import '../models/announcement.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final int initialIndex;
+
+  const HomeScreen({super.key, this.initialIndex = 0});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -33,6 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedIndex = widget.initialIndex;
     // Pre-create all screens so their StreamBuilders connect early
     _screens = [
       DashboardTab(navigateToTab: _onItemTapped),

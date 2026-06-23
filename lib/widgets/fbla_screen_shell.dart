@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 /// Plain content layer matching the clean prototype screens.
 class FblaScreenShell extends StatelessWidget {
   final Widget child;
@@ -7,9 +8,8 @@ class FblaScreenShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final surface = Theme.of(context).scaffoldBackgroundColor;
     return ColoredBox(
-      color: surface,
+      color: Colors.white,
       child: child,
     );
   }

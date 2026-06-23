@@ -4,6 +4,187 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/fbla_colors.dart';
 
+void showFblaPrototypeMenu(
+  BuildContext context, {
+  required ValueChanged<int> onNavigate,
+}) {
+  showGeneralDialog<void>(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: 'Close menu',
+    barrierColor: Colors.black.withOpacity(0.28),
+    transitionDuration: const Duration(milliseconds: 260),
+    pageBuilder: (context, animation, secondaryAnimation) {
+      return _FblaPrototypeMenuOverlay(onNavigate: onNavigate);
+    },
+    transitionBuilder: (context, animation, secondaryAnimation, child) {
+      final offset = Tween<Offset>(
+        begin: const Offset(1, 0),
+        end: Offset.zero,
+      ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
+      return SlideTransition(position: offset, child: child);
+    },
+  );
+}
+
+class FblaPrototypeHeaderMark extends StatelessWidget {
+  const FblaPrototypeHeaderMark({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.local_fire_department, color: Color(0xFFD5A84F), size: 42),
+        Icon(Icons.emoji_events_outlined, color: Color(0xFFD5A84F), size: 25),
+      ],
+    );
+  }
+}
+
+class _FblaPrototypeMenuOverlay extends StatelessWidget {
+  const _FblaPrototypeMenuOverlay({required this.onNavigate});
+
+  final ValueChanged<int> onNavigate;
+
+  @override
+  Widget build(BuildContext context) {
+    const items = [
+      ('Competitions', 3, false),
+      ('News', 2, false),
+      ('Events', 1, false),
+      ('Your Profile', 5, false),
+      ('Calendar', 1, false),
+      ('Messages', 4, false),
+      ('Pin Trading Hub', 4, false),
+      ('Guide', 0, false),
+      ('Resources', 0, false),
+      ('Settings', 5, true),
+    ];
+
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Material(
+        color: Colors.transparent,
+        child: SafeArea(
+          child: Container(
+            width: MediaQuery.sizeOf(context).width * 0.72,
+            margin: const EdgeInsets.fromLTRB(0, 18, 0, 18),
+            padding: const EdgeInsets.fromLTRB(22, 18, 22, 0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(8),
+                bottomLeft: Radius.circular(8),
+              ),
+              border: Border.all(color: const Color(0xFFD8D8D8)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.16),
+                  blurRadius: 28,
+                  offset: const Offset(0, 16),
+                ),
+              ],
+            ),
+            child: ListView(
+              children: [
+                const Text(
+                  'FBLA-LINK',
+                  style: TextStyle(
+                    color: FblaColors.text,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 19,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Divider(height: 1),
+                const SizedBox(height: 14),
+                ...items.map(
+                  (item) => _FblaMenuItem(
+                    label: item.$1,
+                    dark: item.$3,
+                    onTap: () => onNavigate(item.$2),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FblaMenuItem extends StatelessWidget {
+  const _FblaMenuItem({
+    required this.label,
+    required this.onTap,
+    this.dark = false,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+  final bool dark;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = dark ? Colors.white : FblaColors.text;
+    final secondary = dark ? Colors.white70 : FblaColors.muted;
+    return Material(
+      color: dark ? FblaColors.text : Colors.white,
+      borderRadius: BorderRadius.circular(dark ? 8 : 0),
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            border: dark
+                ? null
+                : const Border(
+                    bottom: BorderSide(color: Color(0xFFE0E0E0)),
+                  ),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.star_border, color: foreground, size: 25),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: foreground,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      'Menu description.',
+                      style: TextStyle(color: secondary, fontSize: 15),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.home_outlined, color: foreground, size: 18),
+              Text(
+                'A',
+                style: TextStyle(
+                  color: foreground,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class PaintStrokeReveal extends StatelessWidget {
   const PaintStrokeReveal({
     super.key,
