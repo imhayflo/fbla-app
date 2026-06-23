@@ -18,9 +18,9 @@ class FblaAppBar {
       leading: leading ??
           (canPop
               ? null
-              : Padding(
-                  padding: const EdgeInsets.only(left: 12, top: 10, bottom: 10),
-                  child: Image.asset('assets/fbla_logo.png', fit: BoxFit.contain),
+              : const Padding(
+                  padding: EdgeInsets.only(left: 14),
+                  child: _AppBarTorchMark(),
                 )),
       title: Text(
         title,
@@ -37,6 +37,29 @@ class FblaAppBar {
       shadowColor: Colors.transparent,
       scrolledUnderElevation: 0,
       actions: actions,
+    );
+  }
+}
+
+class _AppBarTorchMark extends StatelessWidget {
+  const _AppBarTorchMark();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 34,
+      height: 34,
+      child: Stack(
+        alignment: Alignment.center,
+        children: const [
+          Icon(Icons.emoji_events, color: FblaColors.goldDeep, size: 26),
+          Positioned(
+            top: 0,
+            child: Icon(Icons.local_fire_department,
+                color: FblaColors.gold, size: 18),
+          ),
+        ],
+      ),
     );
   }
 }

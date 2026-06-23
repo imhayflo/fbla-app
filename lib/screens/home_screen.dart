@@ -9,7 +9,6 @@ import 'package:fbla_member_app/screens/social_screen.dart';
 import 'package:fbla_member_app/screens/instructions_screen.dart';
 import 'package:fbla_member_app/theme/app_theme.dart';
 import 'package:fbla_member_app/theme/fbla_colors.dart';
-import 'package:fbla_member_app/widgets/fbla_atmospheric_background.dart';
 import '../services/database_service.dart';
 import '../models/member.dart';
 import '../models/event.dart';
@@ -23,7 +22,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 1; // Start on Guide page instead of Home
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  int _selectedIndex = 0;
   DateTime? _initialEventDate;
   String? _initialAnnouncementId;
 
@@ -35,7 +35,10 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     // Pre-create all screens so their StreamBuilders connect early
     _screens = [
-      DashboardTab(navigateToTab: _onItemTapped),
+      DashboardTab(
+        navigateToTab: _onItemTapped,
+        openMenu: () => _scaffoldKey.currentState?.openEndDrawer(),
+      ),
       const InstructionsScreen(),
       EventsScreen(initialDate: _initialEventDate),
       AnnouncementsScreen(initialAnnouncementId: _initialAnnouncementId),
@@ -65,100 +68,38 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final navBg = theme.colorScheme.surface;
-    final navBorder = theme.colorScheme.outlineVariant;
-
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          const FblaAtmosphericBackground(),
-          IndexedStack(
-            index: _selectedIndex,
-            children: _screens,
-          ),
-        ],
+      key: _scaffoldKey,
+      backgroundColor: Colors.white,
+      endDrawer: _PrototypeMenuDrawer(
+        selectedIndex: _selectedIndex,
+        onSelect: (index) {
+          Navigator.pop(context);
+          _onItemTapped(index);
+        },
       ),
-      bottomNavigationBar: ClipRect(
-        child: Container(
-            decoration: BoxDecoration(
-              color: navBg,
-              border: Border(
-                top: BorderSide(color: navBorder),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 12,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            child: NavigationBarTheme(
-              data: NavigationBarThemeData(
-                backgroundColor: navBg,
-                indicatorColor: theme.colorScheme.primary.withOpacity(0.16),
-              ),
-              child: NavigationBar(
-                selectedIndex: _selectedIndex,
-                onDestinationSelected: (index) => _onItemTapped(index),
-                destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.menu_book_outlined),
-            selectedIcon: Icon(Icons.menu_book),
-            label: 'Guide',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_today_outlined),
-            selectedIcon: Icon(Icons.calendar_today),
-            label: 'Calendar',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.announcement_outlined),
-            selectedIcon: Icon(Icons.announcement),
-            label: 'News',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.emoji_events_outlined),
-            selectedIcon: Icon(Icons.emoji_events),
-            label: 'Compete',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.share_outlined),
-            selectedIcon: Icon(Icons.share),
-            label: 'Social',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-                ],
-              ),
-            ),
-          ),
-        ),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _screens,
+      ),
     );
   }
 }
 
 class DashboardTab extends StatelessWidget {
   final void Function(int index, {DateTime? eventDate, String? announcementId}) navigateToTab;
+  final VoidCallback openMenu;
 
-  const DashboardTab({super.key, required this.navigateToTab});
+  const DashboardTab({
+    super.key,
+    required this.navigateToTab,
+    required this.openMenu,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final stats = theme.fblaStats;
     final dbService = DatabaseService();
     final dateFormat = DateFormat('MMM d, yyyy');
     final dashBg = FblaColors.navy;
@@ -176,14 +117,20 @@ class DashboardTab extends StatelessWidget {
         foregroundColor: FblaColors.navy,
         elevation: 0,
         shadowColor: Colors.transparent,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 12, top: 10, bottom: 10),
-          child: Image.asset('assets/fbla_logo.png', fit: BoxFit.contain),
+        leading: const Padding(
+          padding: EdgeInsets.only(left: 14),
+          child: _PrototypeMark(),
         ),
         title: const SizedBox.shrink(),
+        actions: [
+          IconButton(
+            onPressed: openMenu,
+            icon: const Icon(Icons.menu),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        padding: EdgeInsets.zero,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -195,9 +142,9 @@ class DashboardTab extends StatelessWidget {
 
                 return SizedBox(
                   width: double.infinity,
-                  height: 360,
+                  height: 520,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 28),
+                    padding: const EdgeInsets.symmetric(horizontal: 28),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -215,19 +162,24 @@ class DashboardTab extends StatelessWidget {
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
+                            fontSize: 28,
                             height: 1.1,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 10),
                         Text(
-                          'See what categories',
+                          'See what you\'ve missed.',
                           textAlign: TextAlign.center,
                           style: theme.textTheme.bodyLarge?.copyWith(
                             color: FblaColors.gold,
+                            fontSize: 18,
                           ),
                         ),
-                        const SizedBox(height: 18),
-                        FilledButton(
+                        const SizedBox(height: 24),
+                        SizedBox(
+                          width: 146,
+                          height: 40,
+                          child: FilledButton(
                           onPressed: () => navigateToTab(4),
                           style: FilledButton.styleFrom(
                             backgroundColor: const Color(0xFF2563EB),
@@ -240,7 +192,8 @@ class DashboardTab extends StatelessWidget {
                               borderRadius: BorderRadius.circular(4),
                             ),
                           ),
-                          child: const Text('View'),
+                            child: const Text('Let\'s Go!'),
+                          ),
                         ),
                       ],
                     ),
@@ -248,7 +201,7 @@ class DashboardTab extends StatelessWidget {
                 );
               },
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 0),
 
             StreamBuilder<List<Event>>(
               stream: dbService.eventsStream,
@@ -261,92 +214,7 @@ class DashboardTab extends StatelessWidget {
                 );
               },
             ),
-
-            Text('Your Activity', style: sectionHeaderStyle),
-            const SizedBox(height: 16),
-            StreamBuilder<Member?>(
-              stream: dbService.memberStream,
-              builder: (context, snapshot) {
-                final member = snapshot.data;
-                return Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _StatCard(
-                            title: 'Events',
-                            value: '${member?.eventsAttended ?? 0}',
-                            icon: Icons.event,
-                            color: stats.events,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: StreamBuilder<List<String>>(
-                            stream: dbService.userRegisteredCompetitionsStream,
-                            builder: (context, regCompsSnapshot) {
-                              final regCompCount = regCompsSnapshot.data?.length ?? 0;
-                              return _StatCard(
-                                title: 'Competitions',
-                                value: '$regCompCount',
-                                icon: Icons.emoji_events,
-                                color: stats.competitions,
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _StatCard(
-                            title: 'Points',
-                            value: '${member?.points ?? 0}',
-                            icon: Icons.star,
-                            color: stats.points,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: StreamBuilder<List<Member>>(
-                            stream: dbService.getAllMembersSortedByPoints(),
-                            builder: (context, snapshot) {
-                              if (!snapshot.hasData) {
-                                return _StatCard(
-                                  title: 'Rank',
-                                  value: '-',
-                                  icon: Icons.leaderboard,
-                                  color: stats.rank,
-                                );
-                              }
-                              final members = snapshot.data!;
-                              // Find current user's rank
-                              final currentUid = member?.uid;
-                              int userRank = 0;
-                              for (int i = 0; i < members.length; i++) {
-                                if (members[i].uid == currentUid) {
-                                  userRank = i + 1;
-                                  break;
-                                }
-                              }
-                              return _StatCard(
-                                title: 'Rank',
-                                value: userRank > 0 ? '#$userRank' : '-',
-                                icon: Icons.leaderboard,
-                                color: stats.rank,
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 24),
+            const _PrototypeMessagesSection(),
 
             // Upcoming Events
             Row(
@@ -598,6 +466,254 @@ class DashboardTab extends StatelessWidget {
       default:
         return Colors.green;
     }
+  }
+}
+
+class _PrototypeMark extends StatelessWidget {
+  const _PrototypeMark();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 34,
+      height: 34,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Icon(Icons.emoji_events, color: FblaColors.goldDeep, size: 26),
+          Positioned(
+            top: 0,
+            child: Icon(Icons.local_fire_department,
+                color: FblaColors.gold, size: 18),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PrototypeMenuDrawer extends StatelessWidget {
+  const _PrototypeMenuDrawer({
+    required this.selectedIndex,
+    required this.onSelect,
+  });
+
+  final int selectedIndex;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      _MenuItem('Competitions', 'Menu description.', 4),
+      _MenuItem('News', 'Menu description.', 3),
+      _MenuItem('Events', 'Menu description.', 2),
+      _MenuItem('Your Profile', 'Menu description.', 6),
+      _MenuItem('Calendar', 'Menu description.', 2),
+      _MenuItem('Messages', 'Menu description.', 5),
+      _MenuItem('Pin Trading Hub', 'Menu description.', 5),
+      _MenuItem('Guide', 'Menu description.', 1),
+      _MenuItem('Resources', 'Menu description.', 1),
+      _MenuItem('Settings', 'Menu description.', 6),
+    ];
+
+    return Drawer(
+      width: 250,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(),
+      child: SafeArea(
+        child: Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 14, 16, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'FBLA-LINK',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF111827),
+                  ),
+                ),
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  final item = items[index];
+                  final selected = item.index == selectedIndex ||
+                      (item.title == 'Settings' && selectedIndex == 6);
+                  return _PrototypeDrawerTile(
+                    item: item,
+                    selected: selected && item.title == 'Settings',
+                    onTap: () => onSelect(item.index),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PrototypeMessagesSection extends StatelessWidget {
+  const _PrototypeMessagesSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          Text(
+            'Messages',
+            style: TextStyle(
+              fontSize: 22,
+              height: 1,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF111827),
+            ),
+          ),
+          SizedBox(height: 14),
+          _PrototypeMessageCard(
+            text: 'Hey, what have you been using to study for Data Science & AI?',
+          ),
+          SizedBox(height: 12),
+          _PrototypeMessageCard(
+            text: 'Did you have the time to go and get your California pin?',
+          ),
+          SizedBox(height: 12),
+          _PrototypeMessageCard(
+            text: 'I placed 3rd at States for my competition.',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PrototypeMessageCard extends StatelessWidget {
+  const _PrototypeMessageCard({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Color(0xFFE5E7EB)),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            text,
+            style: const TextStyle(
+              color: Color(0xFF111827),
+              fontSize: 15,
+              height: 1.1,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: const [
+              CircleAvatar(
+                radius: 12,
+                backgroundColor: Color(0xFFEAF1FA),
+                child: Icon(Icons.person, size: 15, color: FblaColors.navy),
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Name',
+                style: TextStyle(
+                  color: Color(0xFF6B7280),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MenuItem {
+  final String title;
+  final String subtitle;
+  final int index;
+
+  const _MenuItem(this.title, this.subtitle, this.index);
+}
+
+class _PrototypeDrawerTile extends StatelessWidget {
+  const _PrototypeDrawerTile({
+    required this.item,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _MenuItem item;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = selected ? const Color(0xFF2F3136) : Colors.white;
+    final fg = selected ? Colors.white : const Color(0xFF111827);
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        color: bg,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+        child: Row(
+          children: [
+            Icon(Icons.star_border, size: 18, color: fg),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    style: TextStyle(
+                      color: fg,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    item.subtitle,
+                    style: TextStyle(
+                      color: selected ? Colors.white70 : const Color(0xFF6B7280),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.home_outlined, color: fg, size: 15),
+            const SizedBox(width: 2),
+            Text('A', style: TextStyle(color: fg, fontSize: 11)),
+          ],
+        ),
+      ),
+    );
   }
 }
 

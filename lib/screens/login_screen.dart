@@ -183,6 +183,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 Form(
                   key: _formKey,
+                  child: Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: const Color(0xFFE5E7EB)),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -228,10 +235,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 8),
                         Align(
-                          alignment: Alignment.centerRight,
+                          alignment: Alignment.centerLeft,
                           child: TextButton(
+                            style: TextButton.styleFrom(
+                              foregroundColor: const Color(0xFF111827),
+                              padding: EdgeInsets.zero,
+                              minimumSize: const Size(0, 32),
+                              textStyle: const TextStyle(fontSize: 11),
+                            ),
                             onPressed: _resetPassword,
-                            child: const Text('Forgot Password?'),
+                            child: const Text('Forgot password?'),
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -257,7 +270,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   )
                                 : const Text(
-                                    'Login',
+                                    'Sign In',
                                     style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w600),
@@ -266,6 +279,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ],
                     ),
+                  ),
                 ),
                 const SizedBox(height: 18),
                 Row(
