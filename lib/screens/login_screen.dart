@@ -339,49 +339,67 @@ class _EntryScreen extends StatelessWidget {
                 const _LoginBackdrop(),
                 Padding(
                   padding: const EdgeInsets.all(28),
-                  child: Column(
-                    children: [
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 18,
+                  child: SizedBox.expand(
+                    child: Stack(
+                      children: [
+                        Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 18,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(30),
+                                  border:
+                                      Border.all(color: Colors.white, width: 2),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color:
+                                          FblaColors.navy.withOpacity(0.14),
+                                      blurRadius: 32,
+                                      offset: const Offset(0, 16),
+                                    ),
+                                  ],
+                                ),
+                                child: Image.asset(
+                                  'assets/fbla_logo.png',
+                                  height: 104,
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                              const Text(
+                                'The Official* FBLA Member App',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: FblaColors.text,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(color: Colors.white, width: 2),
-                          boxShadow: [
-                            BoxShadow(
-                              color: FblaColors.navy.withOpacity(0.14),
-                              blurRadius: 32,
-                              offset: const Offset(0, 16),
+                        const Align(
+                          alignment: Alignment.bottomCenter,
+                          child: Padding(
+                            padding: EdgeInsets.only(bottom: 28),
+                            child: Text(
+                              'Tap Anywhere to Start',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: FblaColors.text,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
-                          ],
+                          ),
                         ),
-                        child: Image.asset('assets/fbla_logo.png', height: 104),
-                      ),
-                      const SizedBox(height: 18),
-                      const Text(
-                        'The Official* FBLA Member App',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: FblaColors.text,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const Spacer(),
-                      const Text(
-                        'Tap Anywhere to Start',
-                        style: TextStyle(
-                          color: FblaColors.text,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ],
