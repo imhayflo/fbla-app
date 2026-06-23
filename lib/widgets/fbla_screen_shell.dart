@@ -7,7 +7,7 @@ class FblaScreenShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final surface = Theme.of(context).colorScheme.surface;
+    final surface = Theme.of(context).scaffoldBackgroundColor;
     return ColoredBox(
       color: surface,
       child: child,

@@ -5,6 +5,7 @@ import 'package:fbla_member_app/services/database_service.dart';
 import 'package:fbla_member_app/services/social_service.dart';
 import 'package:fbla_member_app/widgets/fbla_app_bar.dart';
 import 'package:fbla_member_app/widgets/fbla_screen_shell.dart';
+import 'package:fbla_member_app/widgets/app_chrome.dart';
 
 class SocialScreen extends StatefulWidget {
   const SocialScreen({super.key});
@@ -35,10 +36,33 @@ class _SocialScreenState extends State<SocialScreen> {
       length: 3,
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: FblaAppBar.standard(context, title: 'Social'),
+        appBar: FblaAppBar.standard(
+          context,
+          title: 'Social',
+          actions: const [
+            AppHelpButton(
+              title: 'Connect with FBLA members',
+              tips: [
+                'Use Socials for official links, Messages for requests and chats, and Pins for trading listings.',
+                'Pin trading and messaging are built around requests so members stay in control.',
+              ],
+            ),
+          ],
+        ),
         body: FblaScreenShell(
           child: Column(
             children: [
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: AppInstructionCard(
+                  id: 'social',
+                  title: 'Connect with FBLA members',
+                  tips: [
+                    'Use Socials for official links, Messages for member requests and chats, and Pins for trading listings.',
+                    'Pin trading and messaging are built around requests so members stay in control.',
+                  ],
+                ),
+              ),
               const TabBar(
                 tabs: [
                   Tab(icon: Icon(Icons.public), text: 'Socials'),

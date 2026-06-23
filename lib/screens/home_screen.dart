@@ -6,9 +6,8 @@ import 'package:fbla_member_app/screens/announcements_screen.dart';
 import 'package:fbla_member_app/screens/profile_screen.dart';
 import 'package:fbla_member_app/screens/competitions_screen.dart';
 import 'package:fbla_member_app/screens/social_screen.dart';
-import 'package:fbla_member_app/screens/instructions_screen.dart';
-import 'package:fbla_member_app/theme/app_theme.dart';
 import 'package:fbla_member_app/theme/fbla_colors.dart';
+import 'package:fbla_member_app/widgets/app_chrome.dart';
 import '../services/database_service.dart';
 import '../models/member.dart';
 import '../models/event.dart';
@@ -22,7 +21,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
   DateTime? _initialEventDate;
   String? _initialAnnouncementId;
@@ -35,11 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     // Pre-create all screens so their StreamBuilders connect early
     _screens = [
-      DashboardTab(
-        navigateToTab: _onItemTapped,
-        openMenu: () => _scaffoldKey.currentState?.openEndDrawer(),
-      ),
-      const InstructionsScreen(),
+      DashboardTab(navigateToTab: _onItemTapped),
       EventsScreen(initialDate: _initialEventDate),
       AnnouncementsScreen(initialAnnouncementId: _initialAnnouncementId),
       const CompetitionsScreen(),
@@ -68,19 +62,63 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      key: _scaffoldKey,
-      backgroundColor: Colors.white,
-      endDrawer: _PrototypeMenuDrawer(
-        selectedIndex: _selectedIndex,
-        onSelect: (index) {
-          Navigator.pop(context);
-          _onItemTapped(index);
-        },
-      ),
+      backgroundColor: FblaColors.paper,
       body: IndexedStack(
         index: _selectedIndex,
         children: _screens,
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(
+            top: BorderSide(color: theme.colorScheme.outlineVariant),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 18,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: NavigationBar(
+          selectedIndex: _selectedIndex,
+          onDestinationSelected: _onItemTapped,
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.dashboard_outlined),
+              selectedIcon: Icon(Icons.dashboard_rounded),
+              label: 'Home',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.calendar_today_outlined),
+              selectedIcon: Icon(Icons.calendar_today_rounded),
+              label: 'Calendar',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.campaign_outlined),
+              selectedIcon: Icon(Icons.campaign_rounded),
+              label: 'News',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.emoji_events_outlined),
+              selectedIcon: Icon(Icons.emoji_events_rounded),
+              label: 'Compete',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.people_alt_outlined),
+              selectedIcon: Icon(Icons.people_alt_rounded),
+              label: 'Social',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.person_outline),
+              selectedIcon: Icon(Icons.person_rounded),
+              label: 'Profile',
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -88,13 +126,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class DashboardTab extends StatelessWidget {
   final void Function(int index, {DateTime? eventDate, String? announcementId}) navigateToTab;
-  final VoidCallback openMenu;
 
-  const DashboardTab({
-    super.key,
-    required this.navigateToTab,
-    required this.openMenu,
-  });
+  const DashboardTab({super.key, required this.navigateToTab});
 
   @override
   Widget build(BuildContext context) {
@@ -102,106 +135,132 @@ class DashboardTab extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final dbService = DatabaseService();
     final dateFormat = DateFormat('MMM d, yyyy');
-    final dashBg = FblaColors.navy;
-    final dashFg = Colors.white;
     final sectionHeaderStyle = theme.textTheme.titleLarge?.copyWith(
       fontWeight: FontWeight.bold,
-      color: Colors.white,
+      color: const Color(0xFF111827),
     );
 
     return Scaffold(
-      backgroundColor: dashBg,
+      backgroundColor: FblaColors.paper,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: FblaColors.paper,
         surfaceTintColor: Colors.transparent,
         foregroundColor: FblaColors.navy,
         elevation: 0,
         shadowColor: Colors.transparent,
-        leading: const Padding(
-          padding: EdgeInsets.only(left: 14),
-          child: _PrototypeMark(),
+        titleSpacing: 20,
+        title: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: FblaColors.gold.withOpacity(0.8)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(5),
+                child: Image.asset('assets/fbla_logo.png', fit: BoxFit.contain),
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Text('FBLA Dashboard'),
+          ],
         ),
-        title: const SizedBox.shrink(),
         actions: [
           IconButton(
-            onPressed: openMenu,
-            icon: const Icon(Icons.menu),
+            tooltip: 'Help',
+            onPressed: () {
+              showModalBottomSheet<void>(
+                context: context,
+                showDragHandle: true,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                builder: (context) => const Padding(
+                  padding: EdgeInsets.fromLTRB(24, 8, 24, 28),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Welcome to your dashboard',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: FblaColors.navy,
+                        ),
+                      ),
+                      SizedBox(height: 14),
+                      Text('Track your FBLA activity, upcoming events, and recent announcements from one clean home base.'),
+                      SizedBox(height: 12),
+                      Text('Use the bottom navigation to move between Calendar, News, Compete, Social, and Profile.'),
+                    ],
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.info_outline),
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.zero,
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const AppInstructionCard(
+              id: 'home',
+              title: 'Welcome to your dashboard',
+              tips: [
+                'Track your FBLA activity, upcoming events, and recent announcements from one clean home base.',
+                'Use the bottom navigation to move between Calendar, News, Compete, Social, and Profile.',
+              ],
+            ),
             StreamBuilder<Member?>(
               stream: dbService.memberStream,
               builder: (context, snapshot) {
                 final member = snapshot.data;
                 final name = member?.name.split(' ').first ?? 'Member';
 
-                return SizedBox(
+                return Container(
                   width: double.infinity,
-                  height: 520,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 28),
+                  padding: const EdgeInsets.all(22),
+                  decoration: BoxDecoration(
+                    color: FblaColors.navy,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: FblaColors.navy.withOpacity(0.22),
+                        blurRadius: 24,
+                        offset: const Offset(0, 12),
+                      ),
+                    ],
+                  ),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Image.asset(
-                          'assets/fbla_logo.png',
-                          width: 210,
-                          fit: BoxFit.contain,
-                          color: Colors.white.withOpacity(0.12),
-                          colorBlendMode: BlendMode.srcATop,
-                        ),
-                        const SizedBox(height: 24),
                         Text(
-                          'Welcome back,\n$name',
-                          textAlign: TextAlign.center,
+                          'Welcome back, $name!',
                           style: theme.textTheme.headlineSmall?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
-                            fontSize: 28,
-                            height: 1.1,
                           ),
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 8),
                         Text(
-                          'See what you\'ve missed.',
-                          textAlign: TextAlign.center,
+                          'Stay connected with your chapter',
                           style: theme.textTheme.bodyLarge?.copyWith(
-                            color: FblaColors.gold,
-                            fontSize: 18,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        SizedBox(
-                          width: 146,
-                          height: 40,
-                          child: FilledButton(
-                          onPressed: () => navigateToTab(4),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF2563EB),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 26,
-                              vertical: 10,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                            child: const Text('Let\'s Go!'),
+                            color: Colors.white.withOpacity(0.88),
                           ),
                         ),
                       ],
                     ),
-                  ),
                 );
               },
             ),
-            const SizedBox(height: 0),
+            const SizedBox(height: 24),
 
             StreamBuilder<List<Event>>(
               stream: dbService.eventsStream,
@@ -214,21 +273,87 @@ class DashboardTab extends StatelessWidget {
                 );
               },
             ),
-            const _PrototypeMessagesSection(),
+            Text('Your Activity', style: sectionHeaderStyle),
+            const SizedBox(height: 14),
+            StreamBuilder<Member?>(
+              stream: dbService.memberStream,
+              builder: (context, snapshot) {
+                final member = snapshot.data;
+                return Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _StatCard(
+                            title: 'Events',
+                            value: '${member?.eventsAttended ?? 0}',
+                            icon: Icons.event_available_outlined,
+                            color: FblaColors.navy,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: StreamBuilder<List<String>>(
+                            stream: dbService.userRegisteredCompetitionsStream,
+                            builder: (context, regCompsSnapshot) {
+                              return _StatCard(
+                                title: 'Competitions',
+                                value: '${regCompsSnapshot.data?.length ?? 0}',
+                                icon: Icons.emoji_events_outlined,
+                                color: FblaColors.goldDeep,
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _StatCard(
+                            title: 'Points',
+                            value: '${member?.points ?? 0}',
+                            icon: Icons.star_outline,
+                            color: const Color(0xFFD97706),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: StreamBuilder<List<Member>>(
+                            stream: dbService.getAllMembersSortedByPoints(),
+                            builder: (context, snapshot) {
+                              var userRank = 0;
+                              final members = snapshot.data ?? [];
+                              for (var i = 0; i < members.length; i++) {
+                                if (members[i].uid == member?.uid) {
+                                  userRank = i + 1;
+                                  break;
+                                }
+                              }
+                              return _StatCard(
+                                title: 'Rank',
+                                value: userRank > 0 ? '#$userRank' : '-',
+                                icon: Icons.leaderboard_outlined,
+                                color: const Color(0xFF047857),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 28),
 
             // Upcoming Events
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Upcoming Events', style: sectionHeaderStyle),
-                TextButton(
-                  onPressed: () {
-                    // Navigate to events tab
-                    final homeState = context.findAncestorStateOfType<_HomeScreenState>();
-                    homeState?._onItemTapped(2);
-                  },
-                  child: const Text('View All'),
-                ),
+                TextButton(onPressed: () => navigateToTab(1), child: const Text('View All')),
               ],
             ),
             const SizedBox(height: 12),
@@ -272,7 +397,7 @@ class DashboardTab extends StatelessWidget {
                             padding: const EdgeInsets.only(bottom: 12),
                             child: InkWell(
                               onTap: () {
-                                navigateToTab(2, eventDate: event.date);
+                                navigateToTab(1, eventDate: event.date);
                               },
                               child: _EventCard(
                                 title: event.title,
@@ -294,14 +419,7 @@ class DashboardTab extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Recent News', style: sectionHeaderStyle),
-                TextButton(
-                  onPressed: () {
-                    // Navigate to news (announcements) tab
-                    final homeState = context.findAncestorStateOfType<_HomeScreenState>();
-                    homeState?._onItemTapped(3);
-                  },
-                  child: const Text('View All'),
-                ),
+                TextButton(onPressed: () => navigateToTab(2), child: const Text('View All')),
               ],
             ),
             const SizedBox(height: 12),
@@ -466,254 +584,6 @@ class DashboardTab extends StatelessWidget {
       default:
         return Colors.green;
     }
-  }
-}
-
-class _PrototypeMark extends StatelessWidget {
-  const _PrototypeMark();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 34,
-      height: 34,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Icon(Icons.emoji_events, color: FblaColors.goldDeep, size: 26),
-          Positioned(
-            top: 0,
-            child: Icon(Icons.local_fire_department,
-                color: FblaColors.gold, size: 18),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PrototypeMenuDrawer extends StatelessWidget {
-  const _PrototypeMenuDrawer({
-    required this.selectedIndex,
-    required this.onSelect,
-  });
-
-  final int selectedIndex;
-  final ValueChanged<int> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    final items = [
-      _MenuItem('Competitions', 'Menu description.', 4),
-      _MenuItem('News', 'Menu description.', 3),
-      _MenuItem('Events', 'Menu description.', 2),
-      _MenuItem('Your Profile', 'Menu description.', 6),
-      _MenuItem('Calendar', 'Menu description.', 2),
-      _MenuItem('Messages', 'Menu description.', 5),
-      _MenuItem('Pin Trading Hub', 'Menu description.', 5),
-      _MenuItem('Guide', 'Menu description.', 1),
-      _MenuItem('Resources', 'Menu description.', 1),
-      _MenuItem('Settings', 'Menu description.', 6),
-    ];
-
-    return Drawer(
-      width: 250,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(),
-      child: SafeArea(
-        child: Column(
-          children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 14, 16, 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'FBLA-LINK',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF111827),
-                  ),
-                ),
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                itemCount: items.length,
-                itemBuilder: (context, index) {
-                  final item = items[index];
-                  final selected = item.index == selectedIndex ||
-                      (item.title == 'Settings' && selectedIndex == 6);
-                  return _PrototypeDrawerTile(
-                    item: item,
-                    selected: selected && item.title == 'Settings',
-                    onTap: () => onSelect(item.index),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PrototypeMessagesSection extends StatelessWidget {
-  const _PrototypeMessagesSection();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text(
-            'Messages',
-            style: TextStyle(
-              fontSize: 22,
-              height: 1,
-              fontWeight: FontWeight.w800,
-              color: Color(0xFF111827),
-            ),
-          ),
-          SizedBox(height: 14),
-          _PrototypeMessageCard(
-            text: 'Hey, what have you been using to study for Data Science & AI?',
-          ),
-          SizedBox(height: 12),
-          _PrototypeMessageCard(
-            text: 'Did you have the time to go and get your California pin?',
-          ),
-          SizedBox(height: 12),
-          _PrototypeMessageCard(
-            text: 'I placed 3rd at States for my competition.',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PrototypeMessageCard extends StatelessWidget {
-  const _PrototypeMessageCard({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Color(0xFFE5E7EB)),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            text,
-            style: const TextStyle(
-              color: Color(0xFF111827),
-              fontSize: 15,
-              height: 1.1,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: const [
-              CircleAvatar(
-                radius: 12,
-                backgroundColor: Color(0xFFEAF1FA),
-                child: Icon(Icons.person, size: 15, color: FblaColors.navy),
-              ),
-              SizedBox(width: 8),
-              Text(
-                'Name',
-                style: TextStyle(
-                  color: Color(0xFF6B7280),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MenuItem {
-  final String title;
-  final String subtitle;
-  final int index;
-
-  const _MenuItem(this.title, this.subtitle, this.index);
-}
-
-class _PrototypeDrawerTile extends StatelessWidget {
-  const _PrototypeDrawerTile({
-    required this.item,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final _MenuItem item;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final bg = selected ? const Color(0xFF2F3136) : Colors.white;
-    final fg = selected ? Colors.white : const Color(0xFF111827);
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        color: bg,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-        child: Row(
-          children: [
-            Icon(Icons.star_border, size: 18, color: fg),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.title,
-                    style: TextStyle(
-                      color: fg,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    item.subtitle,
-                    style: TextStyle(
-                      color: selected ? Colors.white70 : const Color(0xFF6B7280),
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.home_outlined, color: fg, size: 15),
-            const SizedBox(width: 2),
-            Text('A', style: TextStyle(color: fg, fontSize: 11)),
-          ],
-        ),
-      ),
-    );
   }
 }
 

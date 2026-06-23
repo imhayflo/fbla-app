@@ -6,6 +6,7 @@ import '../services/database_service.dart';
 import '../models/event.dart';
 import '../widgets/fbla_app_bar.dart';
 import '../widgets/fbla_screen_shell.dart';
+import '../widgets/app_chrome.dart';
 import '../models/competition.dart';
 
 class EventsScreen extends StatefulWidget {
@@ -38,6 +39,13 @@ class _EventsScreenState extends State<EventsScreen> {
         context,
         title: 'Calendar',
         actions: [
+          const AppHelpButton(
+            title: 'Use your FBLA calendar',
+            tips: [
+              'Dots show days with FBLA events. Tap a date to see what is happening that day.',
+              'Use Generate prep advice to get a preparation plan for upcoming events and competitions.',
+            ],
+          ),
           TextButton.icon(
             onPressed: () => _showAiPrepAdvice(
               context,
@@ -104,6 +112,17 @@ class _EventsScreenState extends State<EventsScreen> {
 
                       return Column(
                         children: [
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+                            child: AppInstructionCard(
+                              id: 'calendar',
+                              title: 'Use your FBLA calendar',
+                              tips: [
+                                'Dots show days with FBLA events. Tap a date to see what is happening that day.',
+                                'Use Generate prep advice to get a preparation plan for upcoming events and competitions.',
+                              ],
+                            ),
+                          ),
                           Padding(
                             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                             child: SizedBox(

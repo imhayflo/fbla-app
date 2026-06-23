@@ -5,6 +5,7 @@ import '../services/database_service.dart';
 import '../models/competition.dart';
 import '../widgets/fbla_app_bar.dart';
 import '../widgets/fbla_screen_shell.dart';
+import '../widgets/app_chrome.dart';
 
 class CompetitionsScreen extends StatefulWidget {
   const CompetitionsScreen({super.key});
@@ -21,7 +22,19 @@ class _CompetitionsScreenState extends State<CompetitionsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: FblaAppBar.standard(context, title: 'Competitions'),
+      appBar: FblaAppBar.standard(
+        context,
+        title: 'Competitions',
+        actions: const [
+          AppHelpButton(
+            title: 'Explore competitive events',
+            tips: [
+              'Use filter pills to browse event types, then tap a card to see details.',
+              'Try the event finder if you are not sure which competition best fits your strengths.',
+            ],
+          ),
+        ],
+      ),
       body: FblaScreenShell(
         child: Column(
         children: [
@@ -61,14 +74,24 @@ class _CompetitionsScreenState extends State<CompetitionsScreen> {
                     return ListView.builder(
                       padding: const EdgeInsets.all(16),
                       itemCount:
-                          filteredCompetitions.isEmpty ? 3 : filteredCompetitions.length + 2,
+                          filteredCompetitions.isEmpty ? 4 : filteredCompetitions.length + 3,
                       itemBuilder: (context, index) {
                         if (index == 0) {
+                          return const AppInstructionCard(
+                            id: 'compete',
+                            title: 'Explore competitive events',
+                            tips: [
+                              'Use the filter pills to browse event types, then tap a card to see details and mark it as your competition.',
+                              'Try the event finder if you are not sure which competition best fits your strengths.',
+                            ],
+                          );
+                        }
+                        if (index == 1) {
                           return _EventFinderCard(
                             onTap: () => _showEventFinder(context, competitions),
                           );
                         }
-                        if (index == 1) {
+                        if (index == 2) {
                           return _CategoryFilters(
                             selectedCategory: _selectedCategory,
                             onChanged: (category) {
@@ -80,7 +103,7 @@ class _CompetitionsScreenState extends State<CompetitionsScreen> {
                           return _NoCompetitionsCard(category: _selectedCategory);
                         }
 
-                        final competition = filteredCompetitions[index - 2];
+                        final competition = filteredCompetitions[index - 3];
                         final isRegistered =
                             registeredIds.contains(competition.id);
                         return _CompetitionCard(

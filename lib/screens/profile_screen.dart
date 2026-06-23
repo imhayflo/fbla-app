@@ -9,6 +9,7 @@ import 'settings_screen.dart';
 import 'help_screen.dart';
 import '../widgets/fbla_app_bar.dart';
 import '../widgets/fbla_screen_shell.dart';
+import '../widgets/app_chrome.dart';
 import '../widgets/state_placement_badge.dart';
 import '../models/state_competition_result.dart';
 
@@ -149,7 +150,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: FblaAppBar.standard(context, title: 'Profile'),
+      appBar: FblaAppBar.standard(
+        context,
+        title: 'Profile',
+        actions: const [
+          AppHelpButton(
+            title: 'Manage your member profile',
+            tips: [
+              'Your profile keeps membership, chapter, points, placements, and account actions in one place.',
+              'Use Update Profile to keep your school, chapter, state, and contact details current.',
+            ],
+          ),
+        ],
+      ),
       body: FblaScreenShell(
         child: StreamBuilder<Member?>(
         stream: _dbService.memberStream,
@@ -207,6 +220,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const AppInstructionCard(
+                        id: 'profile',
+                        title: 'Manage your member profile',
+                        tips: [
+                          'Your profile keeps membership, chapter, points, placements, and account actions in one place.',
+                          'Use Update Profile to keep your school, chapter, state, and contact details current.',
+                        ],
+                      ),
                       Text(
                         'Member Information',
                         style: theme.textTheme.titleLarge?.copyWith(

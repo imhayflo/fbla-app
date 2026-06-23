@@ -18,16 +18,27 @@ class FblaAppBar {
       leading: leading ??
           (canPop
               ? null
-              : const Padding(
-                  padding: EdgeInsets.only(left: 14),
-                  child: _AppBarTorchMark(),
+              : Padding(
+                  padding: const EdgeInsets.only(left: 14, top: 9, bottom: 9),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: FblaColors.gold.withOpacity(0.7),
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(5),
+                    child: Image.asset('assets/fbla_logo.png',
+                        fit: BoxFit.contain),
+                  ),
                 )),
       title: Text(
         title,
         style: TextStyle(
           color: barFg,
-          fontSize: 15,
-          fontWeight: FontWeight.w700,
+          fontSize: 22,
+          fontWeight: FontWeight.w800,
         ),
       ),
       backgroundColor: barBg,
@@ -37,29 +48,6 @@ class FblaAppBar {
       shadowColor: Colors.transparent,
       scrolledUnderElevation: 0,
       actions: actions,
-    );
-  }
-}
-
-class _AppBarTorchMark extends StatelessWidget {
-  const _AppBarTorchMark();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 34,
-      height: 34,
-      child: Stack(
-        alignment: Alignment.center,
-        children: const [
-          Icon(Icons.emoji_events, color: FblaColors.goldDeep, size: 26),
-          Positioned(
-            top: 0,
-            child: Icon(Icons.local_fire_department,
-                color: FblaColors.gold, size: 18),
-          ),
-        ],
-      ),
     );
   }
 }

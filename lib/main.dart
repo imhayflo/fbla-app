@@ -82,7 +82,7 @@ class _SplashInitAppState extends State<_SplashInitApp> {
 
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: _PrototypeSplash(),
+      home: _LaunchSplash(),
     );
   }
 }
@@ -188,7 +188,7 @@ class _FBLAAppState extends State<FBLAApp> {
               future: _checkAuthState(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const _PrototypeSplash();
+                  return const _LaunchSplash();
                 }
                 if (snapshot.hasData) {
                   return const _HomeScreenWithSync();
@@ -234,8 +234,8 @@ class _FBLAAppState extends State<FBLAApp> {
   }
 }
 
-class _PrototypeSplash extends StatelessWidget {
-  const _PrototypeSplash();
+class _LaunchSplash extends StatelessWidget {
+  const _LaunchSplash();
 
   @override
   Widget build(BuildContext context) {
@@ -256,19 +256,29 @@ class _PrototypeSplash extends StatelessWidget {
                 ),
                 const SizedBox(height: 14),
                 const Text(
-                  'The Official* FBLA Member App',
+                  'FBLA Link',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Color(0xFF111827),
+                    color: FblaColors.navy,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'The official member experience',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Color(0xFF4B5563),
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 const Spacer(flex: 3),
                 const Text(
-                  'Tap Anywhere to Start',
+                  'Loading...',
                   style: TextStyle(
-                    color: Color(0xFF111827),
+                    color: Color(0xFF4B5563),
                     fontSize: 12,
                   ),
                 ),

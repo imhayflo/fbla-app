@@ -5,6 +5,7 @@ import '../services/database_service.dart';
 import '../models/announcement.dart';
 import '../widgets/fbla_app_bar.dart';
 import '../widgets/fbla_screen_shell.dart';
+import '../widgets/app_chrome.dart';
 
 class AnnouncementsScreen extends StatefulWidget {
   final String? initialAnnouncementId;
@@ -49,7 +50,19 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: FblaAppBar.standard(context, title: 'Announcements'),
+      appBar: FblaAppBar.standard(
+        context,
+        title: 'Announcements',
+        actions: const [
+          AppHelpButton(
+            title: 'Official announcements',
+            tips: [
+              'News cards show official FBLA updates, deadlines, and opportunities.',
+              'Tap a card to read more, then open the source link when one is available.',
+            ],
+          ),
+        ],
+      ),
       body: FblaScreenShell(
         child: RefreshIndicator(
           onRefresh: _refreshNews,
@@ -104,9 +117,20 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             controller: _scrollController,
-            itemCount: announcements.length,
+            itemCount: announcements.length + 1,
             itemBuilder: (context, index) {
-              final announcement = announcements[index];
+              if (index == 0) {
+                return const AppInstructionCard(
+                  id: 'news',
+                  title: 'Official announcements',
+                  tips: [
+                    'News cards show official FBLA updates, deadlines, and opportunities.',
+                    'Tap a card to read more, then open the source link when one is available.',
+                  ],
+                );
+              }
+
+              final announcement = announcements[index - 1];
               
               // Scroll to initial announcement if provided
               if (!_hasScrolled && widget.initialAnnouncementId != null) {
