@@ -68,37 +68,78 @@ class _FblaPrototypeMenuOverlay extends StatelessWidget {
         color: Colors.transparent,
         child: SafeArea(
           child: Container(
-            width: MediaQuery.sizeOf(context).width * 0.72,
-            margin: const EdgeInsets.fromLTRB(0, 18, 0, 18),
-            padding: const EdgeInsets.fromLTRB(22, 18, 22, 0),
+            width: MediaQuery.sizeOf(context).width * 0.78,
+            margin: const EdgeInsets.fromLTRB(0, 16, 0, 16),
+            padding: const EdgeInsets.fromLTRB(22, 20, 22, 0),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(8),
-                bottomLeft: Radius.circular(8),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.white, Color(0xFFF5F8FD)],
               ),
-              border: Border.all(color: const Color(0xFFD8D8D8)),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(24),
+                bottomLeft: Radius.circular(24),
+              ),
+              border: Border.all(color: FblaColors.line),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.16),
-                  blurRadius: 28,
-                  offset: const Offset(0, 16),
+                  color: FblaColors.navy.withOpacity(0.24),
+                  blurRadius: 34,
+                  offset: const Offset(-8, 18),
                 ),
               ],
             ),
             child: ListView(
               children: [
-                const Text(
-                  'FBLA-LINK',
-                  style: TextStyle(
-                    color: FblaColors.text,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 19,
+                Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: FblaColors.navy,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: FblaColors.navy.withOpacity(0.20),
+                            blurRadius: 16,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.local_fire_department,
+                        color: FblaColors.gold,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'FBLA-LINK',
+                        style: TextStyle(
+                          color: FblaColors.text,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 19,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  height: 1,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        FblaColors.gold,
+                        FblaColors.line,
+                        Colors.transparent,
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                const Divider(height: 1),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
                 ...items.map(
                   (item) => _FblaMenuItem(
                     label: item.$1,
@@ -131,22 +172,25 @@ class _FblaMenuItem extends StatelessWidget {
     final foreground = dark ? Colors.white : FblaColors.text;
     final secondary = dark ? Colors.white70 : FblaColors.muted;
     return Material(
-      color: dark ? FblaColors.text : Colors.white,
-      borderRadius: BorderRadius.circular(dark ? 8 : 0),
+      color: dark ? FblaColors.text : Colors.transparent,
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
           decoration: BoxDecoration(
-            border: dark
-                ? null
-                : const Border(
-                    bottom: BorderSide(color: Color(0xFFE0E0E0)),
-                  ),
+            color: dark ? FblaColors.text : Colors.white.withOpacity(0.68),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: dark ? FblaColors.text : FblaColors.line,
+            ),
           ),
           child: Row(
             children: [
-              Icon(Icons.star_border, color: foreground, size: 25),
+              Icon(Icons.star_border,
+                  color: dark ? FblaColors.gold : FblaColors.navy, size: 25),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -385,14 +429,18 @@ class _AppInstructionCardState extends State<AppInstructionCard> {
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFBEB),
-        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFFFFBEB), Color(0xFFFFF4D7)],
+        ),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: FblaColors.gold.withOpacity(0.55)),
         boxShadow: [
           BoxShadow(
             color: FblaColors.navy.withOpacity(0.08),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
@@ -474,7 +522,7 @@ class AppSectionHeader extends StatelessWidget {
               title,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF111827),
+                    color: FblaColors.text,
                   ),
             ),
           ),
@@ -508,10 +556,22 @@ class AppEmptyState extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 36),
       child: Column(
         children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: theme.colorScheme.primaryContainer,
-            child: Icon(icon, color: theme.colorScheme.primary, size: 30),
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: FblaColors.mist,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: FblaColors.navy.withOpacity(0.08),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: FblaColors.navy, size: 30),
           ),
           const SizedBox(height: 14),
           Text(

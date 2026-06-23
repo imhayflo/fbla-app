@@ -3,14 +3,18 @@ import 'package:flutter/material.dart';
 class FblaColors {
   FblaColors._();
 
-  static const Color navy = Color(0xFF003B73);
-  static const Color navyDark = Color(0xFF002F5F);
-  static const Color gold = Color(0xFFF4C542);
-  static const Color goldDeep = Color(0xFFD99A00);
+  static const Color navy = Color(0xFF0A2E7F);
+  static const Color navyDark = Color(0xFF061B4D);
+  static const Color blue = Color(0xFF1D52BC);
+  static const Color cobalt = Color(0xFF226ADD);
+  static const Color gold = Color(0xFFF4AB19);
+  static const Color goldDeep = Color(0xFFD49313);
   static const Color crimson = Color(0xFFC8102E);
   static const Color paper = Color(0xFFFAF9F6);
   static const Color text = Color(0xFF2D2B2B);
   static const Color muted = Color(0xFF6B7280);
+  static const Color mist = Color(0xFFEAF1FB);
+  static const Color line = Color(0xFFD9E1EC);
 
   static ColorScheme schemeDefault() {
     return ColorScheme.fromSeed(
@@ -21,13 +25,13 @@ class FblaColors {
       surface: Colors.white,
       brightness: Brightness.light,
     ).copyWith(
-      primaryContainer: const Color(0xFFDCEAF7),
-      secondaryContainer: const Color(0xFFFFF3CC),
+      primaryContainer: mist,
+      secondaryContainer: const Color(0xFFFFE8B8),
       tertiaryContainer: const Color(0xFFF8D7DC),
-      onSurface: const Color(0xFF111827),
-      onSurfaceVariant: const Color(0xFF4B5563),
-      outline: const Color(0xFFDADDE3),
-      outlineVariant: const Color(0xFFE6E8EC),
+      onSurface: text,
+      onSurfaceVariant: muted,
+      outline: line,
+      outlineVariant: const Color(0xFFE8EDF4),
     );
   }
 

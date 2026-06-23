@@ -84,9 +84,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 18,
-                    offset: const Offset(0, -4),
+                    color: FblaColors.navy.withOpacity(0.10),
+                    blurRadius: 22,
+                    offset: const Offset(0, -8),
                   ),
                 ],
               ),
@@ -191,7 +191,7 @@ class _DashboardTabState extends State<DashboardTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: FblaColors.paper,
       appBar: AppBar(
         toolbarHeight: 86,
         backgroundColor: Colors.white,
@@ -233,6 +233,7 @@ class _DashboardTabState extends State<DashboardTab> {
                 ),
                 _BlueFeedSection(
                   title: 'Recent News',
+                  icon: Icons.campaign_outlined,
                   child: _RecentNews(
                     dbService: _dbService,
                     onViewNews: () => widget.navigateToTab(2),
@@ -240,6 +241,7 @@ class _DashboardTabState extends State<DashboardTab> {
                 ),
                 _BlueFeedSection(
                   title: 'Upcoming Events',
+                  icon: Icons.event_available_outlined,
                   child: _UpcomingEvents(
                     dbService: _dbService,
                     dateFormat: _dateFormat,
@@ -376,13 +378,31 @@ class _WelcomeHero extends StatelessWidget {
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 540),
       padding: const EdgeInsets.fromLTRB(26, 90, 26, 42),
-      color: FblaColors.navy,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            FblaColors.navyDark,
+            FblaColors.navy,
+            FblaColors.blue,
+          ],
+        ),
+      ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Opacity(
-            opacity: 0.22,
-            child: Image.asset('assets/fbla_logo.png', height: 95),
+            opacity: 0.20,
+            child: Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(color: Colors.white.withOpacity(0.18)),
+              ),
+              child: Image.asset('assets/fbla_logo.png', height: 82),
+            ),
           ),
           const SizedBox(height: 24),
           Text(
@@ -410,15 +430,21 @@ class _WelcomeHero extends StatelessWidget {
             child: FilledButton(
               onPressed: onLetsGo,
               style: FilledButton.styleFrom(
-                backgroundColor: FblaColors.schemeDefault().primary,
+                backgroundColor: Colors.white,
+                shadowColor: FblaColors.gold.withOpacity(0.35),
+                elevation: 8,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(7),
+                  borderRadius: BorderRadius.circular(18),
                 ),
               ),
               child: const Text(
                 "Let's Go!",
-                style: TextStyle(fontSize: 21, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  color: FblaColors.navy,
+                  fontSize: 21,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
           ),
@@ -467,15 +493,8 @@ class _PrototypeMessageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 22),
-      padding: const EdgeInsets.fromLTRB(24, 26, 24, 24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: const Color(0xFFDCDCDC), width: 1.5),
-      ),
+    return _AestheticSurface(
+      margin: const EdgeInsets.only(bottom: 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -513,26 +532,54 @@ class _PrototypeMessageCard extends StatelessWidget {
 }
 
 class _BlueFeedSection extends StatelessWidget {
-  const _BlueFeedSection({required this.title, required this.child});
+  const _BlueFeedSection({
+    required this.title,
+    required this.icon,
+    required this.child,
+  });
 
   final String title;
+  final IconData icon;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: const Color(0xFF226ADD),
-      padding: const EdgeInsets.fromLTRB(26, 28, 26, 28),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [FblaColors.blue, FblaColors.cobalt],
+        ),
+      ),
+      padding: const EdgeInsets.fromLTRB(26, 30, 26, 30),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.16),
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: Colors.white.withOpacity(0.24)),
                 ),
+                child: Icon(icon, color: FblaColors.gold),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 18),
           child,
@@ -618,14 +665,7 @@ class _PrototypeFeedCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: const Color(0xFFDCDCDC), width: 1.5),
-        ),
+      child: _AestheticSurface(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -661,6 +701,38 @@ class _PrototypeFeedCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _AestheticSurface extends StatelessWidget {
+  const _AestheticSurface({
+    required this.child,
+    this.margin,
+  });
+
+  final Widget child;
+  final EdgeInsetsGeometry? margin;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: margin,
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: FblaColors.navy.withOpacity(0.12),
+            blurRadius: 26,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: child,
     );
   }
 }

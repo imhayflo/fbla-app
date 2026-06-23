@@ -135,16 +135,35 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: FblaColors.paper,
       body: Stack(
         children: [
+          const _LoginBackdrop(),
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(32, 126, 32, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Image.asset('assets/fbla_logo.png', height: 92),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: FblaColors.navy.withOpacity(0.12),
+                          blurRadius: 28,
+                          offset: const Offset(0, 14),
+                        ),
+                      ],
+                    ),
+                    child: Image.asset('assets/fbla_logo.png', height: 76),
+                  ),
                   const SizedBox(height: 28),
                   if (_error != null)
                     Container(
@@ -166,12 +185,16 @@ class _LoginScreenState extends State<LoginScreen>
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(22, 22, 22, 28),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: const Color(0xFFD7D7D7),
-                          width: 1.5,
-                        ),
+                        color: Colors.white.withOpacity(0.94),
+                        borderRadius: BorderRadius.circular(26),
+                        border: Border.all(color: Colors.white, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: FblaColors.navy.withOpacity(0.14),
+                            blurRadius: 30,
+                            offset: const Offset(0, 16),
+                          ),
+                        ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -180,10 +203,12 @@ class _LoginScreenState extends State<LoginScreen>
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
                             textInputAction: TextInputAction.next,
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'Email',
                               hintText: 'Value',
-                              border: OutlineInputBorder(),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
                             ),
                             validator: validateEmail,
                           ),
@@ -196,7 +221,9 @@ class _LoginScreenState extends State<LoginScreen>
                             decoration: InputDecoration(
                               labelText: 'Password',
                               hintText: 'Value',
-                              border: const OutlineInputBorder(),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
                               suffixIcon: IconButton(
                                 icon: Icon(
                                   _obscurePassword
@@ -219,7 +246,7 @@ class _LoginScreenState extends State<LoginScreen>
                                 backgroundColor: FblaColors.navy,
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(5),
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
                               ),
                               child: _isLoading
@@ -257,7 +284,11 @@ class _LoginScreenState extends State<LoginScreen>
                   const Center(
                     child: Text(
                       'The Official* FBLA Member App',
-                      style: TextStyle(fontSize: 19, color: Color(0xFF2D2B2B)),
+                      style: TextStyle(
+                        fontSize: 19,
+                        color: FblaColors.text,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -299,35 +330,85 @@ class _EntryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Positioned.fill(
       child: Material(
-        color: Colors.white,
+        color: Colors.transparent,
         child: InkWell(
           onTap: onStart,
           child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(28),
-              child: Column(
-                children: [
-                  const Spacer(),
-                  Image.asset('assets/fbla_logo.png', height: 120),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'The Official* FBLA Member App',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 16, color: Color(0xFF2D2B2B)),
+            child: Stack(
+              children: [
+                const _LoginBackdrop(),
+                Padding(
+                  padding: const EdgeInsets.all(28),
+                  child: Column(
+                    children: [
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 18,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: FblaColors.navy.withOpacity(0.14),
+                              blurRadius: 32,
+                              offset: const Offset(0, 16),
+                            ),
+                          ],
+                        ),
+                        child: Image.asset('assets/fbla_logo.png', height: 104),
+                      ),
+                      const SizedBox(height: 18),
+                      const Text(
+                        'The Official* FBLA Member App',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: FblaColors.text,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const Spacer(),
+                      const Text(
+                        'Tap Anywhere to Start',
+                        style: TextStyle(
+                          color: FblaColors.text,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                    ],
                   ),
-                  const Spacer(),
-                  const Text(
-                    'Tap Anywhere to Start',
-                    style: TextStyle(
-                      color: Color(0xFF2D2B2B),
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                ],
-              ),
+                ),
+              ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LoginBackdrop extends StatelessWidget {
+  const _LoginBackdrop();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Positioned.fill(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFF9FBFF),
+              Color(0xFFEAF1FB),
+              Color(0xFFFAF9F6),
+            ],
           ),
         ),
       ),

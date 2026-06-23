@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:fbla_member_app/screens/home_screen.dart';
 import 'package:fbla_member_app/theme/fbla_colors.dart';
@@ -29,7 +31,23 @@ class FblaAppBar {
           },
         );
       },
-      icon: const Icon(Icons.menu, size: 30, color: FblaColors.text),
+      icon: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: FblaColors.mist,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: Colors.white),
+          boxShadow: [
+            BoxShadow(
+              color: FblaColors.navy.withOpacity(0.10),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: const Icon(Icons.menu, size: 24, color: FblaColors.text),
+      ),
     );
 
     return AppBar(
@@ -42,13 +60,28 @@ class FblaAppBar {
                   child: FblaPrototypeHeaderMark(),
                 )),
       leadingWidth: canPop ? null : 96,
-      title: Text(
-        title,
-        style: const TextStyle(
-          color: FblaColors.text,
-          fontSize: 24,
-          fontWeight: FontWeight.w900,
-        ),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: FblaColors.text,
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
+              height: 1,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Container(
+            width: 42,
+            height: 4,
+            decoration: BoxDecoration(
+              color: FblaColors.gold,
+              borderRadius: BorderRadius.circular(99),
+            ),
+          ),
+        ],
       ),
       backgroundColor: Colors.white,
       foregroundColor: FblaColors.text,
@@ -56,6 +89,9 @@ class FblaAppBar {
       elevation: 0,
       shadowColor: Colors.transparent,
       scrolledUnderElevation: 0,
+      shape: const Border(
+        bottom: BorderSide(color: Color(0xFFE8EDF4)),
+      ),
       actions: [
         ...?actions,
         if (showPrototypeMenu) menuAction,

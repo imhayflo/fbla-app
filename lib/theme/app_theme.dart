@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:fbla_member_app/services/accessibility_controller.dart';
 import 'fbla_colors.dart';
@@ -71,7 +73,8 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: scheme.primary,
-          side: BorderSide(color: scheme.primary, width: a.highContrast ? 2 : 1),
+          side:
+              BorderSide(color: scheme.primary, width: a.highContrast ? 2 : 1),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -90,7 +93,8 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: scheme.primary, width: a.highContrast ? 3 : 2),
+          borderSide:
+              BorderSide(color: scheme.primary, width: a.highContrast ? 3 : 2),
         ),
       ),
       dividerTheme: DividerThemeData(
@@ -128,23 +132,24 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
       ),
       cardTheme: CardThemeData(
-        elevation: a.highContrast ? 1 : 0,
-        shadowColor: Colors.black12,
+        elevation: a.highContrast ? 1 : 4,
+        shadowColor: FblaColors.navy.withOpacity(0.12),
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           side: a.highContrast
               ? BorderSide(color: scheme.outline, width: 1.5)
-              : BorderSide(color: scheme.outlineVariant),
+              : const BorderSide(color: FblaColors.line),
         ),
         color: Colors.white,
         margin: EdgeInsets.zero,
       ),
       navigationBarTheme: NavigationBarThemeData(
-        elevation: 0,
+        elevation: 8,
         backgroundColor: Colors.white,
-        indicatorColor: scheme.primary.withOpacity(0.12),
-        height: 68,
+        indicatorColor: FblaColors.mist,
+        shadowColor: FblaColors.navy.withOpacity(0.12),
+        height: 72,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return TextStyle(
@@ -161,16 +166,20 @@ class AppTheme {
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
+          backgroundColor: FblaColors.navy,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
+          textStyle: const TextStyle(fontWeight: FontWeight.w800),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: scheme.primary,
-          side: BorderSide(color: scheme.primary, width: a.highContrast ? 2 : 1),
+          side:
+              BorderSide(color: scheme.primary, width: a.highContrast ? 2 : 1),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -178,18 +187,19 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: scheme.surface,
+        fillColor: Colors.white,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: scheme.outlineVariant),
+          borderSide: const BorderSide(color: FblaColors.line),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: scheme.outlineVariant),
+          borderSide: const BorderSide(color: FblaColors.line),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: scheme.primary, width: a.highContrast ? 3 : 2),
+          borderSide:
+              BorderSide(color: scheme.primary, width: a.highContrast ? 3 : 2),
         ),
       ),
       dividerTheme: DividerThemeData(
