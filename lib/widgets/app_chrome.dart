@@ -1,6 +1,82 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/fbla_colors.dart';
+
+class PaintStrokeReveal extends StatelessWidget {
+  const PaintStrokeReveal({
+    super.key,
+    required this.progress,
+    this.color = FblaColors.navy,
+  });
+
+  final double progress;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: CustomPaint(
+        painter: _PaintStrokePainter(
+          progress: progress.clamp(0, 1),
+          color: color,
+        ),
+        size: Size.infinite,
+      ),
+    );
+  }
+}
+
+class _PaintStrokePainter extends CustomPainter {
+  const _PaintStrokePainter({
+    required this.progress,
+    required this.color,
+  });
+
+  final double progress;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (progress <= 0) return;
+
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..strokeWidth = size.width * 0.44;
+
+    final path = Path()
+      ..moveTo(size.width * 0.18, -size.height * 0.08)
+      ..cubicTo(
+        size.width * 0.55,
+        size.height * 0.22,
+        size.width * 0.18,
+        size.height * 0.28,
+        size.width * 0.46,
+        size.height * 0.48,
+      )
+      ..cubicTo(
+        size.width * 0.8,
+        size.height * 0.72,
+        size.width * 0.22,
+        size.height * 0.58,
+        size.width * 0.78,
+        size.height * 1.1,
+      );
+
+    final metric = path.computeMetrics().first;
+    final visible = metric.extractPath(0, metric.length * progress);
+    canvas.drawPath(visible, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _PaintStrokePainter oldDelegate) {
+    return progress != oldDelegate.progress || color != oldDelegate.color;
+  }
+}
 
 class AppInstructionCard extends StatefulWidget {
   final String id;
@@ -185,9 +261,7 @@ class _AppInstructionCardState extends State<AppInstructionCard> {
               ),
               const Spacer(),
               FilledButton(
-                onPressed: atEnd
-                    ? _dismiss
-                    : () => setState(() => _index += 1),
+                onPressed: atEnd ? _dismiss : () => setState(() => _index += 1),
                 child: Text(atEnd ? 'Done' : 'Next'),
               ),
             ],

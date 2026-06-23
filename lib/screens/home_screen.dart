@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use, unused_element, prefer_const_constructors
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -27,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Pre-build all tab screens to reduce first-tap delay
   late final List<Widget> _screens;
-  
+
   @override
   void initState() {
     super.initState();
@@ -40,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
       const SocialScreen(),
       const ProfileScreen(),
     ];
-    
+
     // Pre-warm Firestore connections in background
     _prewarmFirestore();
   }
@@ -69,425 +71,192 @@ class _HomeScreenState extends State<HomeScreen> {
         index: _selectedIndex,
         children: _screens,
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(
-            top: BorderSide(color: theme.colorScheme.outlineVariant),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 18,
-              offset: const Offset(0, -4),
+      bottomNavigationBar: _selectedIndex == 0
+          ? null
+          : Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  top: BorderSide(color: theme.colorScheme.outlineVariant),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 18,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: NavigationBar(
+                selectedIndex: _selectedIndex,
+                onDestinationSelected: _onItemTapped,
+                destinations: const [
+                  NavigationDestination(
+                    icon: Icon(Icons.dashboard_outlined),
+                    selectedIcon: Icon(Icons.dashboard_rounded),
+                    label: 'Home',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.calendar_today_outlined),
+                    selectedIcon: Icon(Icons.calendar_today_rounded),
+                    label: 'Calendar',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.campaign_outlined),
+                    selectedIcon: Icon(Icons.campaign_rounded),
+                    label: 'News',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.emoji_events_outlined),
+                    selectedIcon: Icon(Icons.emoji_events_rounded),
+                    label: 'Compete',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.people_alt_outlined),
+                    selectedIcon: Icon(Icons.people_alt_rounded),
+                    label: 'Social',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.person_outline),
+                    selectedIcon: Icon(Icons.person_rounded),
+                    label: 'Profile',
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
-        child: NavigationBar(
-          selectedIndex: _selectedIndex,
-          onDestinationSelected: _onItemTapped,
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.dashboard_outlined),
-              selectedIcon: Icon(Icons.dashboard_rounded),
-              label: 'Home',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.calendar_today_outlined),
-              selectedIcon: Icon(Icons.calendar_today_rounded),
-              label: 'Calendar',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.campaign_outlined),
-              selectedIcon: Icon(Icons.campaign_rounded),
-              label: 'News',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.emoji_events_outlined),
-              selectedIcon: Icon(Icons.emoji_events_rounded),
-              label: 'Compete',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.people_alt_outlined),
-              selectedIcon: Icon(Icons.people_alt_rounded),
-              label: 'Social',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person_rounded),
-              label: 'Profile',
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
 
-class DashboardTab extends StatelessWidget {
-  final void Function(int index, {DateTime? eventDate, String? announcementId}) navigateToTab;
+class DashboardTab extends StatefulWidget {
+  final void Function(int index, {DateTime? eventDate, String? announcementId})
+      navigateToTab;
 
   const DashboardTab({super.key, required this.navigateToTab});
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final dbService = DatabaseService();
-    final dateFormat = DateFormat('MMM d, yyyy');
-    final sectionHeaderStyle = theme.textTheme.titleLarge?.copyWith(
-      fontWeight: FontWeight.bold,
-      color: const Color(0xFF111827),
-    );
+  State<DashboardTab> createState() => _DashboardTabState();
+}
 
+class _DashboardTabState extends State<DashboardTab> {
+  final _scrollController = ScrollController();
+  final _contentKey = GlobalKey();
+  final _dbService = DatabaseService();
+  final _dateFormat = DateFormat('MMM d, yyyy');
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToContent() {
+    final context = _contentKey.currentContext;
+    if (context != null) {
+      Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 650),
+        curve: Curves.easeInOutCubic,
+      );
+    }
+  }
+
+  void _openMenu() {
+    showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Close menu',
+      barrierColor: Colors.black.withOpacity(0.28),
+      transitionDuration: const Duration(milliseconds: 260),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return _DashboardMenuOverlay(onNavigate: (index) {
+          Navigator.pop(context);
+          widget.navigateToTab(index);
+        });
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final offset = Tween<Offset>(
+          begin: const Offset(1, 0),
+          end: Offset.zero,
+        ).animate(
+            CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
+        return SlideTransition(position: offset, child: child);
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: FblaColors.paper,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: FblaColors.paper,
+        toolbarHeight: 86,
+        backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
-        foregroundColor: FblaColors.navy,
         elevation: 0,
-        shadowColor: Colors.transparent,
-        titleSpacing: 20,
-        title: Row(
+        title: const Row(
           children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: FblaColors.gold.withOpacity(0.8)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(5),
-                child: Image.asset('assets/fbla_logo.png', fit: BoxFit.contain),
-              ),
-            ),
-            const SizedBox(width: 10),
-            const Text('FBLA Dashboard'),
+            Icon(Icons.local_fire_department,
+                color: Color(0xFFD5A84F), size: 46),
+            Icon(Icons.emoji_events_outlined,
+                color: Color(0xFFD5A84F), size: 28),
           ],
         ),
         actions: [
           IconButton(
-            tooltip: 'Help',
-            onPressed: () {
-              showModalBottomSheet<void>(
-                context: context,
-                showDragHandle: true,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                ),
-                builder: (context) => const Padding(
-                  padding: EdgeInsets.fromLTRB(24, 8, 24, 28),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Welcome to your dashboard',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          color: FblaColors.navy,
-                        ),
-                      ),
-                      SizedBox(height: 14),
-                      Text('Track your FBLA activity, upcoming events, and recent announcements from one clean home base.'),
-                      SizedBox(height: 12),
-                      Text('Use the bottom navigation to move between Calendar, News, Compete, Social, and Profile.'),
-                    ],
-                  ),
-                ),
-              );
-            },
-            icon: const Icon(Icons.info_outline),
+            tooltip: 'Open menu',
+            onPressed: _openMenu,
+            icon: const Icon(Icons.menu, size: 30, color: Color(0xFF2D2B2B)),
           ),
+          const SizedBox(width: 18),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const AppInstructionCard(
-              id: 'home',
-              title: 'Welcome to your dashboard',
-              tips: [
-                'Track your FBLA activity, upcoming events, and recent announcements from one clean home base.',
-                'Use the bottom navigation to move between Calendar, News, Compete, Social, and Profile.',
-              ],
-            ),
-            StreamBuilder<Member?>(
-              stream: dbService.memberStream,
-              builder: (context, snapshot) {
-                final member = snapshot.data;
-                final name = member?.name.split(' ').first ?? 'Member';
-
-                return Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(22),
-                  decoration: BoxDecoration(
-                    color: FblaColors.navy,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: FblaColors.navy.withOpacity(0.22),
-                        blurRadius: 24,
-                        offset: const Offset(0, 12),
-                      ),
-                    ],
-                  ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Welcome back, $name!',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Stay connected with your chapter',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: Colors.white.withOpacity(0.88),
-                          ),
-                        ),
-                      ],
-                    ),
-                );
-              },
-            ),
-            const SizedBox(height: 24),
-
-            StreamBuilder<List<Event>>(
-              stream: dbService.eventsStream,
-              builder: (context, snapshot) {
-                final conference = _findConferenceEvent(snapshot.data ?? []);
-                if (conference == null) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 24),
-                  child: _ConferenceModeCard(event: conference),
-                );
-              },
-            ),
-            Text('Your Activity', style: sectionHeaderStyle),
-            const SizedBox(height: 14),
-            StreamBuilder<Member?>(
-              stream: dbService.memberStream,
-              builder: (context, snapshot) {
-                final member = snapshot.data;
-                return Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _StatCard(
-                            title: 'Events',
-                            value: '${member?.eventsAttended ?? 0}',
-                            icon: Icons.event_available_outlined,
-                            color: FblaColors.navy,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: StreamBuilder<List<String>>(
-                            stream: dbService.userRegisteredCompetitionsStream,
-                            builder: (context, regCompsSnapshot) {
-                              return _StatCard(
-                                title: 'Competitions',
-                                value: '${regCompsSnapshot.data?.length ?? 0}',
-                                icon: Icons.emoji_events_outlined,
-                                color: FblaColors.goldDeep,
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _StatCard(
-                            title: 'Points',
-                            value: '${member?.points ?? 0}',
-                            icon: Icons.star_outline,
-                            color: const Color(0xFFD97706),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: StreamBuilder<List<Member>>(
-                            stream: dbService.getAllMembersSortedByPoints(),
-                            builder: (context, snapshot) {
-                              var userRank = 0;
-                              final members = snapshot.data ?? [];
-                              for (var i = 0; i < members.length; i++) {
-                                if (members[i].uid == member?.uid) {
-                                  userRank = i + 1;
-                                  break;
-                                }
-                              }
-                              return _StatCard(
-                                title: 'Rank',
-                                value: userRank > 0 ? '#$userRank' : '-',
-                                icon: Icons.leaderboard_outlined,
-                                color: const Color(0xFF047857),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(height: 28),
-
-            // Upcoming Events
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: StreamBuilder<Member?>(
+        stream: _dbService.memberStream,
+        builder: (context, snapshot) {
+          final member = snapshot.data;
+          final name = member?.name.split(' ').first ?? 'User';
+          return SingleChildScrollView(
+            controller: _scrollController,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Upcoming Events', style: sectionHeaderStyle),
-                TextButton(onPressed: () => navigateToTab(1), child: const Text('View All')),
-              ],
-            ),
-            const SizedBox(height: 12),
-            StreamBuilder<List<Event>>(
-              stream: dbService.eventsStream,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: CircularProgressIndicator(color: colorScheme.primary),
-                    ),
-                  );
-                }
-
-                final events = snapshot.data ?? [];
-                final upcomingEvents = events
-                    .where((e) => e.date.isAfter(DateTime.now()))
-                    .take(2)
-                    .toList();
-
-                if (upcomingEvents.isEmpty) {
-                  return Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Center(
-                        child: Text(
-                          'No upcoming events',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurface.withOpacity(0.6),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }
-
-                return Column(
-                  children: upcomingEvents
-                      .map((event) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: InkWell(
-                              onTap: () {
-                                navigateToTab(1, eventDate: event.date);
-                              },
-                              child: _EventCard(
-                                title: event.title,
-                                date: event.endDate != null
-                                    ? '${dateFormat.format(event.date)} - ${dateFormat.format(event.endDate!)}'
-                                    : dateFormat.format(event.date),
-                                type: event.type,
-                              ),
-                            ),
-                          ))
-                      .toList(),
-                );
-              },
-            ),
-            const SizedBox(height: 24),
-
-            // Recent News
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Recent News', style: sectionHeaderStyle),
-                TextButton(onPressed: () => navigateToTab(2), child: const Text('View All')),
-              ],
-            ),
-            const SizedBox(height: 12),
-            StreamBuilder<List<Announcement>>(
-              stream: dbService.announcementsStream,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: CircularProgressIndicator(color: colorScheme.primary),
-                    ),
-                  );
-                }
-
-                final announcements = snapshot.data ?? [];
-
-                if (announcements.isEmpty) {
-                  return Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Center(
-                        child: Text(
-                          'No announcements',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurface.withOpacity(0.6),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }
-
-                final latestAnnouncement = announcements.first;
-                return Card(
-                  child: InkWell(
-                    onTap: () {
-                      _showAnnouncementDetails(context, latestAnnouncement);
-                    },
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: colorScheme.primaryContainer,
-                        child: Icon(Icons.campaign,
-                            color: colorScheme.onPrimaryContainer),
-                      ),
-                      title: Text(
-                        latestAnnouncement.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      subtitle: Text(
-                        latestAnnouncement.content,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      trailing: const Icon(Icons.chevron_right),
-                    ),
+                _WelcomeHero(name: name, onLetsGo: _scrollToContent),
+                Container(
+                  key: _contentKey,
+                  color: Colors.white,
+                  padding: const EdgeInsets.fromLTRB(26, 26, 26, 0),
+                  child: const _MessagesPreview(),
+                ),
+                _BlueFeedSection(
+                  title: 'Recent News',
+                  child: _RecentNews(
+                    dbService: _dbService,
+                    onViewNews: () => widget.navigateToTab(2),
                   ),
-                );
-              },
+                ),
+                _BlueFeedSection(
+                  title: 'Upcoming Events',
+                  child: _UpcomingEvents(
+                    dbService: _dbService,
+                    dateFormat: _dateFormat,
+                    onViewCalendar: () => widget.navigateToTab(1),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: _DashboardStats(member: member, dbService: _dbService),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
-  void _showAnnouncementDetails(BuildContext context, Announcement announcement) {
+  void _showAnnouncementDetails(
+      BuildContext context, Announcement announcement) {
     final theme = Theme.of(context);
     final dateFormat = DateFormat('MMMM d, yyyy');
 
@@ -503,7 +272,8 @@ class DashboardTab extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: _getPriorityColor(announcement.priority).withOpacity(0.2),
+                color:
+                    _getPriorityColor(announcement.priority).withOpacity(0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -537,7 +307,9 @@ class DashboardTab extends StatelessWidget {
               ],
               Row(
                 children: [
-                  Icon(Icons.calendar_today, size: 14, color: theme.colorScheme.onSurface.withOpacity(0.6)),
+                  Icon(Icons.calendar_today,
+                      size: 14,
+                      color: theme.colorScheme.onSurface.withOpacity(0.6)),
                   const SizedBox(width: 4),
                   Text(
                     dateFormat.format(announcement.date),
@@ -555,7 +327,8 @@ class DashboardTab extends StatelessWidget {
                   onPressed: () async {
                     final uri = Uri.parse(announcement.externalUrl!);
                     if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      await launchUrl(uri,
+                          mode: LaunchMode.externalApplication);
                     }
                   },
                   icon: const Icon(Icons.open_in_new),
@@ -584,6 +357,500 @@ class DashboardTab extends StatelessWidget {
       default:
         return Colors.green;
     }
+  }
+}
+
+class _WelcomeHero extends StatelessWidget {
+  const _WelcomeHero({required this.name, required this.onLetsGo});
+
+  final String name;
+  final VoidCallback onLetsGo;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 540),
+      padding: const EdgeInsets.fromLTRB(26, 90, 26, 42),
+      color: FblaColors.navy,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Opacity(
+            opacity: 0.22,
+            child: Image.asset('assets/fbla_logo.png', height: 95),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Welcome Back,\n$name',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.displaySmall?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+              height: 1.08,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            "See what you've missed.",
+            textAlign: TextAlign.center,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              color: FblaColors.gold,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 30),
+          SizedBox(
+            width: 210,
+            height: 58,
+            child: FilledButton(
+              onPressed: onLetsGo,
+              style: FilledButton.styleFrom(
+                backgroundColor: FblaColors.schemeDefault().primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(7),
+                ),
+              ),
+              child: const Text(
+                "Let's Go!",
+                style: TextStyle(fontSize: 21, fontWeight: FontWeight.w500),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MessagesPreview extends StatelessWidget {
+  const _MessagesPreview();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Messages',
+          style: TextStyle(
+            fontSize: 31,
+            fontWeight: FontWeight.w900,
+            color: Color(0xFF2D2B2B),
+          ),
+        ),
+        SizedBox(height: 22),
+        _PrototypeMessageCard(
+          text: 'Hey, what have you been using to study for Data Science & AI?',
+        ),
+        _PrototypeMessageCard(
+          text: 'Did you have the time to go and get your California pin?',
+        ),
+        _PrototypeMessageCard(
+          text: 'I placed 3rd at States for my competition.',
+        ),
+        SizedBox(height: 22),
+      ],
+    );
+  }
+}
+
+class _PrototypeMessageCard extends StatelessWidget {
+  const _PrototypeMessageCard({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 22),
+      padding: const EdgeInsets.fromLTRB(24, 26, 24, 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: const Color(0xFFDCDCDC), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            text,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFF2D2B2B),
+                  height: 1.1,
+                ),
+          ),
+          const SizedBox(height: 28),
+          const Row(
+            children: [
+              CircleAvatar(
+                radius: 17,
+                backgroundColor: Color(0xFFDCEAF7),
+                child: Icon(Icons.person, color: FblaColors.navy, size: 20),
+              ),
+              SizedBox(width: 12),
+              Text(
+                'Name',
+                style: TextStyle(
+                  color: FblaColors.muted,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BlueFeedSection extends StatelessWidget {
+  const _BlueFeedSection({required this.title, required this.child});
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      color: const Color(0xFF226ADD),
+      padding: const EdgeInsets.fromLTRB(26, 28, 26, 28),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+          const SizedBox(height: 18),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _RecentNews extends StatelessWidget {
+  const _RecentNews({required this.dbService, required this.onViewNews});
+
+  final DatabaseService dbService;
+  final VoidCallback onViewNews;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<Announcement>>(
+      stream: dbService.announcementsStream,
+      builder: (context, snapshot) {
+        final announcements = snapshot.data ?? [];
+        final title = announcements.isEmpty
+            ? 'News synced with FBLA website'
+            : announcements.first.title;
+        final author =
+            announcements.isEmpty ? 'Author' : announcements.first.author;
+        return _PrototypeFeedCard(
+          title: title,
+          name: author.isEmpty ? 'Author' : author,
+          onTap: onViewNews,
+        );
+      },
+    );
+  }
+}
+
+class _UpcomingEvents extends StatelessWidget {
+  const _UpcomingEvents({
+    required this.dbService,
+    required this.dateFormat,
+    required this.onViewCalendar,
+  });
+
+  final DatabaseService dbService;
+  final DateFormat dateFormat;
+  final VoidCallback onViewCalendar;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<Event>>(
+      stream: dbService.eventsStream,
+      builder: (context, snapshot) {
+        final now = DateTime.now();
+        final upcoming = (snapshot.data ?? [])
+            .where((event) => event.date.isAfter(now))
+            .take(1)
+            .toList();
+        final title = upcoming.isEmpty
+            ? 'An Upcoming Event synced with the FBLA website'
+            : upcoming.first.title;
+        final name = upcoming.isEmpty
+            ? 'Author'
+            : dateFormat.format(upcoming.first.date);
+        return _PrototypeFeedCard(
+            title: title, name: name, onTap: onViewCalendar);
+      },
+    );
+  }
+}
+
+class _PrototypeFeedCard extends StatelessWidget {
+  const _PrototypeFeedCard({
+    required this.title,
+    required this.name,
+    required this.onTap,
+  });
+
+  final String title;
+  final String name;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: const Color(0xFFDCDCDC), width: 1.5),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF2D2B2B),
+                    height: 1.1,
+                  ),
+            ),
+            const SizedBox(height: 28),
+            Row(
+              children: [
+                const CircleAvatar(
+                  radius: 17,
+                  backgroundColor: Color(0xFFDCEAF7),
+                  child: Icon(Icons.person, color: FblaColors.navy, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    name,
+                    style: const TextStyle(
+                      color: FblaColors.muted,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardStats extends StatelessWidget {
+  const _DashboardStats({required this.member, required this.dbService});
+
+  final Member? member;
+  final DatabaseService dbService;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const AppInstructionCard(
+          id: 'home',
+          title: 'Welcome to your dashboard',
+          tips: [
+            'Scroll through messages, news, and events like the prototype.',
+            'Use the top-right menu to jump to other FBLA Link features.',
+          ],
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: _StatCard(
+                title: 'Events',
+                value: '${member?.eventsAttended ?? 0}',
+                icon: Icons.event_available_outlined,
+                color: FblaColors.navy,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: StreamBuilder<List<String>>(
+                stream: dbService.userRegisteredCompetitionsStream,
+                builder: (context, snapshot) {
+                  return _StatCard(
+                    title: 'Competitions',
+                    value: '${snapshot.data?.length ?? 0}',
+                    icon: Icons.emoji_events_outlined,
+                    color: FblaColors.goldDeep,
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _DashboardMenuOverlay extends StatelessWidget {
+  const _DashboardMenuOverlay({required this.onNavigate});
+
+  final ValueChanged<int> onNavigate;
+
+  @override
+  Widget build(BuildContext context) {
+    const items = [
+      ('Competitions', 3, false),
+      ('News', 2, false),
+      ('Events', 1, false),
+      ('Your Profile', 5, false),
+      ('Calendar', 1, false),
+      ('Messages', 4, false),
+      ('Pin Trading Hub', 4, false),
+      ('Guide', 0, false),
+      ('Resources', 0, false),
+      ('Settings', 5, true),
+    ];
+
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Material(
+        color: Colors.transparent,
+        child: SafeArea(
+          child: Container(
+            width: MediaQuery.sizeOf(context).width * 0.72,
+            margin: const EdgeInsets.fromLTRB(0, 18, 0, 18),
+            padding: const EdgeInsets.fromLTRB(22, 18, 22, 0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(8),
+                bottomLeft: Radius.circular(8),
+              ),
+              border: Border.all(color: const Color(0xFFD8D8D8)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.16),
+                  blurRadius: 28,
+                  offset: const Offset(0, 16),
+                ),
+              ],
+            ),
+            child: ListView(
+              children: [
+                const Text(
+                  'FBLA-LINK',
+                  style: TextStyle(
+                    color: Color(0xFF2D2B2B),
+                    fontWeight: FontWeight.w900,
+                    fontSize: 19,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Divider(height: 1),
+                const SizedBox(height: 14),
+                ...items.map(
+                  (item) => _MenuItem(
+                    label: item.$1,
+                    dark: item.$3,
+                    onTap: () => onNavigate(item.$2),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MenuItem extends StatelessWidget {
+  const _MenuItem({
+    required this.label,
+    required this.onTap,
+    this.dark = false,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+  final bool dark;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = dark ? Colors.white : const Color(0xFF2D2B2B);
+    final secondary = dark ? Colors.white70 : FblaColors.muted;
+    return Material(
+      color: dark ? const Color(0xFF2D2B2B) : Colors.white,
+      borderRadius: BorderRadius.circular(dark ? 8 : 0),
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            border: dark
+                ? null
+                : const Border(
+                    bottom: BorderSide(color: Color(0xFFE0E0E0)),
+                  ),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.star_border, color: foreground, size: 25),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: foreground,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      'Menu description.',
+                      style: TextStyle(color: secondary, fontSize: 15),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.home_outlined, color: foreground, size: 18),
+              Text(
+                'A',
+                style: TextStyle(
+                  color: foreground,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -731,7 +998,8 @@ class _EventCard extends StatelessWidget {
 Event? _findConferenceEvent(List<Event> events) {
   final now = DateTime.now();
   final conferences = events.where((event) {
-    final text = '${event.title} ${event.type} ${event.description}'.toLowerCase();
+    final text =
+        '${event.title} ${event.type} ${event.description}'.toLowerCase();
     final isConference = text.contains('conference') ||
         text.contains('nlc') ||
         text.contains('slc') ||
@@ -792,7 +1060,9 @@ class _ConferenceModeCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _isActive ? 'Conference Mode Active' : 'Conference Mode Ready',
+                        _isActive
+                            ? 'Conference Mode Active'
+                            : 'Conference Mode Ready',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -846,10 +1116,15 @@ class _ConferenceModeSheetState extends State<_ConferenceModeSheet> {
   List<_TimelineItem> get _timeline {
     final start = widget.event.date;
     return [
-      _TimelineItem(start.subtract(const Duration(days: 1)), 'Pack, print materials, and confirm travel.'),
-      _TimelineItem(start, 'Check in, review schedule, and attend opening sessions.'),
-      _TimelineItem(start.add(const Duration(days: 1)), 'Compete, attend workshops, and trade pins.'),
-      _TimelineItem((widget.event.endDate ?? start).add(const Duration(days: 1)), 'Write thank-you notes and save feedback.'),
+      _TimelineItem(start.subtract(const Duration(days: 1)),
+          'Pack, print materials, and confirm travel.'),
+      _TimelineItem(
+          start, 'Check in, review schedule, and attend opening sessions.'),
+      _TimelineItem(start.add(const Duration(days: 1)),
+          'Compete, attend workshops, and trade pins.'),
+      _TimelineItem(
+          (widget.event.endDate ?? start).add(const Duration(days: 1)),
+          'Write thank-you notes and save feedback.'),
     ];
   }
 
@@ -1013,7 +1288,8 @@ class _ConferenceModeSheetState extends State<_ConferenceModeSheet> {
     final query = Uri.encodeComponent(
       event.location.isEmpty ? event.title : event.location,
     );
-    final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
+    final uri =
+        Uri.parse('https://www.google.com/maps/search/?api=1&query=$query');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }

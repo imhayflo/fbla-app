@@ -9,6 +9,8 @@ class FblaColors {
   static const Color goldDeep = Color(0xFFD99A00);
   static const Color crimson = Color(0xFFC8102E);
   static const Color paper = Color(0xFFFAF9F6);
+  static const Color text = Color(0xFF2D2B2B);
+  static const Color muted = Color(0xFF6B7280);
 
   static ColorScheme schemeDefault() {
     return ColorScheme.fromSeed(
