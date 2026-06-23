@@ -50,16 +50,39 @@ class _FblaPrototypeMenuOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const items = [
-      ('Competitions', 3, false),
-      ('News', 2, false),
-      ('Events', 1, false),
-      ('Your Profile', 5, false),
-      ('Calendar', 1, false),
-      ('Messages', 4, false),
-      ('Pin Trading Hub', 4, false),
-      ('Guide', 0, false),
-      ('Resources', 0, false),
-      ('Settings', 5, true),
+      (
+        'Competitions',
+        'Events, results, and registration',
+        Icons.emoji_events_outlined,
+        3,
+        false
+      ),
+      ('News', 'Official FBLA updates', Icons.campaign_outlined, 2, false),
+      ('Calendar', 'Meetings and deadlines', Icons.event_outlined, 1, false),
+      (
+        'Your Profile',
+        'Points, rank, and details',
+        Icons.person_outline,
+        5,
+        false
+      ),
+      ('Messages', 'Chapter conversations', Icons.forum_outlined, 4, false),
+      (
+        'Pin Trading Hub',
+        'Connect with members',
+        Icons.push_pin_outlined,
+        4,
+        false
+      ),
+      ('Guide', 'Tips and walkthroughs', Icons.explore_outlined, 0, false),
+      (
+        'Resources',
+        'Helpful links and forms',
+        Icons.folder_open_outlined,
+        0,
+        false
+      ),
+      ('Settings', 'Preferences and account', Icons.settings_outlined, 5, true),
     ];
 
     return Align(
@@ -143,8 +166,10 @@ class _FblaPrototypeMenuOverlay extends StatelessWidget {
                 ...items.map(
                   (item) => _FblaMenuItem(
                     label: item.$1,
-                    dark: item.$3,
-                    onTap: () => onNavigate(item.$2),
+                    description: item.$2,
+                    icon: item.$3,
+                    dark: item.$5,
+                    onTap: () => onNavigate(item.$4),
                   ),
                 ),
               ],
@@ -159,11 +184,15 @@ class _FblaPrototypeMenuOverlay extends StatelessWidget {
 class _FblaMenuItem extends StatelessWidget {
   const _FblaMenuItem({
     required this.label,
+    required this.description,
+    required this.icon,
     required this.onTap,
     this.dark = false,
   });
 
   final String label;
+  final String description;
+  final IconData icon;
   final VoidCallback onTap;
   final bool dark;
 
@@ -189,7 +218,7 @@ class _FblaMenuItem extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(Icons.star_border,
+              Icon(icon,
                   color: dark ? FblaColors.gold : FblaColors.navy, size: 25),
               const SizedBox(width: 14),
               Expanded(
@@ -206,21 +235,13 @@ class _FblaMenuItem extends StatelessWidget {
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      'Menu description.',
+                      description,
                       style: TextStyle(color: secondary, fontSize: 15),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.home_outlined, color: foreground, size: 18),
-              Text(
-                'A',
-                style: TextStyle(
-                  color: foreground,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              Icon(Icons.chevron_right, color: foreground, size: 18),
             ],
           ),
         ),

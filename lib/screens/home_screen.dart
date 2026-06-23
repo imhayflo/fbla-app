@@ -194,15 +194,53 @@ class _DashboardTabState extends State<DashboardTab> {
       backgroundColor: FblaColors.paper,
       appBar: AppBar(
         toolbarHeight: 86,
-        backgroundColor: Colors.white,
+        backgroundColor: FblaColors.porcelain,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.local_fire_department,
-                color: Color(0xFFD5A84F), size: 46),
-            Icon(Icons.emoji_events_outlined,
-                color: Color(0xFFD5A84F), size: 28),
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: FblaColors.navy,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: FblaColors.navy.withOpacity(0.18),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.local_fire_department,
+                color: FblaColors.gold,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'FBLA Link',
+                  style: TextStyle(
+                    color: FblaColors.ink,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                Text(
+                  'Member dashboard',
+                  style: TextStyle(
+                    color: FblaColors.muted,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
         actions: [
@@ -227,8 +265,8 @@ class _DashboardTabState extends State<DashboardTab> {
                 _WelcomeHero(name: name, onLetsGo: _scrollToContent),
                 Container(
                   key: _contentKey,
-                  color: Colors.white,
-                  padding: const EdgeInsets.fromLTRB(26, 26, 26, 0),
+                  color: FblaColors.porcelain,
+                  padding: const EdgeInsets.fromLTRB(22, 28, 22, 4),
                   child: const _MessagesPreview(),
                 ),
                 _BlueFeedSection(
@@ -376,10 +414,10 @@ class _WelcomeHero extends StatelessWidget {
     final theme = Theme.of(context);
     return Container(
       width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 540),
-      padding: const EdgeInsets.fromLTRB(26, 90, 26, 42),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
+      constraints: const BoxConstraints(minHeight: 510),
+      padding: const EdgeInsets.fromLTRB(24, 52, 24, 42),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
@@ -388,64 +426,152 @@ class _WelcomeHero extends StatelessWidget {
             FblaColors.blue,
           ],
         ),
+        boxShadow: [
+          BoxShadow(
+            color: FblaColors.navy.withOpacity(0.24),
+            blurRadius: 28,
+            offset: const Offset(0, 16),
+          ),
+        ],
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Stack(
         children: [
-          Opacity(
-            opacity: 0.20,
-            child: Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.10),
-                borderRadius: BorderRadius.circular(32),
-                border: Border.all(color: Colors.white.withOpacity(0.18)),
-              ),
-              child: Image.asset('assets/fbla_logo.png', height: 82),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Welcome Back,\n$name',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.displaySmall?.copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w900,
-              height: 1.08,
-            ),
-          ),
-          const SizedBox(height: 18),
-          Text(
-            "See what you've missed.",
-            textAlign: TextAlign.center,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              color: FblaColors.gold,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 30),
-          SizedBox(
-            width: 210,
-            height: 58,
-            child: FilledButton(
-              onPressed: onLetsGo,
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.white,
-                shadowColor: FblaColors.gold.withOpacity(0.35),
-                elevation: 8,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(18),
+          const Positioned.fill(
+              child: CustomPaint(painter: _HeroLinePainter())),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.11),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: Colors.white.withOpacity(0.17)),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.auto_awesome, color: FblaColors.gold, size: 16),
+                    SizedBox(width: 7),
+                    Text(
+                      'Ready for what is next',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: const Text(
-                "Let's Go!",
-                style: TextStyle(
-                  color: FblaColors.navy,
-                  fontSize: 21,
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.96),
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(color: Colors.white, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.16),
+                      blurRadius: 28,
+                      offset: const Offset(0, 16),
+                    ),
+                  ],
+                ),
+                child: Image.asset('assets/fbla_logo.png', height: 76),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Welcome Back,\n$name',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.displaySmall?.copyWith(
+                  color: Colors.white,
                   fontWeight: FontWeight.w900,
+                  height: 1.05,
                 ),
               ),
+              const SizedBox(height: 14),
+              Text(
+                "See what you've missed.",
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  color: FblaColors.gold,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 10,
+                runSpacing: 10,
+                children: const [
+                  _HeroPill(icon: Icons.campaign_outlined, label: 'News'),
+                  _HeroPill(
+                      icon: Icons.event_available_outlined, label: 'Events'),
+                  _HeroPill(icon: Icons.groups_outlined, label: 'Social'),
+                ],
+              ),
+              const SizedBox(height: 30),
+              SizedBox(
+                width: 210,
+                height: 58,
+                child: FilledButton.icon(
+                  onPressed: onLetsGo,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    shadowColor: FblaColors.gold.withOpacity(0.35),
+                    elevation: 8,
+                    foregroundColor: FblaColors.navy,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  icon: const Icon(Icons.arrow_downward, size: 18),
+                  label: const Text(
+                    "Let's Go",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroPill extends StatelessWidget {
+  const _HeroPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.11),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withOpacity(0.17)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.white, size: 17),
+          const SizedBox(width: 7),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 13,
             ),
           ),
         ],
@@ -454,47 +580,121 @@ class _WelcomeHero extends StatelessWidget {
   }
 }
 
+class _HeroLinePainter extends CustomPainter {
+  const _HeroLinePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withOpacity(0.08)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.3;
+
+    for (var i = 0; i < 4; i++) {
+      final dy = size.height * (0.12 + i * 0.2);
+      final path = Path()
+        ..moveTo(-24, dy)
+        ..cubicTo(
+          size.width * 0.28,
+          dy - 56,
+          size.width * 0.65,
+          dy + 58,
+          size.width + 24,
+          dy,
+        );
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
 class _MessagesPreview extends StatelessWidget {
   const _MessagesPreview();
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Messages',
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Messages',
+                style: TextStyle(
+                  fontSize: 31,
+                  fontWeight: FontWeight.w900,
+                  color: FblaColors.ink,
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: FblaColors.line),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.forum_outlined, color: FblaColors.navy, size: 16),
+                  SizedBox(width: 6),
+                  Text(
+                    '3 new',
+                    style: TextStyle(
+                      color: FblaColors.navy,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Latest chapter conversations and member check-ins.',
           style: TextStyle(
-            fontSize: 31,
-            fontWeight: FontWeight.w900,
-            color: Color(0xFF2D2B2B),
+            color: FblaColors.muted,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        SizedBox(height: 22),
-        _PrototypeMessageCard(
+        const SizedBox(height: 22),
+        const _PrototypeMessageCard(
           text: 'Hey, what have you been using to study for Data Science & AI?',
+          accent: FblaColors.sky,
         ),
-        _PrototypeMessageCard(
+        const _PrototypeMessageCard(
           text: 'Did you have the time to go and get your California pin?',
+          accent: FblaColors.goldDeep,
         ),
-        _PrototypeMessageCard(
+        const _PrototypeMessageCard(
           text: 'I placed 3rd at States for my competition.',
+          accent: FblaColors.crimson,
         ),
-        SizedBox(height: 22),
+        const SizedBox(height: 22),
       ],
     );
   }
 }
 
 class _PrototypeMessageCard extends StatelessWidget {
-  const _PrototypeMessageCard({required this.text});
+  const _PrototypeMessageCard({
+    required this.text,
+    required this.accent,
+  });
 
   final String text;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
     return _AestheticSurface(
       margin: const EdgeInsets.only(bottom: 18),
+      accent: accent,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -502,27 +702,30 @@ class _PrototypeMessageCard extends StatelessWidget {
             text,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.w900,
-                  color: const Color(0xFF2D2B2B),
+                  color: FblaColors.ink,
                   height: 1.1,
                 ),
           ),
-          const SizedBox(height: 28),
-          const Row(
+          const SizedBox(height: 24),
+          Row(
             children: [
               CircleAvatar(
                 radius: 17,
-                backgroundColor: Color(0xFFDCEAF7),
-                child: Icon(Icons.person, color: FblaColors.navy, size: 20),
+                backgroundColor: accent.withOpacity(0.14),
+                child: Icon(Icons.person, color: accent, size: 20),
               ),
-              SizedBox(width: 12),
-              Text(
-                'Name',
-                style: TextStyle(
-                  color: FblaColors.muted,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 16,
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Chapter member',
+                  style: TextStyle(
+                    color: FblaColors.muted,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                  ),
                 ),
               ),
+              Icon(Icons.arrow_forward, color: accent, size: 18),
             ],
           ),
         ],
@@ -709,30 +912,48 @@ class _AestheticSurface extends StatelessWidget {
   const _AestheticSurface({
     required this.child,
     this.margin,
+    this.accent,
   });
 
   final Widget child;
   final EdgeInsetsGeometry? margin;
+  final Color? accent;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
       margin: margin,
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white, width: 1.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: FblaColors.line.withOpacity(0.86)),
         boxShadow: [
           BoxShadow(
-            color: FblaColors.navy.withOpacity(0.12),
-            blurRadius: 26,
-            offset: const Offset(0, 14),
+            color: FblaColors.navy.withOpacity(0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
           ),
         ],
       ),
-      child: child,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (accent != null) ...[
+            Container(
+              width: 38,
+              height: 4,
+              decoration: BoxDecoration(
+                color: accent,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+            const SizedBox(height: 14),
+          ],
+          child,
+        ],
+      ),
     );
   }
 }
@@ -794,16 +1015,39 @@ class _DashboardMenuOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const items = [
-      ('Competitions', 3, false),
-      ('News', 2, false),
-      ('Events', 1, false),
-      ('Your Profile', 5, false),
-      ('Calendar', 1, false),
-      ('Messages', 4, false),
-      ('Pin Trading Hub', 4, false),
-      ('Guide', 0, false),
-      ('Resources', 0, false),
-      ('Settings', 5, true),
+      (
+        'Competitions',
+        'Events, results, and registration',
+        Icons.emoji_events_outlined,
+        3,
+        false
+      ),
+      ('News', 'Official FBLA updates', Icons.campaign_outlined, 2, false),
+      ('Calendar', 'Meetings and deadlines', Icons.event_outlined, 1, false),
+      (
+        'Your Profile',
+        'Points, rank, and details',
+        Icons.person_outline,
+        5,
+        false
+      ),
+      ('Messages', 'Chapter conversations', Icons.forum_outlined, 4, false),
+      (
+        'Pin Trading Hub',
+        'Connect with members',
+        Icons.push_pin_outlined,
+        4,
+        false
+      ),
+      ('Guide', 'Tips and walkthroughs', Icons.explore_outlined, 0, false),
+      (
+        'Resources',
+        'Helpful links and forms',
+        Icons.folder_open_outlined,
+        0,
+        false
+      ),
+      ('Settings', 'Preferences and account', Icons.settings_outlined, 5, true),
     ];
 
     return Align(
@@ -812,42 +1056,78 @@ class _DashboardMenuOverlay extends StatelessWidget {
         color: Colors.transparent,
         child: SafeArea(
           child: Container(
-            width: MediaQuery.sizeOf(context).width * 0.72,
+            width: MediaQuery.sizeOf(context).width * 0.80,
             margin: const EdgeInsets.fromLTRB(0, 18, 0, 18),
-            padding: const EdgeInsets.fromLTRB(22, 18, 22, 0),
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(8),
-                bottomLeft: Radius.circular(8),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Colors.white, FblaColors.porcelain],
               ),
-              border: Border.all(color: const Color(0xFFD8D8D8)),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(20),
+                bottomLeft: Radius.circular(20),
+              ),
+              border: Border.all(color: FblaColors.line),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.16),
-                  blurRadius: 28,
-                  offset: const Offset(0, 16),
+                  color: FblaColors.navy.withOpacity(0.20),
+                  blurRadius: 34,
+                  offset: const Offset(-8, 16),
                 ),
               ],
             ),
             child: ListView(
               children: [
-                const Text(
-                  'FBLA-LINK',
-                  style: TextStyle(
-                    color: Color(0xFF2D2B2B),
-                    fontWeight: FontWeight.w900,
-                    fontSize: 19,
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: FblaColors.navy,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(
+                        Icons.local_fire_department,
+                        color: FblaColors.gold,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'FBLA Link',
+                            style: TextStyle(
+                              color: FblaColors.ink,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 19,
+                            ),
+                          ),
+                          Text(
+                            'Navigate your chapter hub',
+                            style: TextStyle(
+                              color: FblaColors.muted,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                const Divider(height: 1),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
                 ...items.map(
                   (item) => _MenuItem(
                     label: item.$1,
-                    dark: item.$3,
-                    onTap: () => onNavigate(item.$2),
+                    description: item.$2,
+                    icon: item.$3,
+                    dark: item.$5,
+                    onTap: () => onNavigate(item.$4),
                   ),
                 ),
               ],
@@ -862,36 +1142,41 @@ class _DashboardMenuOverlay extends StatelessWidget {
 class _MenuItem extends StatelessWidget {
   const _MenuItem({
     required this.label,
+    required this.description,
+    required this.icon,
     required this.onTap,
     this.dark = false,
   });
 
   final String label;
+  final String description;
+  final IconData icon;
   final VoidCallback onTap;
   final bool dark;
 
   @override
   Widget build(BuildContext context) {
-    final foreground = dark ? Colors.white : const Color(0xFF2D2B2B);
+    final foreground = dark ? Colors.white : FblaColors.ink;
     final secondary = dark ? Colors.white70 : FblaColors.muted;
     return Material(
-      color: dark ? const Color(0xFF2D2B2B) : Colors.white,
-      borderRadius: BorderRadius.circular(dark ? 8 : 0),
+      color: dark ? FblaColors.navyDark : Colors.white.withOpacity(0.74),
+      borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
-            border: dark
-                ? null
-                : const Border(
-                    bottom: BorderSide(color: Color(0xFFE0E0E0)),
-                  ),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: dark ? FblaColors.navyDark : FblaColors.line,
+            ),
           ),
           child: Row(
             children: [
-              Icon(Icons.star_border, color: foreground, size: 25),
-              const SizedBox(width: 14),
+              Icon(icon, color: foreground, size: 23),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -900,27 +1185,19 @@ class _MenuItem extends StatelessWidget {
                       label,
                       style: TextStyle(
                         color: foreground,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 3),
                     Text(
-                      'Menu description.',
-                      style: TextStyle(color: secondary, fontSize: 15),
+                      description,
+                      style: TextStyle(color: secondary, fontSize: 14),
                     ),
                   ],
                 ),
               ),
-              Icon(Icons.home_outlined, color: foreground, size: 18),
-              Text(
-                'A',
-                style: TextStyle(
-                  color: foreground,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              Icon(Icons.chevron_right, color: foreground, size: 18),
             ],
           ),
         ),

@@ -132,14 +132,14 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
       ),
       cardTheme: CardThemeData(
-        elevation: a.highContrast ? 1 : 4,
-        shadowColor: FblaColors.navy.withOpacity(0.12),
+        elevation: a.highContrast ? 1 : 2,
+        shadowColor: FblaColors.navy.withOpacity(0.10),
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(12),
           side: a.highContrast
               ? BorderSide(color: scheme.outline, width: 1.5)
-              : const BorderSide(color: FblaColors.line),
+              : BorderSide(color: FblaColors.line.withOpacity(0.78)),
         ),
         color: Colors.white,
         margin: EdgeInsets.zero,
@@ -170,7 +170,7 @@ class AppTheme {
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
           textStyle: const TextStyle(fontWeight: FontWeight.w800),
         ),
@@ -181,7 +181,7 @@ class AppTheme {
           side:
               BorderSide(color: scheme.primary, width: a.highContrast ? 2 : 1),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
       ),
@@ -189,15 +189,15 @@ class AppTheme {
         filled: true,
         fillColor: Colors.white,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: FblaColors.line),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: FblaColors.line),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           borderSide:
               BorderSide(color: scheme.primary, width: a.highContrast ? 3 : 2),
         ),

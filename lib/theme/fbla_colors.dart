@@ -11,10 +11,14 @@ class FblaColors {
   static const Color goldDeep = Color(0xFFD49313);
   static const Color crimson = Color(0xFFC8102E);
   static const Color paper = Color(0xFFFAF9F6);
+  static const Color porcelain = Color(0xFFF5F8FD);
+  static const Color ink = Color(0xFF111827);
   static const Color text = Color(0xFF2D2B2B);
   static const Color muted = Color(0xFF6B7280);
   static const Color mist = Color(0xFFEAF1FB);
   static const Color line = Color(0xFFD9E1EC);
+  static const Color sky = Color(0xFF4C8BF5);
+  static const Color emerald = Color(0xFF12956B);
 
   static ColorScheme schemeDefault() {
     return ColorScheme.fromSeed(
