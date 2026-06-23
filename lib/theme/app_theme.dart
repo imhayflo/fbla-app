@@ -31,7 +31,7 @@ class AppTheme {
         foregroundColor: scheme.onSurface,
         surfaceTintColor: scheme.primary.withOpacity(0.12),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: a.highContrast ? 1 : 0,
         shadowColor: Colors.black54,
         surfaceTintColor: Colors.transparent,
@@ -131,9 +131,9 @@ class AppTheme {
         foregroundColor: scheme.onSurface,
         surfaceTintColor: Colors.transparent,
       ),
-      cardTheme: CardTheme(
-        elevation: a.highContrast ? 1 : 0,
-        shadowColor: Colors.black26,
+      cardTheme: CardThemeData(
+        elevation: a.highContrast ? 1 : 4,
+        shadowColor: FblaColors.navy.withOpacity(0.12),
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),

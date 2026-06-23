@@ -284,7 +284,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: _selectedStateCode,
+                      initialValue: _selectedStateCode,
                       decoration: InputDecoration(
                         labelText: 'State *',
                         prefixIcon: const Icon(Icons.map_outlined),
@@ -313,7 +313,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     const SizedBox(height: 16),
                     // Section dropdown (required, regional sections from API — select state first)
                     DropdownButtonFormField<FblaSection>(
-                      value: _selectedSection,
+                      initialValue: _selectedSection,
                       decoration: InputDecoration(
                         labelText: 'Regional Section *',
                         prefixIcon: _sectionsLoading
