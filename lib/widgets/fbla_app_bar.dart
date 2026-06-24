@@ -55,9 +55,19 @@ class FblaAppBar {
       leading: leading ??
           (canPop
               ? null
-              : const Padding(
-                  padding: EdgeInsets.only(left: 18),
-                  child: FblaPrototypeHeaderMark(),
+              : Padding(
+                  padding: const EdgeInsets.only(left: 18),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(14),
+                    onTap: () {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (_) => const HomeScreen(initialIndex: 0),
+                        ),
+                      );
+                    },
+                    child: const FblaPrototypeHeaderMark(),
+                  ),
                 )),
       leadingWidth: canPop ? null : 96,
       title: Column(

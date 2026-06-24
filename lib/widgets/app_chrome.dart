@@ -32,12 +32,28 @@ class FblaPrototypeHeaderMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.local_fire_department, color: Color(0xFFD5A84F), size: 42),
-        Icon(Icons.emoji_events_outlined, color: Color(0xFFD5A84F), size: 25),
-      ],
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: FblaColors.line),
+        boxShadow: [
+          BoxShadow(
+            color: FblaColors.navy.withOpacity(0.18),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Image.asset(
+          'assets/fbla_logo.png',
+          fit: BoxFit.contain,
+        ),
+      ),
     );
   }
 }
@@ -115,29 +131,11 @@ class _FblaPrototypeMenuOverlay extends StatelessWidget {
             ),
             child: ListView(
               children: [
-                Row(
+                const Row(
                   children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: FblaColors.navy,
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: FblaColors.navy.withOpacity(0.20),
-                            blurRadius: 16,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.local_fire_department,
-                        color: FblaColors.gold,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
+                    FblaPrototypeHeaderMark(),
+                    SizedBox(width: 12),
+                    Expanded(
                       child: Text(
                         'FBLA-LINK',
                         style: TextStyle(

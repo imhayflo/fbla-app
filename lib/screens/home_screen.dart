@@ -197,51 +197,65 @@ class _DashboardTabState extends State<DashboardTab> {
         backgroundColor: FblaColors.porcelain,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
-        title: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: FblaColors.navy,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: FblaColors.navy.withOpacity(0.18),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
+        title: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () {
+            widget.navigateToTab(0);
+            _scrollController.animateTo(
+              0,
+              duration: const Duration(milliseconds: 450),
+              curve: Curves.easeOutCubic,
+            );
+          },
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: FblaColors.line),
+                  boxShadow: [
+                    BoxShadow(
+                      color: FblaColors.navy.withOpacity(0.18),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Image.asset(
+                    'assets/fbla_logo.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'FBLA Link',
+                    style: TextStyle(
+                      color: FblaColors.ink,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  Text(
+                    'Member dashboard',
+                    style: TextStyle(
+                      color: FblaColors.muted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.local_fire_department,
-                color: FblaColors.gold,
-                size: 28,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'FBLA Link',
-                  style: TextStyle(
-                    color: FblaColors.ink,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                Text(
-                  'Member dashboard',
-                  style: TextStyle(
-                    color: FblaColors.muted,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
         actions: [
           IconButton(
@@ -267,7 +281,7 @@ class _DashboardTabState extends State<DashboardTab> {
                   key: _contentKey,
                   color: FblaColors.porcelain,
                   padding: const EdgeInsets.fromLTRB(22, 28, 22, 4),
-                  child: const _MessagesPreview(),
+                  child: _MessagesPreview(dbService: _dbService),
                 ),
                 _BlueFeedSection(
                   title: 'Recent News',
@@ -438,107 +452,115 @@ class _WelcomeHero extends StatelessWidget {
         children: [
           const Positioned.fill(
               child: CustomPaint(painter: _HeroLinePainter())),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.11),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: Colors.white.withOpacity(0.17)),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.auto_awesome, color: FblaColors.gold, size: 16),
-                    SizedBox(width: 7),
-                    Text(
-                      'Ready for what is next',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.11),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: Colors.white.withOpacity(0.17)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.auto_awesome,
+                            color: FblaColors.gold, size: 16),
+                        SizedBox(width: 7),
+                        Text(
+                          'Ready for what is next',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.96),
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.16),
+                          blurRadius: 28,
+                          offset: const Offset(0, 16),
+                        ),
+                      ],
+                    ),
+                    child: Image.asset('assets/fbla_logo.png', height: 76),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Welcome Back,\n$name',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.displaySmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                      height: 1.05,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    "See what you've missed.",
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: FblaColors.gold,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: const [
+                      _HeroPill(icon: Icons.campaign_outlined, label: 'News'),
+                      _HeroPill(
+                          icon: Icons.event_available_outlined,
+                          label: 'Events'),
+                      _HeroPill(icon: Icons.groups_outlined, label: 'Social'),
+                    ],
+                  ),
+                  const SizedBox(height: 30),
+                  SizedBox(
+                    width: 210,
+                    height: 58,
+                    child: FilledButton.icon(
+                      onPressed: onLetsGo,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        shadowColor: FblaColors.gold.withOpacity(0.35),
+                        elevation: 8,
+                        foregroundColor: FblaColors.navy,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      icon: const Icon(Icons.arrow_downward, size: 18),
+                      label: const Text(
+                        "Let's Go",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.96),
-                  borderRadius: BorderRadius.circular(28),
-                  border: Border.all(color: Colors.white, width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.16),
-                      blurRadius: 28,
-                      offset: const Offset(0, 16),
-                    ),
-                  ],
-                ),
-                child: Image.asset('assets/fbla_logo.png', height: 76),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Welcome Back,\n$name',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.displaySmall?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                  height: 1.05,
-                ),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                "See what you've missed.",
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  color: FblaColors.gold,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 10,
-                runSpacing: 10,
-                children: const [
-                  _HeroPill(icon: Icons.campaign_outlined, label: 'News'),
-                  _HeroPill(
-                      icon: Icons.event_available_outlined, label: 'Events'),
-                  _HeroPill(icon: Icons.groups_outlined, label: 'Social'),
+                  ),
                 ],
               ),
-              const SizedBox(height: 30),
-              SizedBox(
-                width: 210,
-                height: 58,
-                child: FilledButton.icon(
-                  onPressed: onLetsGo,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    shadowColor: FblaColors.gold.withOpacity(0.35),
-                    elevation: 8,
-                    foregroundColor: FblaColors.navy,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  icon: const Icon(Icons.arrow_downward, size: 18),
-                  label: const Text(
-                    "Let's Go",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),
@@ -611,72 +633,123 @@ class _HeroLinePainter extends CustomPainter {
 }
 
 class _MessagesPreview extends StatelessWidget {
-  const _MessagesPreview();
+  const _MessagesPreview({required this.dbService});
+
+  final DatabaseService dbService;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: dbService.conversationsStream,
+      builder: (context, snapshot) {
+        final conversations = (snapshot.data ?? []).take(3).toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Expanded(
-              child: Text(
-                'Messages',
-                style: TextStyle(
-                  fontSize: 31,
-                  fontWeight: FontWeight.w900,
-                  color: FblaColors.ink,
-                ),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: FblaColors.line),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.forum_outlined, color: FblaColors.navy, size: 16),
-                  SizedBox(width: 6),
-                  Text(
-                    '3 new',
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Messages',
                     style: TextStyle(
-                      color: FblaColors.navy,
+                      fontSize: 31,
                       fontWeight: FontWeight.w900,
+                      color: FblaColors.ink,
                     ),
                   ),
-                ],
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: FblaColors.line),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.forum_outlined,
+                          color: FblaColors.navy, size: 16),
+                      const SizedBox(width: 6),
+                      Text(
+                        conversations.isEmpty
+                            ? '0 new'
+                            : '${conversations.length} recent',
+                        style: const TextStyle(
+                          color: FblaColors.navy,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Latest chapter conversations and member check-ins.',
+              style: TextStyle(
+                color: FblaColors.muted,
+                fontWeight: FontWeight.w600,
               ),
             ),
+            const SizedBox(height: 22),
+            if (snapshot.connectionState == ConnectionState.waiting)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 22),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (conversations.isEmpty)
+              const _AestheticSurface(
+                margin: EdgeInsets.only(bottom: 22),
+                accent: FblaColors.sky,
+                child: Row(
+                  children: [
+                    Icon(Icons.forum_outlined, color: FblaColors.navy),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'There are no messages.',
+                        style: TextStyle(
+                          color: FblaColors.ink,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ...conversations.map(
+                (conversation) {
+                  final names = Map<String, dynamic>.from(
+                    conversation['participantNames'] as Map? ?? {},
+                  );
+                  final otherName = names.entries
+                      .firstWhere(
+                        (entry) => entry.key != dbService.currentUserId,
+                        orElse: () => MapEntry<String, dynamic>('', 'Member'),
+                      )
+                      .value
+                      .toString();
+                  final lastMessage =
+                      conversation['lastMessage']?.toString().trim();
+                  return _PrototypeMessageCard(
+                    text: lastMessage == null || lastMessage.isEmpty
+                        ? 'No messages yet.'
+                        : lastMessage,
+                    name: otherName,
+                    accent: FblaColors.sky,
+                  );
+                },
+              ),
+            const SizedBox(height: 22),
           ],
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          'Latest chapter conversations and member check-ins.',
-          style: TextStyle(
-            color: FblaColors.muted,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 22),
-        const _PrototypeMessageCard(
-          text: 'Hey, what have you been using to study for Data Science & AI?',
-          accent: FblaColors.sky,
-        ),
-        const _PrototypeMessageCard(
-          text: 'Did you have the time to go and get your California pin?',
-          accent: FblaColors.goldDeep,
-        ),
-        const _PrototypeMessageCard(
-          text: 'I placed 3rd at States for my competition.',
-          accent: FblaColors.crimson,
-        ),
-        const SizedBox(height: 22),
-      ],
+        );
+      },
     );
   }
 }
@@ -684,10 +757,12 @@ class _MessagesPreview extends StatelessWidget {
 class _PrototypeMessageCard extends StatelessWidget {
   const _PrototypeMessageCard({
     required this.text,
+    required this.name,
     required this.accent,
   });
 
   final String text;
+  final String name;
   final Color accent;
 
   @override
@@ -715,10 +790,10 @@ class _PrototypeMessageCard extends StatelessWidget {
                 child: Icon(Icons.person, color: accent, size: 20),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Chapter member',
-                  style: TextStyle(
+                  name,
+                  style: const TextStyle(
                     color: FblaColors.muted,
                     fontWeight: FontWeight.w800,
                     fontSize: 16,
@@ -1080,22 +1155,11 @@ class _DashboardMenuOverlay extends StatelessWidget {
             ),
             child: ListView(
               children: [
-                Row(
+                const Row(
                   children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: FblaColors.navy,
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Icon(
-                        Icons.local_fire_department,
-                        color: FblaColors.gold,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
+                    FblaPrototypeHeaderMark(),
+                    SizedBox(width: 12),
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
