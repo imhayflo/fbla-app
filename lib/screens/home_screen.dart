@@ -276,7 +276,11 @@ class _DashboardTabState extends State<DashboardTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _WelcomeHero(name: name, onLetsGo: _scrollToContent),
+                _WelcomeHero(
+                  name: name,
+                  onLetsGo: _scrollToContent,
+                  onNavigate: (index) => widget.navigateToTab(index),
+                ),
                 Container(
                   key: _contentKey,
                   color: FblaColors.porcelain,
@@ -301,7 +305,7 @@ class _DashboardTabState extends State<DashboardTab> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.fromLTRB(26, 30, 26, 30),
                   child: _DashboardStats(member: member, dbService: _dbService),
                 ),
               ],
@@ -418,10 +422,15 @@ class _DashboardTabState extends State<DashboardTab> {
 }
 
 class _WelcomeHero extends StatelessWidget {
-  const _WelcomeHero({required this.name, required this.onLetsGo});
+  const _WelcomeHero({
+    required this.name,
+    required this.onLetsGo,
+    required this.onNavigate,
+  });
 
   final String name;
   final VoidCallback onLetsGo;
+  final ValueChanged<int> onNavigate;
 
   @override
   Widget build(BuildContext context) {
@@ -525,12 +534,22 @@ class _WelcomeHero extends StatelessWidget {
                     alignment: WrapAlignment.center,
                     spacing: 10,
                     runSpacing: 10,
-                    children: const [
-                      _HeroPill(icon: Icons.campaign_outlined, label: 'News'),
+                    children: [
                       _HeroPill(
-                          icon: Icons.event_available_outlined,
-                          label: 'Events'),
-                      _HeroPill(icon: Icons.groups_outlined, label: 'Social'),
+                        icon: Icons.campaign_outlined,
+                        label: 'News',
+                        onTap: () => onNavigate(2),
+                      ),
+                      _HeroPill(
+                        icon: Icons.event_available_outlined,
+                        label: 'Events',
+                        onTap: () => onNavigate(1),
+                      ),
+                      _HeroPill(
+                        icon: Icons.groups_outlined,
+                        label: 'Social',
+                        onTap: () => onNavigate(4),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 30),
@@ -569,34 +588,46 @@ class _WelcomeHero extends StatelessWidget {
 }
 
 class _HeroPill extends StatelessWidget {
-  const _HeroPill({required this.icon, required this.label});
+  const _HeroPill({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   final IconData icon;
   final String label;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.11),
+    return Material(
+      color: Colors.white.withOpacity(0.11),
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.white.withOpacity(0.17)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: Colors.white, size: 17),
-          const SizedBox(width: 7),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-              fontSize: 13,
-            ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: Colors.white.withOpacity(0.17)),
           ),
-        ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: Colors.white, size: 17),
+              const SizedBox(width: 7),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1043,14 +1074,6 @@ class _DashboardStats extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const AppInstructionCard(
-          id: 'home',
-          title: 'Welcome to your dashboard',
-          tips: [
-            'Scroll through messages, news, and events like the prototype.',
-            'Use the top-right menu to jump to other FBLA Link features.',
-          ],
-        ),
         Row(
           children: [
             Expanded(
