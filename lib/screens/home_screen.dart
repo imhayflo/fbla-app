@@ -421,7 +421,7 @@ class _DashboardTabState extends State<DashboardTab> {
   }
 }
 
-class _WelcomeHero extends StatelessWidget {
+class _WelcomeHero extends StatefulWidget {
   const _WelcomeHero({
     required this.name,
     required this.onLetsGo,
@@ -431,6 +431,35 @@ class _WelcomeHero extends StatelessWidget {
   final String name;
   final VoidCallback onLetsGo;
   final ValueChanged<int> onNavigate;
+
+  @override
+  State<_WelcomeHero> createState() => _WelcomeHeroState();
+}
+
+class _WelcomeHeroState extends State<_WelcomeHero>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _paintController;
+  late final Animation<double> _paintProgress;
+
+  @override
+  void initState() {
+    super.initState();
+    _paintController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1050),
+    );
+    _paintProgress = CurvedAnimation(
+      parent: _paintController,
+      curve: Curves.easeOutCubic,
+    );
+    _paintController.forward();
+  }
+
+  @override
+  void dispose() {
+    _paintController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -461,129 +490,232 @@ class _WelcomeHero extends StatelessWidget {
         children: [
           const Positioned.fill(
               child: CustomPaint(painter: _HeroLinePainter())),
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.11),
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: Colors.white.withOpacity(0.17)),
+          AnimatedBuilder(
+            animation: _paintProgress,
+            builder: (context, child) {
+              return ClipPath(
+                clipper: _HeroPaintRevealClipper(
+                  progress: _paintProgress.value,
+                ),
+                child: child,
+              );
+            },
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.11),
+                        borderRadius: BorderRadius.circular(999),
+                        border:
+                            Border.all(color: Colors.white.withOpacity(0.17)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.auto_awesome,
+                              color: FblaColors.gold, size: 16),
+                          SizedBox(width: 7),
+                          Text(
+                            'Ready for what is next',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.96),
+                        borderRadius: BorderRadius.circular(28),
+                        border: Border.all(color: Colors.white, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.16),
+                            blurRadius: 28,
+                            offset: const Offset(0, 16),
+                          ),
+                        ],
+                      ),
+                      child: Image.asset('assets/fbla_logo.png', height: 76),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Welcome Back,\n${widget.name}',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.displaySmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        height: 1.05,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      "See what you've missed.",
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: FblaColors.gold,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 10,
+                      runSpacing: 10,
                       children: [
-                        Icon(Icons.auto_awesome,
-                            color: FblaColors.gold, size: 16),
-                        SizedBox(width: 7),
-                        Text(
-                          'Ready for what is next',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w800,
+                        _HeroPill(
+                          icon: Icons.campaign_outlined,
+                          label: 'News',
+                          onTap: () => widget.onNavigate(2),
+                        ),
+                        _HeroPill(
+                          icon: Icons.event_available_outlined,
+                          label: 'Events',
+                          onTap: () => widget.onNavigate(1),
+                        ),
+                        _HeroPill(
+                          icon: Icons.groups_outlined,
+                          label: 'Social',
+                          onTap: () => widget.onNavigate(4),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 30),
+                    SizedBox(
+                      width: 210,
+                      height: 58,
+                      child: FilledButton.icon(
+                        onPressed: widget.onLetsGo,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          shadowColor: FblaColors.gold.withOpacity(0.35),
+                          elevation: 8,
+                          foregroundColor: FblaColors.navy,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.96),
-                      borderRadius: BorderRadius.circular(28),
-                      border: Border.all(color: Colors.white, width: 2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.16),
-                          blurRadius: 28,
-                          offset: const Offset(0, 16),
-                        ),
-                      ],
-                    ),
-                    child: Image.asset('assets/fbla_logo.png', height: 76),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Welcome Back,\n$name',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.displaySmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w900,
-                      height: 1.05,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    "See what you've missed.",
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: FblaColors.gold,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      _HeroPill(
-                        icon: Icons.campaign_outlined,
-                        label: 'News',
-                        onTap: () => onNavigate(2),
-                      ),
-                      _HeroPill(
-                        icon: Icons.event_available_outlined,
-                        label: 'Events',
-                        onTap: () => onNavigate(1),
-                      ),
-                      _HeroPill(
-                        icon: Icons.groups_outlined,
-                        label: 'Social',
-                        onTap: () => onNavigate(4),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 30),
-                  SizedBox(
-                    width: 210,
-                    height: 58,
-                    child: FilledButton.icon(
-                      onPressed: onLetsGo,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        shadowColor: FblaColors.gold.withOpacity(0.35),
-                        elevation: 8,
-                        foregroundColor: FblaColors.navy,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      icon: const Icon(Icons.arrow_downward, size: 18),
-                      label: const Text(
-                        "Let's Go",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
+                        icon: const Icon(Icons.arrow_downward, size: 18),
+                        label: const Text(
+                          "Let's Go",
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedBuilder(
+                animation: _paintProgress,
+                builder: (context, _) {
+                  return CustomPaint(
+                    painter: _HeroPaintEdgePainter(
+                      progress: _paintProgress.value,
+                    ),
+                  );
+                },
               ),
             ),
           ),
         ],
       ),
     );
+  }
+}
+
+class _HeroPaintRevealClipper extends CustomClipper<Path> {
+  const _HeroPaintRevealClipper({required this.progress});
+
+  final double progress;
+
+  @override
+  Path getClip(Size size) {
+    final p = progress.clamp(0.0, 1.0);
+    final y = size.height * (p * 1.18 - 0.1);
+    final wave = size.height * 0.05;
+
+    return Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width, y - wave)
+      ..cubicTo(
+        size.width * 0.72,
+        y + wave,
+        size.width * 0.36,
+        y - wave * 1.35,
+        0,
+        y + wave,
+      )
+      ..close();
+  }
+
+  @override
+  bool shouldReclip(covariant _HeroPaintRevealClipper oldClipper) {
+    return progress != oldClipper.progress;
+  }
+}
+
+class _HeroPaintEdgePainter extends CustomPainter {
+  const _HeroPaintEdgePainter({required this.progress});
+
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = progress.clamp(0.0, 1.0);
+    if (p <= 0 || p >= 1) return;
+
+    final y = size.height * (p * 1.18 - 0.1);
+    final paint = Paint()
+      ..color = Colors.white.withOpacity((1 - p) * 0.18)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.18
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    final path = Path()
+      ..moveTo(-size.width * 0.1, y)
+      ..cubicTo(
+        size.width * 0.18,
+        y - 34,
+        size.width * 0.42,
+        y + 42,
+        size.width * 0.7,
+        y + 2,
+      )
+      ..cubicTo(
+        size.width * 0.88,
+        y - 24,
+        size.width,
+        y + 22,
+        size.width * 1.1,
+        y,
+      );
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _HeroPaintEdgePainter oldDelegate) {
+    return progress != oldDelegate.progress;
   }
 }
 
