@@ -628,6 +628,20 @@ class _WelcomeHeroState extends State<_WelcomeHero>
                 animation: _paintProgress,
                 builder: (context, _) {
                   return CustomPaint(
+                    painter: _HeroPaintCoverPainter(
+                      progress: _paintProgress.value,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedBuilder(
+                animation: _paintProgress,
+                builder: (context, _) {
+                  return CustomPaint(
                     painter: _HeroPaintEdgePainter(
                       progress: _paintProgress.value,
                     ),
@@ -715,6 +729,44 @@ class _HeroPaintEdgePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _HeroPaintEdgePainter oldDelegate) {
+    return progress != oldDelegate.progress;
+  }
+}
+
+class _HeroPaintCoverPainter extends CustomPainter {
+  const _HeroPaintCoverPainter({required this.progress});
+
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = progress.clamp(0.0, 1.0);
+    if (p >= 1) return;
+
+    final y = size.height * (p * 1.18 - 0.1);
+    final wave = size.height * 0.05;
+    final paint = Paint()
+      ..color = FblaColors.paper
+      ..style = PaintingStyle.fill;
+
+    final cover = Path()
+      ..moveTo(0, y + wave)
+      ..cubicTo(
+        size.width * 0.36,
+        y - wave * 1.35,
+        size.width * 0.72,
+        y + wave,
+        size.width,
+        y - wave,
+      )
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+    canvas.drawPath(cover, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _HeroPaintCoverPainter oldDelegate) {
     return progress != oldDelegate.progress;
   }
 }
@@ -1915,3 +1967,4 @@ class _TimelineItem {
 
   const _TimelineItem(this.time, this.label);
 }
+
