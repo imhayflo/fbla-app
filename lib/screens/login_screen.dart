@@ -9,9 +9,7 @@ import 'home_screen.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key, this.showEntry = true});
-
-  final bool showEntry;
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -26,7 +24,7 @@ class _LoginScreenState extends State<LoginScreen>
 
   bool _isLoading = false;
   bool _obscurePassword = true;
-  late bool _showEntry;
+  bool _showEntry = true;
   String? _error;
   late final AnimationController _paintController;
   late final Animation<double> _paintProgress;
@@ -34,7 +32,6 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   void initState() {
     super.initState();
-    _showEntry = widget.showEntry;
     _paintController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 850),

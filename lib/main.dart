@@ -171,7 +171,8 @@ class _FBLAAppState extends State<FBLAApp> {
             title: 'FBLA Link',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.light(_accessibility),
-            themeMode: ThemeMode.light,
+            darkTheme: AppTheme.dark(_accessibility),
+            themeMode: themeModeNotifier.themeMode,
             builder: (context, child) {
               final mq = MediaQuery.of(context);
               return MediaQuery(
@@ -189,7 +190,10 @@ class _FBLAAppState extends State<FBLAApp> {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const _LaunchSplash();
                 }
-                return _IntroRouteGate(isLoggedIn: snapshot.hasData);
+                if (snapshot.hasData) {
+                  return const _HomeScreenWithSync();
+                }
+                return const LoginScreen();
               },
             ),
           ),
@@ -227,124 +231,6 @@ class _FBLAAppState extends State<FBLAApp> {
       // If there's an error or timeout, return null to show login
       return null;
     }
-  }
-}
-
-class _IntroRouteGate extends StatefulWidget {
-  const _IntroRouteGate({required this.isLoggedIn});
-
-  final bool isLoggedIn;
-
-  @override
-  State<_IntroRouteGate> createState() => _IntroRouteGateState();
-}
-
-class _IntroRouteGateState extends State<_IntroRouteGate> {
-  bool _entered = false;
-
-  void _continue() {
-    if (_entered) return;
-    setState(() => _entered = true);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_entered) {
-      return widget.isLoggedIn
-          ? const _HomeScreenWithSync()
-          : const LoginScreen(showEntry: false);
-    }
-    return _IntroLandingScreen(onStart: _continue);
-  }
-}
-
-class _IntroLandingScreen extends StatelessWidget {
-  const _IntroLandingScreen({required this.onStart});
-
-  final VoidCallback onStart;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: FblaColors.paper,
-      body: InkWell(
-        onTap: onStart,
-        child: SafeArea(
-          child: Stack(
-            children: [
-              const DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFFF9FBFF),
-                      Color(0xFFEAF1FB),
-                      Color(0xFFFAF9F6),
-                    ],
-                  ),
-                ),
-                child: SizedBox.expand(),
-              ),
-              Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 18,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: Colors.white, width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: FblaColors.navy.withOpacity(0.14),
-                            blurRadius: 32,
-                            offset: const Offset(0, 16),
-                          ),
-                        ],
-                      ),
-                      child: Image.asset(
-                        'assets/fbla_logo.png',
-                        height: 104,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    const Text(
-                      'The Official* FBLA Member App',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: FblaColors.text,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Align(
-                alignment: Alignment.bottomCenter,
-                child: Padding(
-                  padding: EdgeInsets.only(bottom: 28),
-                  child: Text(
-                    'Tap Anywhere to Start',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: FblaColors.text,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }
 

@@ -952,21 +952,12 @@ class _MessagesPreview extends StatelessWidget {
                       .toString();
                   final lastMessage =
                       conversation['lastMessage']?.toString().trim();
-                  final mine = conversation['lastSenderId'] == dbService.currentUserId;
-                  final displayText = lastMessage == null || lastMessage.isEmpty
-                      ? 'No messages yet.'
-                      : mine
-                          ? 'You: $lastMessage'
-                          : '$otherName: $lastMessage';
                   return _PrototypeMessageCard(
-                    text: displayText,
+                    text: lastMessage == null || lastMessage.isEmpty
+                        ? 'No messages yet.'
+                        : lastMessage,
                     name: otherName,
                     accent: FblaColors.sky,
-                    onTap: () => _showDashboardChat(
-                      context,
-                      conversation['id'] as String,
-                      otherName,
-                    ),
                   );
                 },
               ),
@@ -983,20 +974,17 @@ class _PrototypeMessageCard extends StatelessWidget {
     required this.text,
     required this.name,
     required this.accent,
-    this.onTap,
   });
 
   final String text;
   final String name;
   final Color accent;
-  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return _AestheticSurface(
       margin: const EdgeInsets.only(bottom: 18),
       accent: accent,
-      onTap: onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1036,133 +1024,6 @@ class _PrototypeMessageCard extends StatelessWidget {
   }
 }
 
-
-void _showDashboardChat(
-  BuildContext context,
-  String conversationId,
-  String title,
-) {
-  showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    builder: (context) => _DashboardChatSheet(
-      dbService: DatabaseService(),
-      conversationId: conversationId,
-      title: title,
-    ),
-  );
-}
-
-class _DashboardChatSheet extends StatefulWidget {
-  const _DashboardChatSheet({
-    required this.dbService,
-    required this.conversationId,
-    required this.title,
-  });
-
-  final DatabaseService dbService;
-  final String conversationId;
-  final String title;
-
-  @override
-  State<_DashboardChatSheet> createState() => _DashboardChatSheetState();
-}
-
-class _DashboardChatSheetState extends State<_DashboardChatSheet> {
-  final TextEditingController _controller = TextEditingController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomInset),
-      child: SizedBox(
-        height: MediaQuery.of(context).size.height * 0.82,
-        child: Column(
-          children: [
-            ListTile(
-              title: Text(widget.title),
-              leading: const Icon(Icons.chat_bubble_outline),
-              trailing: IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close),
-              ),
-            ),
-            Expanded(
-              child: StreamBuilder<List<Map<String, dynamic>>>(
-                stream: widget.dbService.messagesStream(widget.conversationId),
-                builder: (context, snapshot) {
-                  final messages = snapshot.data ?? [];
-                  return ListView.builder(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: messages.length,
-                    itemBuilder: (context, index) {
-                      final message = messages[index];
-                      final mine =
-                          message['senderId'] == widget.dbService.currentUserId;
-                      return Align(
-                        alignment:
-                            mine ? Alignment.centerRight : Alignment.centerLeft,
-                        child: Container(
-                          constraints: const BoxConstraints(maxWidth: 280),
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: mine
-                                ? Theme.of(context)
-                                    .colorScheme
-                                    .primaryContainer
-                                : Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(message['text']?.toString() ?? ''),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      decoration: const InputDecoration(
-                        hintText: 'Message',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton.filled(
-                    onPressed: () {
-                      final text = _controller.text;
-                      _controller.clear();
-                      widget.dbService
-                          .sendChatMessage(widget.conversationId, text);
-                    },
-                    icon: const Icon(Icons.send),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 class _BlueFeedSection extends StatelessWidget {
   const _BlueFeedSection({
     required this.title,
@@ -1342,17 +1203,15 @@ class _AestheticSurface extends StatelessWidget {
     required this.child,
     this.margin,
     this.accent,
-    this.onTap,
   });
 
   final Widget child;
   final EdgeInsetsGeometry? margin;
   final Color? accent;
-  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final surface = Container(
+    return Container(
       width: double.infinity,
       margin: margin,
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
@@ -1384,16 +1243,6 @@ class _AestheticSurface extends StatelessWidget {
           ],
           child,
         ],
-      ),
-    );
-
-    if (onTap == null) return surface;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: surface,
       ),
     );
   }
@@ -1465,10 +1314,21 @@ class _DashboardMenuOverlay extends StatelessWidget {
         false
       ),
       ('Messages', 'Chapter conversations', Icons.forum_outlined, 4, false),
-
-
-
+      (
+        'Pin Trading Hub',
+        'Connect with members',
+        Icons.push_pin_outlined,
+        4,
+        false
+      ),
       ('Guide', 'Tips and walkthroughs', Icons.explore_outlined, 0, false),
+      (
+        'Resources',
+        'Helpful links and forms',
+        Icons.folder_open_outlined,
+        0,
+        false
+      ),
       ('Settings', 'Preferences and account', Icons.settings_outlined, 5, true),
     ];
 
@@ -2107,3 +1967,4 @@ class _TimelineItem {
 
   const _TimelineItem(this.time, this.label);
 }
+

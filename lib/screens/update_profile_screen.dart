@@ -20,7 +20,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
   final _schoolController = TextEditingController();
   final _chapterController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _profilePhotoUrlController = TextEditingController();
   final DatabaseService _dbService = DatabaseService();
 
   bool _saving = false;
@@ -33,7 +32,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     _schoolController.text = widget.member.school;
     _chapterController.text = widget.member.chapter;
     _phoneController.text = widget.member.phone;
-    _profilePhotoUrlController.text = widget.member.profilePhotoUrl;
   }
 
   @override
@@ -42,7 +40,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
     _schoolController.dispose();
     _chapterController.dispose();
     _phoneController.dispose();
-    _profilePhotoUrlController.dispose();
     super.dispose();
   }
 
@@ -58,7 +55,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
         'school': _schoolController.text.trim(),
         'chapter': _chapterController.text.trim(),
         'phone': _phoneController.text.trim(),
-        'profilePhotoUrl': _profilePhotoUrlController.text.trim(),
       });
       if (mounted) {
         setState(() => _saving = false);
@@ -113,30 +109,6 @@ class _UpdateProfileScreenState extends State<UpdateProfileScreen> {
                   ),
                 ),
               ],
-              Center(
-                child: CircleAvatar(
-                  radius: 44,
-                  backgroundImage: _profilePhotoUrlController.text.trim().isEmpty
-                      ? null
-                      : NetworkImage(_profilePhotoUrlController.text.trim()),
-                  child: _profilePhotoUrlController.text.trim().isEmpty
-                      ? const Icon(Icons.person, size: 42)
-                      : null,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _profilePhotoUrlController,
-                keyboardType: TextInputType.url,
-                decoration: InputDecoration(
-                  labelText: 'Profile picture URL (Optional)',
-                  hintText: 'Paste an image link',
-                  prefixIcon: const Icon(Icons.image_outlined),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: 16),
               TextFormField(
                 controller: _nameController,
                 textCapitalization: TextCapitalization.words,

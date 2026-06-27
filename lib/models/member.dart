@@ -11,7 +11,6 @@ class Member {
   /// FBLA regional section id (e.g. ca_bay, tx_north). From API (Firestore fbla_sections, filtered by state).
   final String section;
   final String phone;
-  final String profilePhotoUrl;
   final int points;
   final int rank;
   final int eventsAttended;
@@ -29,7 +28,6 @@ class Member {
     this.state = '',
     this.section = '',
     this.phone = '',
-    this.profilePhotoUrl = '',
     this.points = 0,
     this.rank = 0,
     this.eventsAttended = 0,
@@ -59,7 +57,6 @@ class Member {
       state: data['state'] ?? '',
       section: data['section'] ?? '',
       phone: data['phone'] ?? '',
-      profilePhotoUrl: data['profilePhotoUrl'] ?? '',
       points: data['points'] ?? 0,
       rank: data['rank'] ?? 0,
       eventsAttended: data['eventsAttended'] ?? 0,
@@ -82,7 +79,6 @@ class Member {
       'state': state,
       'section': section,
       'phone': phone,
-      'profilePhotoUrl': profilePhotoUrl,
       'points': points,
       'rank': rank,
       'eventsAttended': eventsAttended,

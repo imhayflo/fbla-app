@@ -126,7 +126,6 @@ class DatabaseService {
       'state': '',
       'section': '',
       'phone': '',
-      'profilePhotoUrl': '',
       'points': 0,
       'rank': 0,
       'eventsAttended': 0,

@@ -135,11 +135,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: FblaAppBar.standard(
-        context,
-        title: 'Create Account',
-        showPrototypeMenu: false,
-      ),
+      appBar: FblaAppBar.standard(context, title: 'Create Account'),
       body: FblaScreenShell(
         child: SafeArea(
           child: SingleChildScrollView(
