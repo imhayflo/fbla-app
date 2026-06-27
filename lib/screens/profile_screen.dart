@@ -482,14 +482,19 @@ class _ProfileHeader extends StatelessWidget {
               CircleAvatar(
                 radius: 50,
                 backgroundColor: Colors.white,
-                child: Text(
-                  member.initials,
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
+                backgroundImage: member.profilePhotoUrl.trim().isEmpty
+                    ? null
+                    : NetworkImage(member.profilePhotoUrl.trim()),
+                child: member.profilePhotoUrl.trim().isEmpty
+                    ? Text(
+                        member.initials,
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
+                      )
+                    : null,
               ),
               if (placements.isNotEmpty)
                 Positioned(

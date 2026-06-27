@@ -6,7 +6,6 @@ import 'import_state_results_screen.dart';
 import '../services/state_results_parser_service.dart';
 import '../widgets/fbla_app_bar.dart';
 import '../widgets/fbla_screen_shell.dart';
-import '../main.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -48,8 +47,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: FblaAppBar.standard(context, title: 'Settings'),
@@ -57,25 +54,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(
-            'Display',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Card(
-            child: SwitchListTile(
-              title: const Text('Dark mode'),
-              subtitle: const Text('Switch between light and dark themes'),
-              value: isDark,
-              onChanged: (value) {
-                themeModeNotifier.toggle();
-              },
-            ),
-          ),
-          const SizedBox(height: 24),
+
           Text(
             'Accessibility',
             style: theme.textTheme.titleMedium?.copyWith(

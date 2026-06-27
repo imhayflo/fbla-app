@@ -83,21 +83,10 @@ class _FblaPrototypeMenuOverlay extends StatelessWidget {
         false
       ),
       ('Messages', 'Chapter conversations', Icons.forum_outlined, 4, false),
-      (
-        'Pin Trading Hub',
-        'Connect with members',
-        Icons.push_pin_outlined,
-        4,
-        false
-      ),
+
+
+
       ('Guide', 'Tips and walkthroughs', Icons.explore_outlined, 0, false),
-      (
-        'Resources',
-        'Helpful links and forms',
-        Icons.folder_open_outlined,
-        0,
-        false
-      ),
       ('Settings', 'Preferences and account', Icons.settings_outlined, 5, true),
     ];
 
@@ -290,25 +279,25 @@ class _PaintStrokePainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
-      ..strokeWidth = size.width * 0.44;
+      ..strokeWidth = (size.shortestSide * 0.32).clamp(150.0, 260.0).toDouble();
 
     final path = Path()
-      ..moveTo(size.width * 0.18, -size.height * 0.08)
+      ..moveTo(size.width * 0.12, -size.height * 0.05)
       ..cubicTo(
-        size.width * 0.55,
-        size.height * 0.22,
-        size.width * 0.18,
-        size.height * 0.28,
-        size.width * 0.46,
-        size.height * 0.48,
+        size.width * 0.58,
+        size.height * 0.14,
+        size.width * 0.2,
+        size.height * 0.34,
+        size.width * 0.5,
+        size.height * 0.5,
       )
       ..cubicTo(
-        size.width * 0.8,
+        size.width * 0.82,
+        size.height * 0.68,
+        size.width * 0.2,
         size.height * 0.72,
-        size.width * 0.22,
-        size.height * 0.58,
-        size.width * 0.78,
-        size.height * 1.1,
+        size.width * 0.84,
+        size.height * 1.08,
       );
 
     final metric = path.computeMetrics().first;
