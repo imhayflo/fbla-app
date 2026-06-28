@@ -1,478 +1,347 @@
-import 'package:http/http.dart' as http;
-import 'package:html/parser.dart' as html_parser;
+import 'dart:convert';
+
 import 'package:html/dom.dart';
+import 'package:html/parser.dart' as html_parser;
+import 'package:http/http.dart' as http;
+
 import '../models/event.dart';
 
-/// Scrapes FBLA calendar events from paginated list pages:
-/// https://www.fbla.org/events/list/?tribe-bar-date=2026-01-01
-/// Handles pagination by changing the date parameter
+/// Pulls public FBLA events from fbla.org and normalizes them for the app calendar.
 class CalendarSyncService {
   static final _headers = {
+    'Accept': 'application/json,text/calendar,text/html;q=0.9,*/*;q=0.8',
     'User-Agent':
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36',
   };
 
-  /// Fetches all calendar events from FBLA by iterating through pages
+  static final _jsonUrls = [
+    'https://www.fbla.org/wp-json/tribe/events/v1/events?per_page=50',
+    'https://www.fbla.org/wp-json/tribe/events/v1/events?per_page=50&start_date=' +
+        DateTime.now().year.toString() +
+        '-01-01',
+  ];
+
+  static final _icalUrls = [
+    'https://www.fbla.org/events/?ical=1',
+    'https://www.fbla.org/calendar/?ical=1',
+  ];
+
+  static final _htmlUrls = [
+    'https://www.fbla.org/events/list/',
+    'https://www.fbla.org/calendar/',
+    'https://www.fbla.org/events/',
+  ];
+
   Future<List<Event>> fetchUpcomingFBLCalendar() async {
-    final List<Event> allEvents = [];
-    final seenIds = <String>{};
-    
-    final currentYear = DateTime.now().year;
-    
-    // Iterate through each month
-    for (int month = 1; month <= 12; month++) {
-      final dateStr = '$currentYear-${month.toString().padLeft(2, '0')}-01';
-      final url = 'https://www.fbla.org/events/list/?tribe-bar-date=$dateStr';
-      
-      print('Fetching events for $dateStr...');
-      
-      try {
-        // Add timeout for each request - max 5 seconds per month
-        final response = await http.get(Uri.parse(url), headers: _headers).timeout(
-          const Duration(seconds: 5),
-          onTimeout: () {
-            print('Request timed out for $dateStr');
-            return http.Response('Timeout', 408);
-          },
-        );
-        
-        // Skip processing if request timed out
-        if (response.statusCode == 408) {
-          print('Skipping $dateStr due to timeout');
-          continue;
-        }
-        
-        if (response.statusCode == 200) {
-          final document = html_parser.parse(response.body);
-          final events = await _parsePage(document);
-          
-          print('Found ${events.length} events for $dateStr');
-          
-          for (final event in events) {
-            // Only add if not seen before
-            if (!seenIds.contains(event.id)) {
-              seenIds.add(event.id);
-              allEvents.add(event);
-            }
-          }
-        } else {
-          print('Failed to fetch $url: ${response.statusCode}');
-        }
-      } catch (e) {
-        print('Error fetching $url: $e');
-      }
+    final byId = <String, Event>{};
+
+    for (final url in _jsonUrls) {
+      final events = await _fetchJsonEvents(url);
+      _mergeEvents(byId, events);
+      if (byId.isNotEmpty) return _sortedUpcoming(byId.values);
     }
 
-    print('Total unique events fetched: ${allEvents.length}');
-    return allEvents;
+    for (final url in _icalUrls) {
+      final events = await _fetchIcalEvents(url);
+      _mergeEvents(byId, events);
+      if (byId.isNotEmpty) return _sortedUpcoming(byId.values);
+    }
+
+    for (final url in _htmlUrls) {
+      final events = await _fetchHtmlEvents(url);
+      _mergeEvents(byId, events);
+    }
+
+    return _sortedUpcoming(byId.values);
   }
 
-  /// Parses a single page and extracts all events
-  Future<List<Event>> _parsePage(Document document) async {
-    final List<Event> events = [];
-    
-    // Try various selectors for event items
-    final selectors = [
-      '.tribe-events-list-event',
-      '.tribe-events-calendar-list-event', 
-      '.type-tribe_events',
-      '.tribe-event',
-      '.tribe-events-item',
-      '.tribe-events-list .tribe-events-event',
-      '[class*="tribe-events-event"]',
-    ];
-    
-    for (final selector in selectors) {
-      final elements = document.querySelectorAll(selector);
-      if (elements.isNotEmpty) {
-        print('Found ${elements.length} events with selector: $selector');
-        for (final element in elements) {
-          final event = await _parseEventElement(element);
-          if (event != null) {
-            events.add(event);
-          }
-        }
-        if (events.isNotEmpty) break;
-      }
+  Future<List<Event>> _fetchJsonEvents(String url) async {
+    try {
+      final response = await http
+          .get(Uri.parse(url), headers: _headers)
+          .timeout(const Duration(seconds: 10));
+      if (response.statusCode != 200) return [];
+
+      final decoded = jsonDecode(response.body);
+      final rawEvents = decoded is Map<String, dynamic>
+          ? decoded['events']
+          : decoded is List
+              ? decoded
+              : const [];
+      if (rawEvents is! List) return [];
+
+      return rawEvents
+          .whereType<Map<String, dynamic>>()
+          .map(_eventFromJson)
+          .whereType<Event>()
+          .toList();
+    } catch (e) {
+      print('Error fetching FBLA JSON calendar: $e');
+      return [];
     }
-    
+  }
+
+  Event? _eventFromJson(Map<String, dynamic> data) {
+    final title = _cleanText(data['title']?.toString() ?? '');
+    final startDetails = data['start_date_details'];
+    final startText = data['start_date']?.toString() ??
+        (startDetails is Map ? startDetails['date']?.toString() : null) ??
+        '';
+    final startDate = DateTime.tryParse(startText);
+    if (title.isEmpty || startDate == null) return null;
+
+    final endText = data['end_date']?.toString() ?? '';
+    final endDate = DateTime.tryParse(endText);
+    final venue = data['venue'];
+    final location = venue is Map
+        ? [venue['venue'], venue['city'], venue['stateprovince']]
+            .where((part) => part != null && part.toString().trim().isNotEmpty)
+            .join(', ')
+        : '';
+    final categories = data['categories'];
+    final type = categories is List &&
+            categories.isNotEmpty &&
+            categories.first is Map
+        ? categories.first['name']?.toString() ?? 'FBLA Event'
+        : 'FBLA Event';
+
+    return Event(
+      id: _eventId(title, startDate, data['url']?.toString()),
+      title: title,
+      description: _cleanText(data['description']?.toString() ??
+          data['excerpt']?.toString() ??
+          'FBLA calendar event'),
+      date: startDate,
+      endDate: endDate,
+      location: location,
+      type: _cleanText(type),
+      link: data['url']?.toString() ?? data['website']?.toString(),
+    );
+  }
+
+  Future<List<Event>> _fetchIcalEvents(String url) async {
+    try {
+      final response = await http
+          .get(Uri.parse(url), headers: _headers)
+          .timeout(const Duration(seconds: 10));
+      if (response.statusCode != 200 || !response.body.contains('BEGIN:VEVENT')) {
+        return [];
+      }
+      return _parseIcal(response.body);
+    } catch (e) {
+      print('Error fetching FBLA iCal calendar: $e');
+      return [];
+    }
+  }
+
+  List<Event> _parseIcal(String body) {
+    final unfolded = body.replaceAll(RegExp(r'\r?\n[ \t]'), '');
+    final blocks = RegExp(r'BEGIN:VEVENT([\s\S]*?)END:VEVENT')
+        .allMatches(unfolded)
+        .map((match) => match.group(1) ?? '');
+    final events = <Event>[];
+
+    for (final block in blocks) {
+      final title = _decodeIcal(_field(block, 'SUMMARY'));
+      final startDate = _parseIcalDate(_field(block, 'DTSTART'));
+      if (title.isEmpty || startDate == null) continue;
+
+      final link = _decodeIcal(_field(block, 'URL'));
+      final description = _decodeIcal(_field(block, 'DESCRIPTION'));
+      events.add(Event(
+        id: _eventId(title, startDate, link.isEmpty ? null : link),
+        title: title,
+        description: description.isEmpty ? 'FBLA calendar event' : description,
+        date: startDate,
+        endDate: _parseIcalDate(_field(block, 'DTEND')),
+        location: _decodeIcal(_field(block, 'LOCATION')),
+        type: 'FBLA Event',
+        link: link.isEmpty ? null : link,
+      ));
+    }
+
     return events;
   }
 
-  /// Parses a single event element
-  Future<Event?> _parseEventElement(Element element) async {
-    try {
-      // Get title - try multiple selectors
-      String? title;
-      final titleSelectors = [
-        '.tribe-events-list-event-title',
-        '.tribe-events-calendar-list-event-title', 
-        '.tribe-event-title',
-        '.event-title',
-        'h2', 'h3',
-        '.tribe-events-event-title',
-        '.tribe-events-title',
-      ];
-      
-      for (final selector in titleSelectors) {
-        final el = element.querySelector(selector);
-        if (el != null && el.text.trim().isNotEmpty) {
-          title = el.text.trim();
-          break;
-        }
-      }
-      
-      // Try getting title from link inside
-      if (title == null || title.isEmpty) {
-        final link = element.querySelector('a[href]');
-        title = link?.text.trim();
-      }
-      
-      if (title == null || title.isEmpty || title.length < 3) return null;
-      
-      // Clean up title
-      title = title.split('\n').first.trim();
-      
-      // Get start and end dates
-      DateTime? startDate;
-      DateTime? endDate;
-      
-      // Try to find date information
-      final dateSelectors = [
-        '.tribe-events-list-event-date',
-        '.tribe-events-calendar-list-event-date',
-        '.tribe-event-date',
-        '.event-date',
-        '.tribe-events-event-date',
-        '.date',
-        'time',
-      ];
-      
-      for (final selector in dateSelectors) {
-        final el = element.querySelector(selector);
-        if (el != null && el.text.trim().isNotEmpty) {
-          final dateText = el.text.trim();
-          final parsed = _extractDateRange(dateText);
-          if (parsed.$1 != null) {
-            startDate = parsed.$1;
-            endDate = parsed.$2;
-            break;
-          }
-        }
-        
-        // Check datetime attribute
-        if (selector == 'time') {
-          final timeEl = element.querySelector(selector);
-          final datetime = timeEl?.attributes['datetime'];
-          if (datetime != null) {
-            final dt = DateTime.tryParse(datetime);
-            if (dt != null) {
-              startDate = dt;
-              break;
-            }
-          }
-        }
-      }
-      
-      // Default to current date if no date found
-      startDate ??= DateTime.now();
-      
-      // Get description from list view first
-      String description = '';
-      
-      // First try to get description from within the event element itself
-      final inlineDesc = element.querySelector('.tribe-events-list-event-description, .tribe-events-event-description, .event-description, .tribe-events-content');
-      if (inlineDesc != null && inlineDesc.text.trim().isNotEmpty) {
-        description = inlineDesc.text.trim();
-      }
-      
-      // If no inline description, try to get from summary/excerpt
-      if (description.isEmpty) {
-        final excerptSelectors = ['.tribe-events-excerpt', '.tribe-event-summary', '.event-summary', '.entry-summary', '[class*="excerpt"]', '[class*="summary"]'];
-        for (final selector in excerptSelectors) {
-          final el = element.querySelector(selector);
-          if (el != null && el.text.trim().isNotEmpty) {
-            description = el.text.trim();
-            break;
-          }
-        }
-      }
-      
-      // Also check for description in paragraph tags within the event element
-      if (description.isEmpty) {
-        final paragraphs = element.querySelectorAll('p');
-        for (final p in paragraphs) {
-          final text = p.text.trim();
-          if (text.length > 30) {
-            description = text;
-            break;
-          }
-        }
-      }
-      
-      // If still no description, get all text content from the event element as fallback
-      if (description.isEmpty) {
-        final allText = element.text.trim();
-        // Try to extract just the description part (after title, before location/link)
-        if (allText.length > 50) {
-          // Split by common separators and find the longest text block
-          final parts = allText.split(RegExp(r'\n|\r'));
-          for (final part in parts) {
-            final trimmed = part.trim();
-            if (trimmed.length > 50 && !trimmed.contains('http')) {
-              description = trimmed;
-              break;
-            }
-          }
-        }
-      }
-      
-      // Get event link - try multiple selectors to find the best link
-      String? link;
-      final linkSelectors = [
-        '.tribe-events-list-event-title a',
-        '.tribe-events-event-title a',
-        '.tribe-event-title a',
-        '.event-title a',
-        '.tribe-events-title a',
-        'a.tribe-event-link',
-        'a.tribe-events-event-link',
-      ];
-      
-      for (final selector in linkSelectors) {
-        final linkEl = element.querySelector(selector);
-        if (linkEl != null) {
-          link = linkEl.attributes['href'];
-          if (link != null && link.isNotEmpty) break;
-        }
-      }
-      
-      // Fallback to any link in the element
-      if (link == null || link.isEmpty) {
-        final anyLink = element.querySelector('a[href]');
-        link = anyLink?.attributes['href'];
-      }
-      
-      // Always fetch from detail page to get full description
-      // This ensures we get the complete event description, not just the preview
-      // Prefer the longer description if we have both
-      if (link != null && link.isNotEmpty) {
-        final detailDescription = await _fetchEventDetailDescription(link);
-        if (detailDescription != null && detailDescription.isNotEmpty) {
-          // Use the longer description for more complete information
-          if (detailDescription.length > description.length) {
-            description = detailDescription;
-          }
-        }
-      }
-      
-      // Get event type
-      String type = 'FBLA Event';
-      final typeSelectors = [
-        '.tribe-events-event-category',
-        '.tribe-event-category',
-        '.event-category',
-      ];
-      
-      for (final selector in typeSelectors) {
-        final el = element.querySelector(selector);
-        if (el != null && el.text.trim().isNotEmpty) {
-          type = el.text.trim();
-          break;
-        }
-      }
-      
-      return Event(
-        id: 'fbla_${title.hashCode.abs()}',
-        title: title,
-        description: description,
-        date: startDate,
-        endDate: endDate,
-        location: '',
-        type: type,
-        link: link,
-      );
-    } catch (e) {
-      return null;
-    }
-  }
-  
-  /// Fetches the event detail page and extracts the full description
-  Future<String?> _fetchEventDetailDescription(String url) async {
-    try {
-      final response = await http.get(Uri.parse(url), headers: _headers).timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          return http.Response('Timeout', 408);
-        },
-      );
-      
-      if (response.statusCode == 200) {
-        final document = html_parser.parse(response.body);
-        
-        // Try various selectors for the event description/content
-        // More aggressive matching for common event calendar plugins
-        final detailDescSelectors = [
-          // The Events Calendar plugin selectors
-          '.tribe-events-content',
-          '.tribe-events-event-description',
-          '.tribe-events-single-section-description',
-          '.tribe-events-event-details .tribe-events-content',
-          '.tribe-events-single-content',
-          '.tribe-events-viewmore',
-          // General WordPress selectors
-          '.entry-content',
-          '.post-content',
-          '.entry-summary',
-          'article .entry-content',
-          'article .post-content',
-          // More generic
-          '[class*="event-description"]',
-          '[class*="event-content"]',
-          '[class*="description"]',
-          '.content',
-          'main',
-          'article',
-        ];
-        
-        String? bestDescription;
-        
-        for (final selector in detailDescSelectors) {
-          final el = document.querySelector(selector);
-          if (el != null && el.text.trim().isNotEmpty) {
-            final text = el.text.trim();
-            // Make sure we have substantial content (at least 50 chars)
-            if (text.length >= 50) {
-              // If this is the first good match, use it
-              if (bestDescription == null || text.length > bestDescription.length) {
-                bestDescription = text;
-              }
-            }
-          }
-        }
-        
-        if (bestDescription != null && bestDescription.length >= 50) {
-          return bestDescription;
-        }
-        
-        // Try all paragraph text from the page as fallback
-        final paragraphs = document.querySelectorAll('p');
-        if (paragraphs.isNotEmpty) {
-          final buffer = StringBuffer();
-          for (final p in paragraphs) {
-            final text = p.text.trim();
-            // Skip short paragraphs and navigation/footer text
-            if (text.length > 30 && !_isNavigationText(text)) {
-              buffer.writeln(text);
-            }
-          }
-          if (buffer.length >= 50) {
-            return buffer.toString().trim();
-          }
-        }
-        
-        // Last resort: get all text content from main content areas
-        final contentSelectors = ['article', 'main', '#main', '.main-content', '.site-content'];
-        for (final selector in contentSelectors) {
-          final el = document.querySelector(selector);
-          if (el != null && el.text.trim().length > 50) {
-            return el.text.trim();
-          }
-        }
-      }
-    } catch (e) {
-      print('Error fetching event detail: $e');
-    }
-    return null;
-  }
-  
-  /// Check if text is likely navigation or boilerplate text to skip
-  bool _isNavigationText(String text) {
-    final lowerText = text.toLowerCase();
-    return lowerText.contains('menu') || 
-           lowerText.contains('home') || 
-           lowerText.contains('about') ||
-           lowerText.contains('contact') ||
-           lowerText.contains('login') ||
-           lowerText.contains('search') ||
-           lowerText.contains('copyright') ||
-           lowerText.contains('follow us') ||
-           lowerText.contains('share this');
+  String _field(String block, String name) {
+    final match = RegExp('^' + name + r'(?:;[^:]*)?:(.*)', multiLine: true)
+        .firstMatch(block);
+    return match?.group(1)?.trim() ?? '';
   }
 
-  /// Extracts start and end dates from date text
-  (DateTime?, DateTime?) _extractDateRange(String dateText) {
-    if (dateText.isEmpty) return (null, null);
-    
+  DateTime? _parseIcalDate(String value) {
+    if (value.isEmpty) return null;
+    final clean = value.trim().replaceAll('Z', '');
+    if (RegExp(r'^\d{8}$').hasMatch(clean)) {
+      return DateTime(
+        int.parse(clean.substring(0, 4)),
+        int.parse(clean.substring(4, 6)),
+        int.parse(clean.substring(6, 8)),
+      );
+    }
+    if (RegExp(r'^\d{8}T\d{6}$').hasMatch(clean)) {
+      return DateTime(
+        int.parse(clean.substring(0, 4)),
+        int.parse(clean.substring(4, 6)),
+        int.parse(clean.substring(6, 8)),
+        int.parse(clean.substring(9, 11)),
+        int.parse(clean.substring(11, 13)),
+        int.parse(clean.substring(13, 15)),
+      );
+    }
+    return DateTime.tryParse(value);
+  }
+
+  Future<List<Event>> _fetchHtmlEvents(String url) async {
+    try {
+      final response = await http
+          .get(Uri.parse(url), headers: _headers)
+          .timeout(const Duration(seconds: 10));
+      if (response.statusCode != 200) return [];
+      final document = html_parser.parse(response.body);
+      return _parseHtmlPage(document);
+    } catch (e) {
+      print('Error fetching FBLA HTML calendar: $e');
+      return [];
+    }
+  }
+
+  List<Event> _parseHtmlPage(Document document) {
+    final selectors = [
+      '[data-js="tribe-events-view"] article',
+      '.tribe-events-calendar-list__event',
+      '.tribe-events-list-event',
+      '.type-tribe_events',
+      '[class*="tribe-events-calendar-list__event"]',
+    ];
+
+    final events = <Event>[];
+    for (final selector in selectors) {
+      final elements = document.querySelectorAll(selector);
+      for (final element in elements) {
+        final event = _parseHtmlEvent(element);
+        if (event != null) events.add(event);
+      }
+      if (events.isNotEmpty) break;
+    }
+    return events;
+  }
+
+  Event? _parseHtmlEvent(Element element) {
+    final titleEl = element.querySelector(
+      '.tribe-events-calendar-list__event-title a, .tribe-events-event-title a, h2 a, h3 a, a[href*="/event/"]',
+    );
+    final title = _cleanText(
+      titleEl?.text ?? element.querySelector('h2, h3')?.text ?? '',
+    );
+    if (title.isEmpty) return null;
+
+    final timeEl = element.querySelector('time[datetime]');
+    final date = DateTime.tryParse(timeEl?.attributes['datetime'] ?? '') ??
+        _extractDate(element.text);
+    if (date == null) return null;
+
+    final description = _cleanText(element
+            .querySelector('.tribe-events-calendar-list__event-description, .tribe-events-content, .entry-summary, p')
+            ?.text ??
+        'FBLA calendar event');
+    final location = _cleanText(element
+            .querySelector('.tribe-events-calendar-list__event-venue, .tribe-events-venue-details, [class*="venue"]')
+            ?.text ??
+        '');
+    final link = titleEl?.attributes['href'];
+
+    return Event(
+      id: _eventId(title, date, link),
+      title: title,
+      description: description.isEmpty ? 'FBLA calendar event' : description,
+      date: date,
+      location: location,
+      type: 'FBLA Event',
+      link: link,
+    );
+  }
+
+  DateTime? _extractDate(String text) {
     final currentYear = DateTime.now().year;
-    
-    // Try various date range patterns
-    // Pattern: "January 15 - January 20, 2026" or "Jan 15 - 20, 2026"
-    final rangePattern1 = RegExp(r'(\w+)\s+(\d+)\s*[-–]\s*(\w+)\s+(\d+),?\s*(\d{4})?');
-    final match1 = rangePattern1.firstMatch(dateText);
-    if (match1 != null) {
-      try {
-        final startMonthName = match1.group(1)!;
-        final startDay = int.parse(match1.group(2)!);
-        final endMonthName = match1.group(3)!;
-        final endDay = int.parse(match1.group(4)!);
-        
-        int startMonth = _monthToNumber(startMonthName) ?? 1;
-        int endMonth = _monthToNumber(endMonthName) ?? startMonth;
-        int year = currentYear;
-        
-        if (match1.group(5) != null) {
-          year = int.tryParse(match1.group(5)!) ?? currentYear;
-        }
-        
-        return (
-          DateTime(year, startMonth, startDay),
-          DateTime(year, endMonth, endDay)
-        );
-      } catch (e) {
-        // Continue to next pattern
+    final match = RegExp(
+      r'(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\.?\s+(\d{1,2})(?:,\s*(\d{4}))?',
+      caseSensitive: false,
+    ).firstMatch(text);
+    if (match == null) return null;
+    final month = _monthToNumber(match.group(1)!);
+    final day = int.tryParse(match.group(2)!);
+    final year = int.tryParse(match.group(3) ?? '') ?? currentYear;
+    if (month == null || day == null) return null;
+    return DateTime(year, month, day);
+  }
+
+  void _mergeEvents(Map<String, Event> byId, Iterable<Event> events) {
+    for (final event in events) {
+      if (!event.date.isBefore(DateTime.now().subtract(const Duration(days: 1)))) {
+        byId[event.id] = event;
       }
     }
-    
-    // Pattern: "January 15, 2026"
-    final singlePattern = RegExp(r'(\w+)\s+(\d+),?\s*(\d{4})?');
-    final match2 = singlePattern.firstMatch(dateText);
-    if (match2 != null) {
-      try {
-        final monthName = match2.group(1)!;
-        final day = int.parse(match2.group(2)!);
-        final month = _monthToNumber(monthName);
-        
-        if (month != null) {
-          int year = currentYear;
-          if (match2.group(3) != null) {
-            year = int.tryParse(match2.group(3)!) ?? currentYear;
-          }
-          return (DateTime(year, month, day), null);
-        }
-      } catch (e) {
-        // Continue
-      }
-    }
-    
-    return (null, null);
+  }
+
+  List<Event> _sortedUpcoming(Iterable<Event> events) {
+    final sorted = events.toList()..sort((a, b) => a.date.compareTo(b.date));
+    return sorted;
+  }
+
+  String _eventId(String title, DateTime date, String? link) {
+    final raw = ((link ?? title) + '_' + date.toIso8601String().substring(0, 10))
+        .toLowerCase();
+    final normalized = raw.replaceAll(RegExp(r'[^a-z0-9]+'), '_');
+    return 'fbla_' + normalized.replaceAll(RegExp(r'^_+|_+$'), '');
+  }
+
+  String _cleanText(String value) {
+    return value
+        .replaceAll(RegExp(r'<[^>]*>'), ' ')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
+  String _decodeIcal(String value) {
+    return value
+        .replaceAll(r'\n', ' ')
+        .replaceAll(r'\,', ',')
+        .replaceAll(r'\;', ';')
+        .replaceAll(r'\\', '\\')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
   }
 
   int? _monthToNumber(String monthName) {
-    final months = {
-      'january': 1, 'jan': 1,
-      'february': 2, 'feb': 2,
-      'march': 3, 'mar': 3,
-      'april': 4, 'apr': 4,
+    const months = {
+      'january': 1,
+      'jan': 1,
+      'february': 2,
+      'feb': 2,
+      'march': 3,
+      'mar': 3,
+      'april': 4,
+      'apr': 4,
       'may': 5,
-      'june': 6, 'jun': 6,
-      'july': 7, 'jul': 7,
-      'august': 8, 'aug': 8,
-      'september': 9, 'sep': 9, 'sept': 9,
-      'october': 10, 'oct': 10,
-      'november': 11, 'nov': 11,
-      'december': 12, 'dec': 12,
+      'june': 6,
+      'jun': 6,
+      'july': 7,
+      'jul': 7,
+      'august': 8,
+      'aug': 8,
+      'september': 9,
+      'sep': 9,
+      'sept': 9,
+      'october': 10,
+      'oct': 10,
+      'november': 11,
+      'nov': 11,
+      'december': 12,
+      'dec': 12,
     };
-    return months[monthName.toLowerCase()];
+    return months[monthName.toLowerCase().replaceAll('.', '')];
   }
 }

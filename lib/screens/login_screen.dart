@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import '../utils/validators.dart';
 import '../theme/fbla_colors.dart';
 import '../widgets/app_chrome.dart';
+import 'demo_tour_screen.dart';
 import 'home_screen.dart';
 import 'signup_screen.dart';
 
@@ -130,6 +131,13 @@ class _LoginScreenState extends State<LoginScreen>
         );
       }
     }
+  }
+
+  void _openDemo() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const DemoTourScreen()),
+    );
   }
 
   @override
@@ -304,11 +312,25 @@ class _LoginScreenState extends State<LoginScreen>
                       child: const Text('Create account'),
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed: _openDemo,
+                    icon: const Icon(Icons.play_circle_outline),
+                    label: const Text('Launch guided demo'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: FblaColors.navy,
+                      side: const BorderSide(color: FblaColors.navy),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
-          if (_showEntry) _EntryScreen(onStart: _startEntry),
+          if (_showEntry) _EntryScreen(onStart: _startEntry, onDemo: _openDemo),
           AnimatedBuilder(
             animation: _paintProgress,
             builder: (context, _) {
@@ -322,9 +344,10 @@ class _LoginScreenState extends State<LoginScreen>
 }
 
 class _EntryScreen extends StatelessWidget {
-  const _EntryScreen({required this.onStart});
+  const _EntryScreen({required this.onStart, required this.onDemo});
 
   final VoidCallback onStart;
+  final VoidCallback onDemo;
 
   @override
   Widget build(BuildContext context) {
@@ -383,18 +406,44 @@ class _EntryScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-                        const Align(
+                        Align(
                           alignment: Alignment.bottomCenter,
                           child: Padding(
-                            padding: EdgeInsets.only(bottom: 28),
-                            child: Text(
-                              'Tap Anywhere to Start',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: FblaColors.text,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w800,
-                              ),
+                            padding: const EdgeInsets.only(bottom: 28),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                OutlinedButton.icon(
+                                  onPressed: onDemo,
+                                  icon: const Icon(Icons.play_circle_outline),
+                                  label: const Text('Watch guided demo'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: FblaColors.navy,
+                                    side: const BorderSide(
+                                      color: FblaColors.navy,
+                                      width: 1.5,
+                                    ),
+                                    backgroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 18,
+                                      vertical: 12,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                const Text(
+                                  'Tap Anywhere to Start',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: FblaColors.text,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),

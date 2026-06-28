@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:fbla_member_app/screens/demo_tour_screen.dart';
 import 'package:fbla_member_app/screens/events_screen.dart';
 import 'package:fbla_member_app/screens/announcements_screen.dart';
 import 'package:fbla_member_app/screens/profile_screen.dart';
@@ -188,6 +189,13 @@ class _DashboardTabState extends State<DashboardTab> {
     );
   }
 
+  void _openDemo() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const DemoTourScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -258,6 +266,15 @@ class _DashboardTabState extends State<DashboardTab> {
           ),
         ),
         actions: [
+          IconButton(
+            tooltip: 'Launch guided demo',
+            onPressed: _openDemo,
+            icon: const Icon(
+              Icons.play_circle_outline,
+              size: 30,
+              color: FblaColors.navy,
+            ),
+          ),
           IconButton(
             tooltip: 'Open menu',
             onPressed: _openMenu,

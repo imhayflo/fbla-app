@@ -200,7 +200,7 @@ class _EventFinderCard extends StatelessWidget {
             ),
             FilledButton.tonalIcon(
               onPressed: onTap,
-              icon: const Icon(Icons.auto_awesome),
+              icon: const Icon(Icons.quiz_outlined),
               label: const Text('Start'),
             ),
           ],

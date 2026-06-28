@@ -472,61 +472,10 @@ class _PinsTab extends StatelessWidget {
         FilledButton.icon(
           onPressed: () => _showNewPinListing(context),
           icon: const Icon(Icons.add),
-          label: const Text('List a pin for trade'),
+          label: const Text('Create pin request'),
         ),
         const SizedBox(height: 16),
-        const _SectionTitle(title: 'Pin stock market'),
-        SizedBox(
-          height: 132,
-          child: StreamBuilder<List<Map<String, dynamic>>>(
-            stream: dbService.pinMarketStream,
-            builder: (context, snapshot) {
-              final market = snapshot.data ?? [];
-              if (market.isEmpty) {
-                return const _EmptyState(
-                  icon: Icons.show_chart,
-                  text: 'Pin values appear after listings are created.',
-                );
-              }
-              return ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: market.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (context, index) {
-                  final item = market[index];
-                  final value = (item['lastValue'] as num?)?.toDouble() ?? 0;
-                  return SizedBox(
-                    width: 180,
-                    child: Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item['pinName']?.toString() ?? 'Pin',
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            const Spacer(),
-                            Text(
-                              '\$${value.toStringAsFixed(0)}',
-                              style: Theme.of(context).textTheme.headlineSmall,
-                            ),
-                            Text('${item['listingCount'] ?? 0} listings'),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 20),
-        const _SectionTitle(title: 'Trade listings'),
+        const _SectionTitle(title: 'Pin trade requests'),
         StreamBuilder<List<Map<String, dynamic>>>(
           stream: dbService.pinListingsStream,
           builder: (context, snapshot) {
@@ -534,23 +483,36 @@ class _PinsTab extends StatelessWidget {
             if (listings.isEmpty) {
               return const _EmptyState(
                 icon: Icons.push_pin_outlined,
-                text: 'No pins listed yet.',
+                text: 'No pin requests yet.',
               );
             }
             return Column(
               children: listings.map((listing) {
                 final ownerId = listing['ownerId'];
                 final mine = ownerId == dbService.currentUserId;
-                final value = (listing['askingValue'] as num?)?.toDouble() ?? 0;
+                final wantedPin = listing['pinName']?.toString() ?? 'FBLA pin';
+                final wantedState = listing['state']?.toString() ?? 'Any chapter';
+                final offeredPin = listing['offeredPinName']?.toString() ??
+                    listing['tradeFor']?.toString() ??
+                    'Open to offers';
+                final offerCondition = listing['offerCondition']?.toString() ??
+                    listing['condition']?.toString() ??
+                    'Good';
+                final offerNotes = listing['offerNotes']?.toString() ?? '';
+                final subtitle = StringBuffer()
+                  ..writeln('${listing['ownerName'] ?? 'Member'} is looking for $wantedState')
+                  ..writeln('Offering: $offeredPin - $offerCondition');
+                if (offerNotes.trim().isNotEmpty) {
+                  subtitle.write(offerNotes.trim());
+                }
+
                 return Card(
                   child: ListTile(
                     leading: CircleAvatar(
-                      child: Text(_pinInitials(listing['state']?.toString())),
+                      child: Text(_pinInitials(wantedState)),
                     ),
-                    title: Text(listing['pinName']?.toString() ?? 'FBLA pin'),
-                    subtitle: Text(
-                      '${listing['condition'] ?? 'Good'} • ${listing['ownerName'] ?? 'Member'}\nWants: ${listing['tradeFor'] ?? 'Open to offers'}',
-                    ),
+                    title: Text('Looking for $wantedPin'),
+                    subtitle: Text(subtitle.toString().trim()),
                     isThreeLine: true,
                     trailing: mine
                         ? const Chip(label: Text('Yours'))
@@ -559,11 +521,11 @@ class _PinsTab extends StatelessWidget {
                               await dbService.requestPinTrade(listing);
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Trade request sent')),
+                                  const SnackBar(content: Text('Trade offer sent')),
                                 );
                               }
                             },
-                            child: Text('\$${value.toStringAsFixed(0)}'),
+                            child: const Text('Offer'),
                           ),
                   ),
                 );
@@ -595,19 +557,19 @@ class _PinListingSheet extends StatefulWidget {
 
 class _PinListingSheetState extends State<_PinListingSheet> {
   final _formKey = GlobalKey<FormState>();
-  final _pinName = TextEditingController();
-  final _state = TextEditingController();
-  final _condition = TextEditingController(text: 'Good');
-  final _value = TextEditingController(text: '10');
-  final _tradeFor = TextEditingController(text: 'Open to offers');
+  final _wantedPin = TextEditingController();
+  final _wantedState = TextEditingController();
+  final _offeredPin = TextEditingController();
+  final _offerCondition = TextEditingController(text: 'Good');
+  final _offerNotes = TextEditingController();
 
   @override
   void dispose() {
-    _pinName.dispose();
-    _state.dispose();
-    _condition.dispose();
-    _value.dispose();
-    _tradeFor.dispose();
+    _wantedPin.dispose();
+    _wantedState.dispose();
+    _offeredPin.dispose();
+    _offerCondition.dispose();
+    _offerNotes.dispose();
     super.dispose();
   }
 
@@ -618,62 +580,61 @@ class _PinListingSheetState extends State<_PinListingSheet> {
       padding: EdgeInsets.fromLTRB(16, 16, 16, bottomInset + 16),
       child: Form(
         key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const ListTile(
-              leading: Icon(Icons.push_pin_outlined),
-              title: Text('List a pin'),
-            ),
-            TextFormField(
-              controller: _pinName,
-              decoration: const InputDecoration(labelText: 'Pin name'),
-              validator: _required,
-            ),
-            TextFormField(
-              controller: _state,
-              decoration: const InputDecoration(labelText: 'State or chapter'),
-              validator: _required,
-            ),
-            TextFormField(
-              controller: _condition,
-              decoration: const InputDecoration(labelText: 'Condition'),
-              validator: _required,
-            ),
-            TextFormField(
-              controller: _value,
-              decoration: const InputDecoration(labelText: 'Estimated value'),
-              keyboardType: TextInputType.number,
-              validator: (value) {
-                final parsed = double.tryParse(value ?? '');
-                if (parsed == null || parsed <= 0) return 'Enter a value';
-                return null;
-              },
-            ),
-            TextFormField(
-              controller: _tradeFor,
-              decoration: const InputDecoration(labelText: 'Looking for'),
-              validator: _required,
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: () async {
-                  if (!_formKey.currentState!.validate()) return;
-                  await widget.dbService.createPinListing(
-                    pinName: _pinName.text,
-                    state: _state.text,
-                    condition: _condition.text,
-                    askingValue: double.parse(_value.text),
-                    tradeFor: _tradeFor.text,
-                  );
-                  if (context.mounted) Navigator.pop(context);
-                },
-                child: const Text('Post listing'),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const ListTile(
+                leading: Icon(Icons.push_pin_outlined),
+                title: Text('Create pin request'),
+                subtitle: Text('Ask for the pin you want and offer one of yours.'),
               ),
-            ),
-          ],
+              TextFormField(
+                controller: _wantedPin,
+                decoration: const InputDecoration(labelText: 'Pin you are looking for'),
+                validator: _required,
+              ),
+              TextFormField(
+                controller: _wantedState,
+                decoration: const InputDecoration(labelText: 'State or chapter wanted'),
+                validator: _required,
+              ),
+              TextFormField(
+                controller: _offeredPin,
+                decoration: const InputDecoration(labelText: 'Pin you can offer'),
+                validator: _required,
+              ),
+              TextFormField(
+                controller: _offerCondition,
+                decoration: const InputDecoration(labelText: 'Offered pin condition'),
+                validator: _required,
+              ),
+              TextFormField(
+                controller: _offerNotes,
+                decoration: const InputDecoration(labelText: 'Offer notes'),
+                minLines: 1,
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () async {
+                    if (!_formKey.currentState!.validate()) return;
+                    await widget.dbService.createPinListing(
+                      pinName: _wantedPin.text,
+                      state: _wantedState.text,
+                      offeredPinName: _offeredPin.text,
+                      offerCondition: _offerCondition.text,
+                      offerNotes: _offerNotes.text,
+                    );
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                  child: const Text('Post request'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

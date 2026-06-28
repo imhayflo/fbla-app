@@ -347,48 +347,27 @@ class DatabaseService {
     });
   }
 
-  Stream<List<Map<String, dynamic>>> get pinMarketStream {
-    return _db.collection('pinMarket').snapshots().map((snapshot) {
-      final market = snapshot.docs.map((doc) {
-        return {'id': doc.id, ...doc.data()};
-      }).toList();
-      market.sort((a, b) {
-        final aValue = (a['lastValue'] as num?)?.toDouble() ?? 0;
-        final bValue = (b['lastValue'] as num?)?.toDouble() ?? 0;
-        return bValue.compareTo(aValue);
-      });
-      return market;
-    });
-  }
-
   Future<void> createPinListing({
     required String pinName,
     required String state,
-    required String condition,
-    required double askingValue,
-    required String tradeFor,
+    required String offeredPinName,
+    required String offerCondition,
+    String offerNotes = '',
   }) async {
     if (_uid == null) return;
     final owner = await getMember(_uid!);
-    final normalized = pinName.trim().toLowerCase();
     await _db.collection('pinListings').add({
       'ownerId': _uid,
       'ownerName': owner?.name ?? 'Member',
       'ownerSchool': owner?.school ?? '',
       'pinName': pinName.trim(),
       'state': state.trim(),
-      'condition': condition.trim(),
-      'askingValue': askingValue,
-      'tradeFor': tradeFor.trim(),
+      'offeredPinName': offeredPinName.trim(),
+      'offerCondition': offerCondition.trim(),
+      'offerNotes': offerNotes.trim(),
       'status': 'active',
       'createdAt': FieldValue.serverTimestamp(),
     });
-    await _db.collection('pinMarket').doc(normalized).set({
-      'pinName': pinName.trim(),
-      'lastValue': askingValue,
-      'listingCount': FieldValue.increment(1),
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
   }
 
   Future<void> requestPinTrade(Map<String, dynamic> listing) async {
@@ -397,6 +376,9 @@ class DatabaseService {
     await _db.collection('pinTradeRequests').add({
       'listingId': listing['id'],
       'pinName': listing['pinName'] ?? '',
+      'wantedState': listing['state'] ?? '',
+      'offeredPinName': listing['offeredPinName'] ?? listing['tradeFor'] ?? '',
+      'offerCondition': listing['offerCondition'] ?? listing['condition'] ?? '',
       'ownerId': listing['ownerId'],
       'ownerName': listing['ownerName'] ?? 'Member',
       'requesterId': _uid,
