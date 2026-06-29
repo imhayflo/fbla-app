@@ -17,6 +17,7 @@ class DatabaseService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   static bool isCalendarSyncing = false;
+  static List<Event>? _calendarFallbackCache;
 
   // Cache for pre-loaded data
   List<Event>? _cachedEvents;
@@ -404,8 +405,70 @@ class DatabaseService {
         .collection('events')
         .orderBy('date', descending: false)
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => Event.fromFirestore(doc)).toList());
+        .asyncMap((snapshot) async {
+      final events = snapshot.docs.map((doc) => Event.fromFirestore(doc)).toList();
+      if (_hasUpcomingFblaEvent(events)) return events;
+
+      final liveEvents = await _fetchLiveCalendarFallback();
+      if (liveEvents.isEmpty) return events;
+      return _mergeEvents(events, liveEvents);
+    });
+  }
+
+  bool _hasUpcomingFblaEvent(List<Event> events) {
+    final today = DateTime.now().subtract(const Duration(days: 1));
+    return events.any((event) {
+      final end = event.endDate ?? event.date;
+      final isFblaEvent = event.id.startsWith('fbla_') ||
+          event.title.toLowerCase().contains('fbla') ||
+          event.type.toLowerCase().contains('fbla');
+      return isFblaEvent && !end.isBefore(today);
+    });
+  }
+
+  List<Event> _mergeEvents(List<Event> existing, List<Event> fallback) {
+    final byId = <String, Event>{for (final event in existing) event.id: event};
+    for (final event in fallback) {
+      byId[event.id] = event;
+    }
+    final merged = byId.values.toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+    return merged;
+  }
+
+  Future<List<Event>> _fetchLiveCalendarFallback() async {
+    if (_calendarFallbackCache != null) return _calendarFallbackCache!;
+
+    try {
+      final events = await CalendarSyncService()
+          .fetchUpcomingFBLCalendar()
+          .timeout(const Duration(seconds: 18), onTimeout: () => <Event>[]);
+      _calendarFallbackCache = events;
+      if (events.isNotEmpty) {
+        try {
+          await _saveCalendarEvents(events);
+        } catch (e) {
+          print('Could not save live FBLA calendar events: $e');
+        }
+      }
+      return events;
+    } catch (e) {
+      print('Live FBLA calendar fallback failed: $e');
+      return [];
+    }
+  }
+
+  Future<void> _saveCalendarEvents(List<Event> events) async {
+    if (events.isEmpty) return;
+    final batch = _db.batch();
+    for (final event in events.take(400)) {
+      batch.set(
+        _db.collection('events').doc(event.id),
+        event.toMap(),
+        SetOptions(merge: true),
+      );
+    }
+    await batch.commit();
   }
 
   Stream<List<String>> get userRegisteredEventsStream {

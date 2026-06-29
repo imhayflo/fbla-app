@@ -139,8 +139,8 @@ class _EventsScreenState extends State<EventsScreen> {
                             ),
                           ),
                           TableCalendar<dynamic>(
-                            firstDay: DateTime.utc(2026, 1, 1),
-                            lastDay: DateTime.utc(2026, 12, 31),
+                            firstDay: DateTime.utc(DateTime.now().year - 1, 1, 1),
+                            lastDay: DateTime.utc(DateTime.now().year + 2, 12, 31),
                             focusedDay: _focusedDay,
                             selectedDayPredicate: (day) =>
                                 isSameDay(_selectedDay, day),
