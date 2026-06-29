@@ -643,9 +643,12 @@ class _SelectedDayEventsList extends StatelessWidget {
     }
 
     items.sort((a, b) {
-      final aDate = (a as _CalendarItem).date;
-      final bDate = (b as _CalendarItem).date;
-      return aDate.compareTo(bDate);
+      final aItem = a as _CalendarItem;
+      final bItem = b as _CalendarItem;
+      final aSchedule = aItem.event?.type == 'NLC Schedule';
+      final bSchedule = bItem.event?.type == 'NLC Schedule';
+      if (aSchedule != bSchedule) return aSchedule ? -1 : 1;
+      return aItem.date.compareTo(bItem.date);
     });
     return items;
   }

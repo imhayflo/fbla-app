@@ -613,8 +613,11 @@ class CalendarSyncService {
   }
 
   String _eventId(String title, DateTime date, String? link) {
-    final raw = ((link ?? title) + '_' + date.toIso8601String().substring(0, 10))
-        .toLowerCase();
+    final raw = [
+      title,
+      date.toIso8601String(),
+      link ?? '',
+    ].join('_').toLowerCase();
     final normalized = raw.replaceAll(RegExp(r'[^a-z0-9]+'), '_');
     return 'fbla_' + normalized.replaceAll(RegExp(r'^_+|_+$'), '');
   }
