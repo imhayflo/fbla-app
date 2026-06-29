@@ -107,7 +107,7 @@ class _EventsScreenState extends State<EventsScreen> {
                     builder: (context, regCompsSnapshot) {
                       final regEventIds = regEventsSnapshot.data ?? [];
                       final regCompIds = regCompsSnapshot.data ?? [];
-                      
+
                       // Get all events for showing markers (black dots)
                       // Only show events, not competitions (competitions don't have real dates)
                       final allEventDates = _getEventDates(events, []);
@@ -156,11 +156,11 @@ class _EventsScreenState extends State<EventsScreen> {
                                 // Check if there's any registered event on this day
                                 final dateKey = DateTime(day.year, day.month, day.day);
                                 final events = allEventDates[dateKey] ?? [];
-                                
+
                                 // Check if any event is registered
                                 final hasRegisteredEvent = events.any((event) => 
                                   _isEventRegistered(event, regEventIds, regCompIds));
-                                
+
                                 if (hasRegisteredEvent) {
                                   return Container(
                                     margin: const EdgeInsets.all(4),
@@ -182,16 +182,16 @@ class _EventsScreenState extends State<EventsScreen> {
                                 // Check if any event is registered
                                 final hasRegisteredEvent = events.any((event) => 
                                   _isEventRegistered(event, regEventIds, regCompIds));
-                                
+
                                 // Only show dots for non-registered events (in black)
                                 final nonRegisteredEvents = events.where((event) => 
                                   !_isEventRegistered(event, regEventIds, regCompIds)).toList();
-                                
+
                                 if (nonRegisteredEvents.isEmpty && hasRegisteredEvent) {
                                   // All events are registered - no dots needed since cell is red
                                   return null;
                                 }
-                                
+
                                 return Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
@@ -624,7 +624,13 @@ class _SelectedDayEventsList extends StatelessWidget {
     final selected = DateTime(selectedDay.year, selectedDay.month, selectedDay.day);
     final List<dynamic> items = [];
 
-    for (final event in events) {
+    final eventById = <String, Event>{for (final event in events) event.id: event};
+    for (final event
+        in CalendarSyncService().nationalLeadershipConferenceSchedule2026()) {
+      eventById[event.id] = event;
+    }
+
+    for (final event in eventById.values) {
       var d = event.date;
       final end = event.endDate ?? event.date;
       while (!d.isAfter(end)) {
@@ -811,10 +817,28 @@ class _EventCalendarCard extends StatelessWidget {
     required this.onTap,
   });
 
+  String _eventTimeText(Event event, DateFormat dateFormat) {
+    if (event.type == 'NLC Schedule') {
+      final timeFormat = DateFormat('h:mm a');
+      if (event.endDate == null || event.endDate == event.date) {
+        return timeFormat.format(event.date);
+      }
+      return '${timeFormat.format(event.date)} - ${timeFormat.format(event.endDate!)}';
+    }
+    return event.endDate != null && event.endDate != event.date
+        ? '${dateFormat.format(event.date)} - ${dateFormat.format(event.endDate!)}'
+        : dateFormat.format(event.date);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final dateFormat = DateFormat('MMM d, yyyy');
+    final isNlcSchedule = event.type == 'NLC Schedule';
+    final title = isNlcSchedule
+        ? event.title.replaceFirst('NLC: ', '')
+        : event.title;
+    final timeText = _eventTimeText(event, dateFormat);
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -881,16 +905,14 @@ class _EventCalendarCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      event.title,
+                      title,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      event.endDate != null && event.endDate != event.date
-                          ? '${dateFormat.format(event.date)} - ${dateFormat.format(event.endDate!)}'
-                          : dateFormat.format(event.date),
+                      timeText,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.6),
                       ),
