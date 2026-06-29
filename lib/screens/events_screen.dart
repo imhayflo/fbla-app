@@ -2,6 +2,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
+import '../services/calendar_sync_service.dart';
 import '../services/database_service.dart';
 import '../models/event.dart';
 import '../widgets/fbla_app_bar.dart';
@@ -20,6 +21,7 @@ class EventsScreen extends StatefulWidget {
 
 class _EventsScreenState extends State<EventsScreen> {
   final DatabaseService _dbService = DatabaseService();
+  final CalendarSyncService _calendarSyncService = CalendarSyncService();
   late DateTime _focusedDay;
   late DateTime _selectedDay;
   CalendarFormat _calendarFormat = CalendarFormat.month;
@@ -93,7 +95,7 @@ class _EventsScreenState extends State<EventsScreen> {
           return StreamBuilder<List<Competition>>(
             stream: _dbService.competitionsStream,
             builder: (context, compSnapshot) {
-              final events = eventSnapshot.data ?? [];
+              final events = _withNlcSchedule(eventSnapshot.data ?? []);
               final competitions = compSnapshot.data ?? [];
 
               // Get registered events to determine marker colors
@@ -282,6 +284,17 @@ class _EventsScreenState extends State<EventsScreen> {
     }
 
     return result;
+  }
+
+  List<Event> _withNlcSchedule(List<Event> events) {
+    final byId = <String, Event>{for (final event in events) event.id: event};
+    for (final event
+        in _calendarSyncService.nationalLeadershipConferenceSchedule2026()) {
+      byId[event.id] = event;
+    }
+    final merged = byId.values.toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+    return merged;
   }
 
   bool _isEventRegistered(dynamic event, List<String> regEventIds, List<String> regCompIds) {
