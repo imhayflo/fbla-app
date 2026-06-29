@@ -18,6 +18,7 @@ class DatabaseService {
 
   static bool isCalendarSyncing = false;
   static List<Event>? _calendarFallbackCache;
+  static bool _savedNlcScheduleThisSession = false;
 
   // Cache for pre-loaded data
   List<Event>? _cachedEvents;
@@ -407,11 +408,26 @@ class DatabaseService {
         .snapshots()
         .asyncMap((snapshot) async {
       final events = snapshot.docs.map((doc) => Event.fromFirestore(doc)).toList();
-      if (_hasUpcomingFblaEvent(events)) return events;
+      final nlcSchedule =
+          CalendarSyncService().nationalLeadershipConferenceSchedule2026();
+      final eventsWithNlcSchedule = _mergeEvents(events, nlcSchedule);
+
+      if (!_savedNlcScheduleThisSession) {
+        _savedNlcScheduleThisSession = true;
+        try {
+          await _saveCalendarEvents(nlcSchedule);
+        } catch (e) {
+          print('Could not save NLC schedule events: $e');
+        }
+      }
+
+      if (_hasUpcomingFblaEvent(eventsWithNlcSchedule)) {
+        return eventsWithNlcSchedule;
+      }
 
       final liveEvents = await _fetchLiveCalendarFallback();
-      if (liveEvents.isEmpty) return events;
-      return _mergeEvents(events, liveEvents);
+      if (liveEvents.isEmpty) return eventsWithNlcSchedule;
+      return _mergeEvents(eventsWithNlcSchedule, liveEvents);
     });
   }
 

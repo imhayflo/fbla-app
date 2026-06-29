@@ -38,13 +38,11 @@ class CalendarSyncService {
     for (final url in _jsonUrls) {
       final events = await _fetchJsonEvents(url);
       _mergeEvents(byId, events);
-      if (byId.isNotEmpty) return _sortedUpcoming(byId.values);
     }
 
     for (final url in _icalUrls) {
       final events = await _fetchIcalEvents(url);
       _mergeEvents(byId, events);
-      if (byId.isNotEmpty) return _sortedUpcoming(byId.values);
     }
 
     for (final url in _htmlUrls) {
@@ -52,7 +50,7 @@ class CalendarSyncService {
       _mergeEvents(byId, events);
     }
 
-    _mergeEvents(byId, _nlcScheduleEvents2026());
+    _mergeEvents(byId, nationalLeadershipConferenceSchedule2026());
 
     if (byId.isEmpty) {
       _mergeEvents(byId, _officialFallbackEvents());
@@ -319,7 +317,7 @@ class CalendarSyncService {
     return [
       _nlcOrientation2026(),
       _nationalLeadershipConference2026(),
-      ..._nlcScheduleEvents2026(),
+      ...nationalLeadershipConferenceSchedule2026(),
     ];
   }
 
@@ -356,7 +354,7 @@ class CalendarSyncService {
     );
   }
 
-  List<Event> _nlcScheduleEvents2026() {
+  List<Event> nationalLeadershipConferenceSchedule2026() {
     const location = 'San Antonio, Texas';
     const type = 'NLC Schedule';
     const link = 'https://www.fbla.org/events/';
