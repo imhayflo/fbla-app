@@ -52,6 +52,8 @@ class CalendarSyncService {
       _mergeEvents(byId, events);
     }
 
+    _mergeEvents(byId, _nlcScheduleEvents2026());
+
     if (byId.isEmpty) {
       _mergeEvents(byId, _officialFallbackEvents());
     }
@@ -317,6 +319,7 @@ class CalendarSyncService {
     return [
       _nlcOrientation2026(),
       _nationalLeadershipConference2026(),
+      ..._nlcScheduleEvents2026(),
     ];
   }
 
@@ -351,6 +354,259 @@ class CalendarSyncService {
       type: 'Conferences',
       link: 'https://www.fbla.org/events/',
     );
+  }
+
+  List<Event> _nlcScheduleEvents2026() {
+    const location = 'San Antonio, Texas';
+    const type = 'NLC Schedule';
+    const link = 'https://www.fbla.org/events/';
+
+    Event scheduleEvent(
+      String title,
+      DateTime start,
+      DateTime? end, {
+      String? description,
+    }) {
+      final fullTitle = 'NLC: $title';
+      return Event(
+        id: _eventId(fullTitle, start, link),
+        title: fullTitle,
+        description: description ??
+            'Tentative 2026 FBLA Middle School and High School National Leadership Conference schedule item.',
+        date: start,
+        endDate: end,
+        location: location,
+        type: type,
+        link: link,
+      );
+    }
+
+    return [
+      scheduleEvent(
+        'Early Conference Check-In & Info Desk Open',
+        DateTime(2026, 6, 28, 16),
+        DateTime(2026, 6, 28, 20, 30),
+      ),
+      scheduleEvent(
+        'Optional Social Activity',
+        DateTime(2026, 6, 28, 19),
+        DateTime(2026, 6, 28, 22),
+      ),
+      scheduleEvent(
+        'Curfew',
+        DateTime(2026, 6, 28, 23, 59),
+        null,
+      ),
+      scheduleEvent(
+        'Conference Check-In & Info Desk Open',
+        DateTime(2026, 6, 29, 7),
+        DateTime(2026, 6, 29, 18),
+      ),
+      scheduleEvent(
+        'Competitive Events Info Desk Open',
+        DateTime(2026, 6, 29, 8),
+        DateTime(2026, 6, 29, 18),
+      ),
+      scheduleEvent(
+        'Competitive Events',
+        DateTime(2026, 6, 29, 8),
+        DateTime(2026, 6, 29, 17),
+      ),
+      scheduleEvent(
+        'LifeSmarts Competition',
+        DateTime(2026, 6, 29, 8),
+        DateTime(2026, 6, 29, 17),
+      ),
+      scheduleEvent(
+        'Event Administrator & Judge Manager Orientation',
+        DateTime(2026, 6, 29, 9),
+        DateTime(2026, 6, 29, 11, 30),
+      ),
+      scheduleEvent(
+        'National Officer Candidate Orientation',
+        DateTime(2026, 6, 29, 9),
+        DateTime(2026, 6, 29, 10),
+      ),
+      scheduleEvent(
+        'Workshops',
+        DateTime(2026, 6, 29, 9),
+        DateTime(2026, 6, 29, 16),
+      ),
+      scheduleEvent(
+        'Future Leaders Expo Hall Open',
+        DateTime(2026, 6, 29, 10),
+        DateTime(2026, 6, 29, 16),
+      ),
+      scheduleEvent(
+        'Doors Open for Opening General Session',
+        DateTime(2026, 6, 29, 18),
+        DateTime(2026, 6, 29, 19),
+      ),
+      scheduleEvent(
+        'Opening General Session',
+        DateTime(2026, 6, 29, 19),
+        DateTime(2026, 6, 29, 21),
+      ),
+      scheduleEvent(
+        'Curfew',
+        DateTime(2026, 6, 29, 23, 59),
+        null,
+      ),
+      scheduleEvent(
+        'Conference Info Desk Open',
+        DateTime(2026, 6, 30, 7),
+        DateTime(2026, 6, 30, 17),
+      ),
+      scheduleEvent(
+        'Competitive Events Info Desk Open',
+        DateTime(2026, 6, 30, 7),
+        DateTime(2026, 6, 30, 18),
+      ),
+      scheduleEvent(
+        'Competitive Events',
+        DateTime(2026, 6, 30, 8),
+        DateTime(2026, 6, 30, 18),
+      ),
+      scheduleEvent(
+        'Workshops',
+        DateTime(2026, 6, 30, 9),
+        DateTime(2026, 6, 30, 16),
+      ),
+      scheduleEvent(
+        'Future Leaders Expo Hall & National Officer Candidate Campaign Booths',
+        DateTime(2026, 6, 30, 9),
+        DateTime(2026, 6, 30, 16),
+      ),
+      scheduleEvent(
+        'Regional Campaign Rally & Recognition Session - Eastern Region',
+        DateTime(2026, 6, 30, 12),
+        DateTime(2026, 6, 30, 13),
+      ),
+      scheduleEvent(
+        'Regional Campaign Rally & Recognition Session - Central Region',
+        DateTime(2026, 6, 30, 13, 30),
+        DateTime(2026, 6, 30, 14, 30),
+      ),
+      scheduleEvent(
+        'Regional Campaign Rally & Recognition Session - Western Region',
+        DateTime(2026, 6, 30, 15),
+        DateTime(2026, 6, 30, 16),
+      ),
+      scheduleEvent(
+        'Regional Campaign Rally & Recognition Session - Southern Region',
+        DateTime(2026, 6, 30, 16, 30),
+        DateTime(2026, 6, 30, 17, 30),
+      ),
+      scheduleEvent(
+        'Curfew',
+        DateTime(2026, 6, 30, 23, 59),
+        null,
+      ),
+      scheduleEvent(
+        'Competitive Events Finalists Posted',
+        DateTime(2026, 7, 1, 5),
+        null,
+      ),
+      scheduleEvent(
+        'Conference Info Desk Open',
+        DateTime(2026, 7, 1, 7),
+        DateTime(2026, 7, 1, 17),
+      ),
+      scheduleEvent(
+        'Competitive Events Info Desk Open',
+        DateTime(2026, 7, 1, 7),
+        DateTime(2026, 7, 1, 18),
+      ),
+      scheduleEvent(
+        'Competitive Events',
+        DateTime(2026, 7, 1, 8),
+        DateTime(2026, 7, 1, 18),
+      ),
+      scheduleEvent(
+        'Q&A Session for President, Secretary, and Treasurer Offices',
+        DateTime(2026, 7, 1, 8),
+        DateTime(2026, 7, 1, 9),
+        description:
+            'Invite-only session for State Presidents and State Voting Delegates.',
+      ),
+      scheduleEvent(
+        'Future Leaders Expo Hall',
+        DateTime(2026, 7, 1, 9),
+        DateTime(2026, 7, 1, 13),
+      ),
+      scheduleEvent(
+        'Workshops',
+        DateTime(2026, 7, 1, 9),
+        DateTime(2026, 7, 1, 14),
+      ),
+      scheduleEvent(
+        'National Officer Election Voting Window Opens',
+        DateTime(2026, 7, 1, 12),
+        null,
+      ),
+      scheduleEvent(
+        'Business Achievement Awards Capstone Competitive Review Finals',
+        DateTime(2026, 7, 1, 13),
+        DateTime(2026, 7, 1, 17, 30),
+      ),
+      scheduleEvent(
+        'Certification Lab',
+        DateTime(2026, 7, 1, 13),
+        DateTime(2026, 7, 1, 18),
+      ),
+      scheduleEvent(
+        'Optional Social Activity',
+        DateTime(2026, 7, 1, 18),
+        null,
+      ),
+      scheduleEvent(
+        'Curfew',
+        DateTime(2026, 7, 1, 23, 59),
+        null,
+      ),
+      scheduleEvent(
+        'Doors Open for Middle School Awards of Excellence General Session',
+        DateTime(2026, 7, 2, 9),
+        DateTime(2026, 7, 2, 10),
+      ),
+      scheduleEvent(
+        'Middle School Awards of Excellence General Session',
+        DateTime(2026, 7, 2, 10),
+        DateTime(2026, 7, 2, 12),
+      ),
+      scheduleEvent(
+        'National Officer Election Voting Window Closes',
+        DateTime(2026, 7, 2, 12),
+        null,
+      ),
+      scheduleEvent(
+        '2025-2026 National Officers Farewell Luncheon',
+        DateTime(2026, 7, 2, 13),
+        DateTime(2026, 7, 2, 15),
+        description: 'Invite-only farewell luncheon.',
+      ),
+      scheduleEvent(
+        'Doors Open for High School Awards of Excellence General Session',
+        DateTime(2026, 7, 2, 16),
+        DateTime(2026, 7, 2, 17),
+      ),
+      scheduleEvent(
+        'High School Awards of Excellence General Session',
+        DateTime(2026, 7, 2, 17),
+        DateTime(2026, 7, 2, 21),
+      ),
+      scheduleEvent(
+        'Curfew',
+        DateTime(2026, 7, 2, 23, 59),
+        null,
+      ),
+      scheduleEvent(
+        'National Officer Transition Meeting',
+        DateTime(2026, 7, 3, 8),
+        DateTime(2026, 7, 3, 10),
+        description: 'Invite-only national officer transition meeting.',
+      ),
+    ];
   }
 
   List<Event> _sortedUpcoming(Iterable<Event> events) {
