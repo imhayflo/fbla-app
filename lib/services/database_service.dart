@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/member.dart';
@@ -134,6 +136,7 @@ class DatabaseService {
       'memberSince': FieldValue.serverTimestamp(),
       'createdAt': FieldValue.serverTimestamp(),
       'chapterInstagramHandle': '',
+      'photoUrl': '',
     });
 
     await _addInitialEvents();
@@ -175,6 +178,53 @@ class DatabaseService {
   Future<void> updateMember(Map<String, dynamic> data) async {
     if (_uid == null) return;
     await _db.collection('users').doc(_uid).update(data);
+  }
+
+  Future<String> uploadProfilePhoto(XFile image) async {
+    final uid = _uid;
+    if (uid == null) throw Exception('You must be signed in to upload a profile photo.');
+
+    final bytes = await image.readAsBytes();
+    final fileName = _safeStorageFileName(image.name);
+    final extension = _fileExtension(fileName);
+    final contentType = image.mimeType ?? _contentTypeForExtension(extension);
+    final ref = FirebaseStorage.instance
+        .ref()
+        .child('profile_photos')
+        .child(uid)
+        .child('${DateTime.now().millisecondsSinceEpoch}_$fileName');
+
+    await ref.putData(
+      bytes,
+      SettableMetadata(contentType: contentType),
+    );
+    return ref.getDownloadURL();
+  }
+
+  String _safeStorageFileName(String name) {
+    final cleaned = name.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+    return cleaned.isEmpty ? 'profile_photo.jpg' : cleaned;
+  }
+
+  String _fileExtension(String name) {
+    final index = name.lastIndexOf('.');
+    if (index == -1 || index == name.length - 1) return 'jpg';
+    return name.substring(index + 1).toLowerCase();
+  }
+
+  String _contentTypeForExtension(String extension) {
+    switch (extension) {
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      case 'jpg':
+      case 'jpeg':
+      default:
+        return 'image/jpeg';
+    }
   }
 
   Future<void> addPoints(int points) async {

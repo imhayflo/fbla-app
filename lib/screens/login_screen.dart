@@ -51,12 +51,9 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
-  Future<void> _startEntry() async {
-    if (!_showEntry || _paintController.isAnimating) return;
-    await _paintController.forward();
-    if (!mounted) return;
+  void _startEntry() {
+    if (!_showEntry) return;
     setState(() => _showEntry = false);
-    _paintController.reset();
   }
 
   Future<void> _login() async {
@@ -73,6 +70,7 @@ class _LoginScreenState extends State<LoginScreen>
         password: _passwordController.text,
       );
 
+      await _paintController.forward(from: 0);
       if (mounted) {
         Navigator.pushReplacement(
           context,

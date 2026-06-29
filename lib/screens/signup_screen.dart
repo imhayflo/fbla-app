@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/fbla_screen_shell.dart';
+import '../widgets/app_chrome.dart';
 import '../widgets/fbla_app_bar.dart';
 import '../services/auth_service.dart';
 import '../services/database_service.dart';
@@ -15,7 +16,8 @@ class SignupScreen extends StatefulWidget {
   State<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
+class _SignupScreenState extends State<SignupScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -37,6 +39,21 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String? _error;
+  late final AnimationController _paintController;
+  late final Animation<double> _paintProgress;
+
+  @override
+  void initState() {
+    super.initState();
+    _paintController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 850),
+    );
+    _paintProgress = CurvedAnimation(
+      parent: _paintController,
+      curve: Curves.easeInOutCubic,
+    );
+  }
 
   Future<void> _loadSectionsForState(String? stateCode) async {
     if (stateCode == null || stateCode.isEmpty) {
@@ -70,6 +87,7 @@ class _SignupScreenState extends State<SignupScreen> {
     _chapterController.dispose();
     _chapterInstagramController.dispose();
     _phoneController.dispose();
+    _paintController.dispose();
     super.dispose();
   }
 
@@ -108,6 +126,7 @@ class _SignupScreenState extends State<SignupScreen> {
             : _chapterInstagramController.text.trim().replaceFirst(RegExp(r'^@'), ''),
       );
 
+      await _paintController.forward(from: 0);
       if (mounted) {
         Navigator.pushAndRemoveUntil(
           context,
@@ -136,11 +155,13 @@ class _SignupScreenState extends State<SignupScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: FblaAppBar.standard(context, title: 'Create Account'),
-      body: FblaScreenShell(
-        child: SafeArea(
-          child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
+      body: Stack(
+        children: [
+          FblaScreenShell(
+            child: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Header
@@ -311,7 +332,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
-                    // Section dropdown (required, regional sections from API — select state first)
+                    // Section dropdown (required, regional sections from API - select state first)
                     DropdownButtonFormField<FblaSection>(
                       initialValue: _selectedSection,
                       decoration: InputDecoration(
@@ -488,7 +509,15 @@ class _SignupScreenState extends State<SignupScreen> {
             ],
           ),
         ),
-        ),
+            ),
+          ),
+          AnimatedBuilder(
+            animation: _paintProgress,
+            builder: (context, _) {
+              return PaintStrokeReveal(progress: _paintProgress.value);
+            },
+          ),
+        ],
       ),
     );
   }

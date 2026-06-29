@@ -41,6 +41,7 @@ class AuthService {
           'section': section,
           'phone': phone ?? '',
           'chapterInstagramHandle': chapterInstagramHandle ?? '',
+          'photoUrl': '',
           'points': 0,
           'rank': 0,
           'eventsAttended': 0,

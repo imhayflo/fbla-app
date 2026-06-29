@@ -297,42 +297,78 @@ class _MessagesTab extends StatelessWidget {
         minChildSize: 0.5,
         maxChildSize: 0.95,
         builder: (context, controller) {
-          return StreamBuilder<List<Member>>(
-            stream: dbService.membersDirectoryStream,
-            builder: (context, snapshot) {
-              final members = snapshot.data ?? [];
-              return ListView(
-                controller: controller,
-                padding: const EdgeInsets.all(16),
-                children: [
-                  const _SectionTitle(title: 'Choose a member'),
-                  if (members.isEmpty)
-                    const _EmptyState(
-                      icon: Icons.people_outline,
-                      text: 'No other members found.',
-                    ),
-                  ...members.map(
-                    (member) => Card(
-                      child: ListTile(
-                        leading: CircleAvatar(child: Text(member.initials)),
-                        title: Text(member.name),
-                        subtitle: Text(member.school.isEmpty ? member.email : member.school),
-                        trailing: FilledButton.tonal(
-                          onPressed: () async {
-                            await dbService.sendMessageRequest(member);
-                            if (context.mounted) {
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Message request sent')),
-                              );
-                            }
-                          },
-                          child: const Text('Request'),
+          String query = '';
+          return StatefulBuilder(
+            builder: (context, setSheetState) {
+              return StreamBuilder<List<Member>>(
+                stream: dbService.membersDirectoryStream,
+                builder: (context, snapshot) {
+                  final members = snapshot.data ?? [];
+                  final filteredMembers = members.where((member) {
+                    final search = query.trim().toLowerCase();
+                    if (search.isEmpty) return true;
+                    return member.name.toLowerCase().contains(search) ||
+                        member.email.toLowerCase().contains(search) ||
+                        member.school.toLowerCase().contains(search) ||
+                        member.chapter.toLowerCase().contains(search);
+                  }).toList();
+
+                  return ListView(
+                    controller: controller,
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      const _SectionTitle(title: 'Choose a member'),
+                      const SizedBox(height: 12),
+                      TextField(
+                        decoration: const InputDecoration(
+                          labelText: 'Search members',
+                          hintText: 'Name, school, chapter, or email',
+                          prefixIcon: Icon(Icons.search),
+                        ),
+                        onChanged: (value) => setSheetState(() => query = value),
+                      ),
+                      const SizedBox(height: 16),
+                      if (members.isEmpty)
+                        const _EmptyState(
+                          icon: Icons.people_outline,
+                          text: 'No other members found.',
+                        )
+                      else if (filteredMembers.isEmpty)
+                        const _EmptyState(
+                          icon: Icons.search_off,
+                          text: 'No members match that search.',
+                        ),
+                      ...filteredMembers.map(
+                        (member) => Card(
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundImage: member.photoUrl.isNotEmpty
+                                  ? NetworkImage(member.photoUrl)
+                                  : null,
+                              child: member.photoUrl.isEmpty
+                                  ? Text(member.initials)
+                                  : null,
+                            ),
+                            title: Text(member.name),
+                            subtitle: Text(member.school.isEmpty ? member.email : member.school),
+                            trailing: FilledButton.tonal(
+                              onPressed: () async {
+                                await dbService.sendMessageRequest(member);
+                                if (context.mounted) {
+                                  Navigator.pop(context);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Message request sent')),
+                                  );
+                                }
+                              },
+                              child: const Text('Request'),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                ],
+                    ],
+                  );
+                },
               );
             },
           );

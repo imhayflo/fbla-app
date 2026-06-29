@@ -16,6 +16,9 @@ class FblaAppBar {
     bool showPrototypeMenu = true,
   }) {
     final canPop = ModalRoute.of(context)?.canPop ?? false;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final menuAction = IconButton(
       tooltip: 'Open menu',
       onPressed: () {
@@ -35,18 +38,18 @@ class FblaAppBar {
         width: 42,
         height: 42,
         decoration: BoxDecoration(
-          color: FblaColors.mist,
+          color: isDark ? const Color(0xFF111827) : FblaColors.mist,
           borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: Colors.white),
+          border: Border.all(color: scheme.outlineVariant),
           boxShadow: [
             BoxShadow(
-              color: FblaColors.navy.withOpacity(0.10),
+              color: Colors.black.withOpacity(isDark ? 0.26 : 0.10),
               blurRadius: 14,
               offset: const Offset(0, 6),
             ),
           ],
         ),
-        child: const Icon(Icons.menu, size: 24, color: FblaColors.text),
+        child: Icon(Icons.menu, size: 24, color: scheme.onSurface),
       ),
     );
 
@@ -75,8 +78,8 @@ class FblaAppBar {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              color: FblaColors.text,
+            style: TextStyle(
+              color: scheme.onSurface,
               fontSize: 24,
               fontWeight: FontWeight.w900,
               height: 1,
@@ -93,14 +96,14 @@ class FblaAppBar {
           ),
         ],
       ),
-      backgroundColor: Colors.white,
-      foregroundColor: FblaColors.text,
+      backgroundColor: scheme.surface,
+      foregroundColor: scheme.onSurface,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       shadowColor: Colors.transparent,
       scrolledUnderElevation: 0,
-      shape: const Border(
-        bottom: BorderSide(color: Color(0xFFE8EDF4)),
+      shape: Border(
+        bottom: BorderSide(color: scheme.outlineVariant),
       ),
       actions: [
         ...?actions,

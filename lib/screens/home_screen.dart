@@ -70,64 +70,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: FblaColors.paper,
+      backgroundColor: theme.colorScheme.surface,
       body: IndexedStack(
         index: _selectedIndex,
         children: _screens,
       ),
-      bottomNavigationBar: _selectedIndex == 0
-          ? null
-          : Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  top: BorderSide(color: theme.colorScheme.outlineVariant),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: FblaColors.navy.withOpacity(0.10),
-                    blurRadius: 22,
-                    offset: const Offset(0, -8),
-                  ),
-                ],
-              ),
-              child: NavigationBar(
-                selectedIndex: _selectedIndex,
-                onDestinationSelected: _onItemTapped,
-                destinations: const [
-                  NavigationDestination(
-                    icon: Icon(Icons.dashboard_outlined),
-                    selectedIcon: Icon(Icons.dashboard_rounded),
-                    label: 'Home',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Icons.calendar_today_outlined),
-                    selectedIcon: Icon(Icons.calendar_today_rounded),
-                    label: 'Calendar',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Icons.campaign_outlined),
-                    selectedIcon: Icon(Icons.campaign_rounded),
-                    label: 'News',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Icons.emoji_events_outlined),
-                    selectedIcon: Icon(Icons.emoji_events_rounded),
-                    label: 'Compete',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Icons.people_alt_outlined),
-                    selectedIcon: Icon(Icons.people_alt_rounded),
-                    label: 'Social',
-                  ),
-                  NavigationDestination(
-                    icon: Icon(Icons.person_outline),
-                    selectedIcon: Icon(Icons.person_rounded),
-                    label: 'Profile',
-                  ),
-                ],
-              ),
-            ),
     );
   }
 }
@@ -198,11 +145,14 @@ class _DashboardTabState extends State<DashboardTab> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: FblaColors.paper,
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         toolbarHeight: 86,
-        backgroundColor: FblaColors.porcelain,
+        backgroundColor: isDark ? const Color(0xFF0F172A) : FblaColors.porcelain,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         title: InkWell(
@@ -221,12 +171,12 @@ class _DashboardTabState extends State<DashboardTab> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark ? const Color(0xFF111827) : Colors.white,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: FblaColors.line),
+                  border: Border.all(color: theme.colorScheme.outlineVariant),
                   boxShadow: [
                     BoxShadow(
-                      color: FblaColors.navy.withOpacity(0.18),
+                      color: Colors.black.withOpacity(isDark ? 0.24 : 0.18),
                       blurRadius: 18,
                       offset: const Offset(0, 8),
                     ),
@@ -241,13 +191,13 @@ class _DashboardTabState extends State<DashboardTab> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'FBLA Link',
                     style: TextStyle(
-                      color: FblaColors.ink,
+                      color: theme.colorScheme.onSurface,
                       fontSize: 20,
                       fontWeight: FontWeight.w900,
                     ),
@@ -255,7 +205,7 @@ class _DashboardTabState extends State<DashboardTab> {
                   Text(
                     'Member dashboard',
                     style: TextStyle(
-                      color: FblaColors.muted,
+                      color: theme.colorScheme.onSurfaceVariant,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),
@@ -269,16 +219,16 @@ class _DashboardTabState extends State<DashboardTab> {
           IconButton(
             tooltip: 'Launch guided demo',
             onPressed: _openDemo,
-            icon: const Icon(
+            icon: Icon(
               Icons.play_circle_outline,
               size: 30,
-              color: FblaColors.navy,
+              color: theme.colorScheme.primary,
             ),
           ),
           IconButton(
             tooltip: 'Open menu',
             onPressed: _openMenu,
-            icon: const Icon(Icons.menu, size: 30, color: Color(0xFF2D2B2B)),
+            icon: Icon(Icons.menu, size: 30, color: theme.colorScheme.onSurface),
           ),
           const SizedBox(width: 18),
         ],
@@ -300,7 +250,7 @@ class _DashboardTabState extends State<DashboardTab> {
                 ),
                 Container(
                   key: _contentKey,
-                  color: FblaColors.porcelain,
+                  color: theme.colorScheme.surface,
                   padding: const EdgeInsets.fromLTRB(22, 28, 22, 4),
                   child: _MessagesPreview(dbService: _dbService),
                 ),
@@ -1330,22 +1280,7 @@ class _DashboardMenuOverlay extends StatelessWidget {
         5,
         false
       ),
-      ('Messages', 'Chapter conversations', Icons.forum_outlined, 4, false),
-      (
-        'Pin Trading Hub',
-        'Connect with members',
-        Icons.push_pin_outlined,
-        4,
-        false
-      ),
-      ('Guide', 'Tips and walkthroughs', Icons.explore_outlined, 0, false),
-      (
-        'Resources',
-        'Helpful links and forms',
-        Icons.folder_open_outlined,
-        0,
-        false
-      ),
+      ('Social', 'Messages, pins, and links', Icons.people_alt_outlined, 4, false),
       ('Settings', 'Preferences and account', Icons.settings_outlined, 5, true),
     ];
 

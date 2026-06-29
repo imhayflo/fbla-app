@@ -22,14 +22,14 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
-      scaffoldBackgroundColor: const Color(0xFF121212),
+      scaffoldBackgroundColor: const Color(0xFF08111F),
       appBarTheme: AppBarTheme(
         centerTitle: false,
         elevation: 0,
         scrolledUnderElevation: 1,
-        backgroundColor: scheme.surface,
+        backgroundColor: const Color(0xFF0F172A),
         foregroundColor: scheme.onSurface,
-        surfaceTintColor: scheme.primary.withOpacity(0.12),
+        surfaceTintColor: Colors.transparent,
       ),
       cardTheme: CardThemeData(
         elevation: a.highContrast ? 1 : 0,
@@ -41,13 +41,13 @@ class AppTheme {
               ? BorderSide(color: scheme.outline, width: 1.5)
               : BorderSide(color: scheme.outlineVariant.withOpacity(0.5)),
         ),
-        color: const Color(0xFF2C2C2E),
+        color: const Color(0xFF111827),
         margin: EdgeInsets.zero,
       ),
       navigationBarTheme: NavigationBarThemeData(
         elevation: 2,
-        backgroundColor: const Color(0xFF1C1C1E),
-        indicatorColor: scheme.primaryContainer,
+        backgroundColor: const Color(0xFF0F172A),
+        indicatorColor: const Color(0xFF1E3A8A),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
             return TextStyle(
@@ -82,7 +82,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: scheme.surface,
+        fillColor: const Color(0xFF111827),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: scheme.outlineVariant),

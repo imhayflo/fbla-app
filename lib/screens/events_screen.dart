@@ -152,61 +152,19 @@ class _EventsScreenState extends State<EventsScreen> {
                               return allEventDates[dateKey] ?? [];
                             },
                             calendarBuilders: CalendarBuilders(
-                              defaultBuilder: (context, day, focusedDay) {
-                                // Check if there's any registered event on this day
-                                final dateKey = DateTime(day.year, day.month, day.day);
-                                final events = allEventDates[dateKey] ?? [];
-
-                                // Check if any event is registered
-                                final hasRegisteredEvent = events.any((event) => 
-                                  _isEventRegistered(event, regEventIds, regCompIds));
-
-                                if (hasRegisteredEvent) {
-                                  return Container(
-                                    margin: const EdgeInsets.all(4),
-                                    decoration: const BoxDecoration(
-                                      color: Colors.red,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      '${day.day}',
-                                      style: const TextStyle(color: Colors.white),
-                                    ),
-                                  );
-                                }
-                                return null; // Use default appearance
-                              },
                               markerBuilder: (context, date, events) {
                                 if (events.isEmpty) return null;
-                                // Check if any event is registered
-                                final hasRegisteredEvent = events.any((event) => 
-                                  _isEventRegistered(event, regEventIds, regCompIds));
-
-                                // Only show dots for non-registered events (in black)
-                                final nonRegisteredEvents = events.where((event) => 
-                                  !_isEventRegistered(event, regEventIds, regCompIds)).toList();
-
-                                if (nonRegisteredEvents.isEmpty && hasRegisteredEvent) {
-                                  // All events are registered - no dots needed since cell is red
-                                  return null;
-                                }
-
-                                return Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    ...nonRegisteredEvents.map((event) {
-                                      return Container(
-                                        margin: const EdgeInsets.symmetric(horizontal: 1),
-                                        width: 6,
-                                        height: 6,
-                                        decoration: const BoxDecoration(
-                                          color: Colors.black,
-                                          shape: BoxShape.circle,
-                                        ),
-                                      );
-                                    }),
-                                  ],
+                                return Align(
+                                  alignment: Alignment.bottomCenter,
+                                  child: Container(
+                                    width: 6,
+                                    height: 6,
+                                    margin: const EdgeInsets.only(bottom: 6),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.black,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
                                 );
                               },
                             ),
@@ -220,12 +178,6 @@ class _EventsScreenState extends State<EventsScreen> {
                               setState(() => _calendarFormat = format);
                             },
                             calendarStyle: CalendarStyle(
-                              markersMaxCount: 3,
-                              markerSize: 8,
-                              markerDecoration: const BoxDecoration(
-                                color: Colors.black,
-                                shape: BoxShape.circle,
-                              ),
                               selectedDecoration: BoxDecoration(
                                 color: Theme.of(context).colorScheme.primary,
                                 shape: BoxShape.circle,

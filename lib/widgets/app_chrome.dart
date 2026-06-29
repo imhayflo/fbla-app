@@ -82,22 +82,7 @@ class _FblaPrototypeMenuOverlay extends StatelessWidget {
         5,
         false
       ),
-      ('Messages', 'Chapter conversations', Icons.forum_outlined, 4, false),
-      (
-        'Pin Trading Hub',
-        'Connect with members',
-        Icons.push_pin_outlined,
-        4,
-        false
-      ),
-      ('Guide', 'Tips and walkthroughs', Icons.explore_outlined, 0, false),
-      (
-        'Resources',
-        'Helpful links and forms',
-        Icons.folder_open_outlined,
-        0,
-        false
-      ),
+      ('Social', 'Messages, pins, and links', Icons.people_alt_outlined, 4, false),
       ('Settings', 'Preferences and account', Icons.settings_outlined, 5, true),
     ];
 
