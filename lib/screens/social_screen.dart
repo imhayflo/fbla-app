@@ -8,21 +8,78 @@ import 'package:fbla_member_app/widgets/fbla_screen_shell.dart';
 import 'package:fbla_member_app/widgets/app_chrome.dart';
 
 class SocialScreen extends StatefulWidget {
-  const SocialScreen({super.key});
+  final int initialTabIndex;
+  final String? initialChatConversationId;
+  final String? initialChatTitle;
+  final int chatOpenRequestId;
+
+  const SocialScreen({
+    super.key,
+    this.initialTabIndex = 0,
+    this.initialChatConversationId,
+    this.initialChatTitle,
+    this.chatOpenRequestId = 0,
+  });
 
   @override
   State<SocialScreen> createState() => _SocialScreenState();
 }
 
-class _SocialScreenState extends State<SocialScreen> {
+class _SocialScreenState extends State<SocialScreen>
+    with SingleTickerProviderStateMixin {
   final DatabaseService _dbService = DatabaseService();
   final SocialService _socialService = SocialService();
   SocialConfig? _socialConfig;
+  late final TabController _tabController;
+  int _handledChatOpenRequestId = -1;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(
+      length: 3,
+      initialIndex: widget.initialTabIndex,
+      vsync: this,
+    );
     _loadSocialConfig();
+    _openRequestedChatAfterBuild();
+  }
+
+  @override
+  void didUpdateWidget(covariant SocialScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialTabIndex != _tabController.index) {
+      _tabController.animateTo(widget.initialTabIndex);
+    }
+    _openRequestedChatAfterBuild();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _openRequestedChatAfterBuild() {
+    final conversationId = widget.initialChatConversationId;
+    if (conversationId == null ||
+        conversationId.isEmpty ||
+        widget.chatOpenRequestId == _handledChatOpenRequestId) {
+      return;
+    }
+    _handledChatOpenRequestId = widget.chatOpenRequestId;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        builder: (context) => _ChatSheet(
+          dbService: _dbService,
+          conversationId: conversationId,
+          title: widget.initialChatTitle ?? 'Member',
+        ),
+      );
+    });
   }
 
   Future<void> _loadSocialConfig() async {
@@ -32,9 +89,7 @@ class _SocialScreenState extends State<SocialScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
+    return Scaffold(
         backgroundColor: Colors.transparent,
         appBar: FblaAppBar.standard(
           context,
@@ -63,8 +118,9 @@ class _SocialScreenState extends State<SocialScreen> {
                   ],
                 ),
               ),
-              const TabBar(
-                tabs: [
+              TabBar(
+                controller: _tabController,
+                tabs: const [
                   Tab(icon: Icon(Icons.public), text: 'Socials'),
                   Tab(icon: Icon(Icons.chat_bubble_outline), text: 'Messages'),
                   Tab(icon: Icon(Icons.push_pin_outlined), text: 'Pins'),
@@ -72,6 +128,7 @@ class _SocialScreenState extends State<SocialScreen> {
               ),
               Expanded(
                 child: TabBarView(
+                  controller: _tabController,
                   children: [
                     _SocialLinksTab(
                       dbService: _dbService,
@@ -86,7 +143,6 @@ class _SocialScreenState extends State<SocialScreen> {
             ],
           ),
         ),
-      ),
     );
   }
 }

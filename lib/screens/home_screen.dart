@@ -29,23 +29,15 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   DateTime? _initialEventDate;
   String? _initialAnnouncementId;
-
-  // Pre-build all tab screens to reduce first-tap delay
-  late final List<Widget> _screens;
+  int _initialSocialTabIndex = 0;
+  String? _initialChatConversationId;
+  String? _initialChatTitle;
+  int _chatOpenRequestId = 0;
 
   @override
   void initState() {
     super.initState();
     _selectedIndex = widget.initialIndex;
-    // Pre-create all screens so their StreamBuilders connect early
-    _screens = [
-      DashboardTab(navigateToTab: _onItemTapped),
-      EventsScreen(initialDate: _initialEventDate),
-      AnnouncementsScreen(initialAnnouncementId: _initialAnnouncementId),
-      const CompetitionsScreen(),
-      const SocialScreen(),
-      const ProfileScreen(),
-    ];
 
     // Pre-warm Firestore connections in background
     _prewarmFirestore();
@@ -58,11 +50,24 @@ class _HomeScreenState extends State<HomeScreen> {
     dbService.warmupStreams();
   }
 
-  void _onItemTapped(int index, {DateTime? eventDate, String? announcementId}) {
+  void _onItemTapped(
+    int index, {
+    DateTime? eventDate,
+    String? announcementId,
+    int? socialTabIndex,
+    String? chatConversationId,
+    String? chatTitle,
+  }) {
     setState(() {
       _selectedIndex = index;
       _initialEventDate = eventDate;
       _initialAnnouncementId = announcementId;
+      _initialSocialTabIndex = socialTabIndex ?? 0;
+      _initialChatConversationId = chatConversationId;
+      _initialChatTitle = chatTitle;
+      if (chatConversationId != null) {
+        _chatOpenRequestId++;
+      }
     });
   }
 
@@ -73,15 +78,33 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: theme.colorScheme.surface,
       body: IndexedStack(
         index: _selectedIndex,
-        children: _screens,
+        children: [
+          DashboardTab(navigateToTab: _onItemTapped),
+          EventsScreen(initialDate: _initialEventDate),
+          AnnouncementsScreen(initialAnnouncementId: _initialAnnouncementId),
+          const CompetitionsScreen(),
+          SocialScreen(
+            initialTabIndex: _initialSocialTabIndex,
+            initialChatConversationId: _initialChatConversationId,
+            initialChatTitle: _initialChatTitle,
+            chatOpenRequestId: _chatOpenRequestId,
+          ),
+          const ProfileScreen(),
+        ],
       ),
     );
   }
 }
 
 class DashboardTab extends StatefulWidget {
-  final void Function(int index, {DateTime? eventDate, String? announcementId})
-      navigateToTab;
+  final void Function(
+    int index, {
+    DateTime? eventDate,
+    String? announcementId,
+    int? socialTabIndex,
+    String? chatConversationId,
+    String? chatTitle,
+  }) navigateToTab;
 
   const DashboardTab({super.key, required this.navigateToTab});
 
@@ -252,7 +275,16 @@ class _DashboardTabState extends State<DashboardTab> {
                   key: _contentKey,
                   color: theme.colorScheme.surface,
                   padding: const EdgeInsets.fromLTRB(22, 28, 22, 4),
-                  child: _MessagesPreview(dbService: _dbService),
+                  child: _MessagesPreview(
+                    dbService: _dbService,
+                    onOpenConversation: (conversationId, title) =>
+                        widget.navigateToTab(
+                      4,
+                      socialTabIndex: 1,
+                      chatConversationId: conversationId,
+                      chatTitle: title,
+                    ),
+                  ),
                 ),
                 _BlueFeedSection(
                   title: 'Recent News',
@@ -815,16 +847,29 @@ class _HeroLinePainter extends CustomPainter {
 }
 
 class _MessagesPreview extends StatelessWidget {
-  const _MessagesPreview({required this.dbService});
+  const _MessagesPreview({
+    required this.dbService,
+    required this.onOpenConversation,
+  });
 
   final DatabaseService dbService;
+  final void Function(String conversationId, String title) onOpenConversation;
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Map<String, dynamic>>>(
       stream: dbService.conversationsStream,
       builder: (context, snapshot) {
-        final conversations = (snapshot.data ?? []).take(3).toList();
+        final currentUserId = dbService.currentUserId;
+        final conversations = (snapshot.data ?? [])
+            .where((conversation) {
+              final lastSenderId = conversation['lastSenderId']?.toString();
+              return lastSenderId != null &&
+                  lastSenderId.isNotEmpty &&
+                  lastSenderId != currentUserId;
+            })
+            .take(3)
+            .toList();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -925,6 +970,10 @@ class _MessagesPreview extends StatelessWidget {
                         : lastMessage,
                     name: otherName,
                     accent: FblaColors.sky,
+                    onTap: () => onOpenConversation(
+                      conversation['id'] as String,
+                      otherName,
+                    ),
                   );
                 },
               ),
@@ -941,18 +990,23 @@ class _PrototypeMessageCard extends StatelessWidget {
     required this.text,
     required this.name,
     required this.accent,
+    required this.onTap,
   });
 
   final String text;
   final String name;
   final Color accent;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return _AestheticSurface(
-      margin: const EdgeInsets.only(bottom: 18),
-      accent: accent,
-      child: Column(
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: _AestheticSurface(
+        margin: const EdgeInsets.only(bottom: 18),
+        accent: accent,
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
@@ -986,6 +1040,7 @@ class _PrototypeMessageCard extends StatelessWidget {
             ],
           ),
         ],
+      ),
       ),
     );
   }
