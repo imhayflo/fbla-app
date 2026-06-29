@@ -205,7 +205,7 @@ class CalendarSyncService {
       final document = html_parser.parse(response.body);
       final events = _parseHtmlPage(document);
       if (events.isNotEmpty) return events;
-      return _parsePlainTextEvents(document.body?.text ?? document.text);
+      return _parsePlainTextEvents(document.body?.text ?? document.text ?? '');
     } catch (e) {
       print('Error fetching FBLA HTML calendar: $e');
       return [];
