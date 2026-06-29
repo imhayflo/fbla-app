@@ -19,29 +19,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final AuthService _authService = AuthService();
   bool _notificationsEnabled = true;
   bool _eventReminders = true;
-  final _geminiKeyController = TextEditingController();
-  bool _loadingGeminiKey = true;
-  bool _obscureGeminiKey = true;
+  final _openAIKeyController = TextEditingController();
+  bool _loadingOpenAIKey = true;
+  bool _obscureOpenAIKey = true;
 
   @override
   void initState() {
     super.initState();
-    _loadGeminiKey();
+    _loadOpenAIKey();
   }
 
-  Future<void> _loadGeminiKey() async {
-    final key = await GeminiConfig.getApiKey();
+  Future<void> _loadOpenAIKey() async {
+    final key = await OpenAIConfig.getApiKey();
     if (mounted) {
       setState(() {
-        if (key != null) _geminiKeyController.text = key;
-        _loadingGeminiKey = false;
+        if (key != null) _openAIKeyController.text = key;
+        _loadingOpenAIKey = false;
       });
     }
   }
 
   @override
   void dispose() {
-    _geminiKeyController.dispose();
+    _openAIKeyController.dispose();
     super.dispose();
   }
 
@@ -160,7 +160,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Card(
             child: Column(
               children: [
-                if (_loadingGeminiKey)
+                if (_loadingOpenAIKey)
                   const Padding(
                     padding: EdgeInsets.all(24),
                     child: Center(child: CircularProgressIndicator()),
@@ -169,20 +169,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                     child: TextField(
-                      controller: _geminiKeyController,
-                      obscureText: _obscureGeminiKey,
+                      controller: _openAIKeyController,
+                      obscureText: _obscureOpenAIKey,
                       decoration: InputDecoration(
-                        labelText: 'Gemini API key',
+                        labelText: 'OpenAI API key',
                         hintText: 'For parsing pasted official results',
                         border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscureGeminiKey
+                            _obscureOpenAIKey
                                 ? Icons.visibility
                                 : Icons.visibility_off,
                           ),
                           onPressed: () => setState(
-                            () => _obscureGeminiKey = !_obscureGeminiKey,
+                            () => _obscureOpenAIKey = !_obscureOpenAIKey,
                           ),
                         ),
                       ),
@@ -190,10 +190,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ListTile(
                   leading: Icon(Icons.key, color: theme.colorScheme.primary),
-                  title: const Text('Save Gemini key'),
+                  title: const Text('Save OpenAI key'),
                   subtitle: const Text('Stored only on this device'),
                   onTap: () async {
-                    await GeminiConfig.saveApiKey(_geminiKeyController.text);
+                    await OpenAIConfig.saveApiKey(_openAIKeyController.text);
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('API key saved')),

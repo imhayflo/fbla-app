@@ -136,7 +136,7 @@ class _EventsScreenState extends State<EventsScreen> {
                                   competitions: competitions,
                                 ),
                                 icon: const Icon(Icons.auto_awesome),
-                                label: const Text('Generate AI prep advice'),
+                                label: const Text('Generate ChatGPT prep advice'),
                               ),
                             ),
                           ),
@@ -508,7 +508,7 @@ class _AiPrepAdviceSheetState extends State<_AiPrepAdviceSheet> {
             if (!_advice!.usedAi) ...[
               const SizedBox(height: 8),
               Text(
-                'Live Gemini advice comes from the Firebase backend once GEMINI_API_KEY is deployed.',
+                'Live ChatGPT advice comes from the Firebase backend once OPENAI_API_KEY is deployed.',
                 style: theme.textTheme.bodySmall,
               ),
             ],

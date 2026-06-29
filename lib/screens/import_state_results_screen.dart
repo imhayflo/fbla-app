@@ -30,7 +30,7 @@ class _ImportStateResultsScreenState extends State<ImportStateResultsScreen> {
   }
 
   Future<void> _loadApiKey() async {
-    final key = await GeminiConfig.getApiKey();
+    final key = await OpenAIConfig.getApiKey();
     if (mounted) {
       setState(() {
         if (key != null) _apiKeyController.text = key;
@@ -47,7 +47,7 @@ class _ImportStateResultsScreenState extends State<ImportStateResultsScreen> {
   }
 
   Future<void> _saveApiKey() async {
-    await GeminiConfig.saveApiKey(_apiKeyController.text);
+    await OpenAIConfig.saveApiKey(_apiKeyController.text);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('API key saved on this device')),
@@ -66,7 +66,7 @@ class _ImportStateResultsScreenState extends State<ImportStateResultsScreen> {
 
     setState(() => _parsing = true);
     try {
-      await GeminiConfig.saveApiKey(_apiKeyController.text);
+      await OpenAIConfig.saveApiKey(_apiKeyController.text);
       final parsed = await StateResultsParserService.parseResultsText(text);
       if (parsed.isEmpty) {
         throw Exception('No placements were found in that text.');
@@ -117,7 +117,7 @@ class _ImportStateResultsScreenState extends State<ImportStateResultsScreen> {
                 padding: const EdgeInsets.all(16),
                 children: [
                   Text(
-                    'AI-assisted import',
+                    'ChatGPT-assisted import',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.primary,
@@ -127,7 +127,7 @@ class _ImportStateResultsScreenState extends State<ImportStateResultsScreen> {
                   Text(
                     'Paste text from an official FBLA state conference results '
                     'listing (PDF excerpt, webpage copy, or spreadsheet export). '
-                    'Gemini extracts placements and links them to member profiles '
+                    'ChatGPT extracts placements and links them to member profiles '
                     'by name. The app does not scrape websites on its own.',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
@@ -138,8 +138,8 @@ class _ImportStateResultsScreenState extends State<ImportStateResultsScreen> {
                     controller: _apiKeyController,
                     obscureText: _obscureKey,
                     decoration: InputDecoration(
-                      labelText: 'Gemini API key',
-                      hintText: 'AIza…',
+                      labelText: 'OpenAI API key',
+                      hintText: 'sk-...',
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -162,12 +162,12 @@ class _ImportStateResultsScreenState extends State<ImportStateResultsScreen> {
                         onPressed: () {
                           Clipboard.setData(
                             const ClipboardData(
-                              text: 'https://aistudio.google.com/apikey',
+                              text: 'https://platform.openai.com/api-keys',
                             ),
                           );
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Google AI Studio link copied'),
+                              content: Text('OpenAI API keys link copied'),
                             ),
                           );
                         },
@@ -197,7 +197,7 @@ class _ImportStateResultsScreenState extends State<ImportStateResultsScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.auto_awesome),
-                    label: Text(_parsing ? 'Parsing…' : 'Parse & import'),
+                    label: Text(_parsing ? 'Parsing...' : 'Parse & import'),
                   ),
                 ],
               ),
