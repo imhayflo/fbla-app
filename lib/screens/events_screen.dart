@@ -1,9 +1,12 @@
-import 'package:cloud_functions/cloud_functions.dart';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../services/calendar_sync_service.dart';
 import '../services/database_service.dart';
+import '../services/state_results_parser_service.dart';
 import '../models/event.dart';
 import '../widgets/fbla_app_bar.dart';
 import '../widgets/fbla_screen_shell.dart';
@@ -355,7 +358,7 @@ class _AiPrepAdviceSheetState extends State<_AiPrepAdviceSheet> {
     });
 
     try {
-      final advice = await _loadBackendAdvice();
+      final advice = await _loadDemoOpenAIAdvice();
       if (mounted) {
         setState(() => _advice = advice);
       }
@@ -364,7 +367,7 @@ class _AiPrepAdviceSheetState extends State<_AiPrepAdviceSheet> {
         setState(() {
           _advice = _fallbackAdvice();
           _error =
-              'AI request failed. This built-in prep plan is showing until the backend key is deployed.';
+              'ChatGPT request failed: ${_friendlyAiError(e)} Showing the built-in demo prep plan instead.';
         });
       }
     } finally {
@@ -374,33 +377,112 @@ class _AiPrepAdviceSheetState extends State<_AiPrepAdviceSheet> {
     }
   }
 
-  Future<_AiPrepAdvice> _loadBackendAdvice() async {
-    final callable = FirebaseFunctions.instance.httpsCallable(
-      'getCalendarPrepAdvice',
-      options: HttpsCallableOptions(timeout: const Duration(seconds: 30)),
+  Future<_AiPrepAdvice> _loadDemoOpenAIAdvice() async {
+    final key = await OpenAIConfig.getApiKey();
+    if (key == null || key.isEmpty) {
+      throw StateError(
+        'Add an OpenAI API key in Settings, then refresh advice. This demo calls ChatGPT directly from the app.',
+      );
+    }
+    if (!key.startsWith('sk-')) {
+      throw StateError(
+        'The saved OpenAI key does not look right. It should start with sk-.',
+      );
+    }
+
+    final eventsText = _upcomingItems.isEmpty
+        ? 'No upcoming events are currently loaded.'
+        : _upcomingItems.map((item) {
+            if (item is Event) {
+              return '- ${item.title} (${item.type}, Event) on ${DateFormat.yMMMd().format(item.date)}';
+            }
+
+            final competition = item as Competition;
+            return '- ${competition.name} (${competition.category}, ${competition.level}) on ${DateFormat.yMMMd().format(competition.date)}';
+          }).join('\n');
+
+    final prompt = '''
+You are an FBLA preparation coach for a student.
+Use these upcoming calendar items:
+$eventsText
+
+Return only valid JSON with exactly these keys:
+summary: short string
+tips: array of 3-5 concise strings
+deadlines: array of 3-5 strings with concrete example preparation deadlines
+weeklyPlan: array of 3-5 strings
+''';
+
+    final response = await http.post(
+      Uri.parse('https://api.openai.com/v1/chat/completions'),
+      headers: {
+        'Authorization': 'Bearer $key',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'model': 'gpt-4o-mini',
+        'messages': [
+          {
+            'role': 'system',
+            'content':
+                'You are a concise FBLA preparation coach. Return only valid JSON.',
+          },
+          {'role': 'user', 'content': prompt},
+        ],
+        'response_format': {'type': 'json_object'},
+        'temperature': 0.3,
+        'max_tokens': 700,
+      }),
     );
-    final result = await callable.call<Map<String, dynamic>>({
-      'items': _upcomingItems.map((item) {
-        if (item is Event) {
-          return {
-            'title': item.title,
-            'type': item.type,
-            'level': 'Event',
-            'date': DateFormat.yMMMd().format(item.date),
-          };
-        }
 
-        final competition = item as Competition;
-        return {
-          'title': competition.name,
-          'type': competition.category,
-          'level': competition.level,
-          'date': DateFormat.yMMMd().format(competition.date),
-        };
-      }).toList(),
+    if (response.statusCode != 200) {
+      throw Exception(_openAIErrorMessage(response));
+    }
+
+    final body = jsonDecode(response.body) as Map<String, dynamic>;
+    final text = body['choices']?[0]?['message']?['content'] as String?;
+    if (text == null || text.trim().isEmpty) {
+      throw Exception('ChatGPT returned an empty response.');
+    }
+
+    final decoded = jsonDecode(_extractJsonObject(text)) as Map<String, dynamic>;
+    return _AiPrepAdvice.fromMap({
+      ...decoded,
+      'usedAi': true,
     });
+  }
 
-    return _AiPrepAdvice.fromMap(Map<String, dynamic>.from(result.data));
+  String _extractJsonObject(String text) {
+    final trimmed = text.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      return trimmed;
+    }
+
+    final start = trimmed.indexOf('{');
+    final end = trimmed.lastIndexOf('}');
+    if (start < 0 || end <= start) {
+      throw Exception('Could not parse JSON from ChatGPT output.');
+    }
+    return trimmed.substring(start, end + 1);
+  }
+
+  String _openAIErrorMessage(http.Response response) {
+    try {
+      final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+      final message = decoded['error']?['message'];
+      if (message is String && message.trim().isNotEmpty) {
+        return 'OpenAI returned ${response.statusCode}: ${message.trim()}';
+      }
+    } catch (_) {
+      // Fall through to a short generic error below.
+    }
+    return 'OpenAI returned ${response.statusCode}.';
+  }
+
+  String _friendlyAiError(Object error) {
+    if (error is StateError) return error.message;
+    final text = error.toString();
+    return text.startsWith('Exception: ') ? text.substring(11) : text;
   }
 
   _AiPrepAdvice _fallbackAdvice() {
@@ -508,7 +590,7 @@ class _AiPrepAdviceSheetState extends State<_AiPrepAdviceSheet> {
             if (!_advice!.usedAi) ...[
               const SizedBox(height: 8),
               Text(
-                'Live ChatGPT advice comes from the Firebase backend once OPENAI_API_KEY is deployed.',
+                'Demo ChatGPT advice uses the OpenAI API key saved in Settings.',
                 style: theme.textTheme.bodySmall,
               ),
             ],

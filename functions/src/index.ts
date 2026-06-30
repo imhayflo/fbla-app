@@ -37,6 +37,11 @@ function readStringList(value: unknown): string[] {
     .slice(0, 6);
 }
 
+function listOrFallback(value: unknown, fallback: string[]): string[] {
+  const list = readStringList(value);
+  return list.length > 0 ? list : fallback;
+}
+
 function extractJson(text: string): AdviceResponse {
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
@@ -47,9 +52,21 @@ function extractJson(text: string): AdviceResponse {
   const parsed = JSON.parse(text.slice(start, end + 1)) as Record<string, unknown>;
   return {
     summary: asText(parsed.summary, "Here is a preparation plan."),
-    tips: readStringList(parsed.tips),
-    deadlines: readStringList(parsed.deadlines),
-    weeklyPlan: readStringList(parsed.weeklyPlan),
+    tips: listOrFallback(parsed.tips, [
+      "Review the official event guidelines and scoring criteria.",
+      "Make a short practice plan with checkpoints before the event date.",
+      "Ask an adviser or officer for feedback before finalizing materials.",
+    ]),
+    deadlines: listOrFallback(parsed.deadlines, [
+      "This week: confirm the rules, schedule, and required materials.",
+      "Two weeks before: complete a timed practice or study review.",
+      "One week before: polish details and confirm travel or meeting logistics.",
+    ]),
+    weeklyPlan: listOrFallback(parsed.weeklyPlan, [
+      "Week 1: understand the event and collect resources.",
+      "Week 2: prepare your content, notes, or study plan.",
+      "Week 3: practice, get feedback, and tighten weak areas.",
+    ]),
     usedAi: true,
   };
 }
@@ -110,6 +127,7 @@ weeklyPlan: array of 3-5 strings
         ],
         response_format: { type: "json_object" },
         temperature: 0.3,
+        max_tokens: 700,
       }),
     });
 

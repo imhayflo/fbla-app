@@ -1011,11 +1011,13 @@ class _CompetitionDetailsSheetState extends State<_CompetitionDetailsSheet> {
                     widget.competition.description,
                     style: theme.textTheme.bodyLarge,
                   ),
-                  const SizedBox(height: 24),
-                  _JudgeSimulatorPrompt(
-                    competition: widget.competition,
-                    onTap: () => _showJudgeSimulator(context),
-                  ),
+                  if (widget.competition.usesJudges) ...[
+                    const SizedBox(height: 24),
+                    _JudgeSimulatorPrompt(
+                      competition: widget.competition,
+                      onTap: () => _showJudgeSimulator(context),
+                    ),
+                  ],
                   if (widget.competition.guidelinesUrl != null &&
                       widget.competition.guidelinesUrl!.isNotEmpty) ...[
                     const SizedBox(height: 24),

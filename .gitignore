@@ -36,6 +36,11 @@ migrate_working_dir/
 .dart-local/
 /build/
 
+# Firebase Functions generated output
+functions/lib/
+functions/node_modules/
+.pnpm-store/
+
 # Symbolication related
 app.*.symbols
 

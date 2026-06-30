@@ -150,7 +150,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 24),
           Text(
-            'State competition results',
+            'ChatGPT demo features',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.primary,
@@ -173,7 +173,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       obscureText: _obscureOpenAIKey,
                       decoration: InputDecoration(
                         labelText: 'OpenAI API key',
-                        hintText: 'For parsing pasted official results',
+                        hintText: 'For prep advice and result parsing',
                         border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
                           icon: Icon(

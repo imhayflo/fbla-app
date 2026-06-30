@@ -25,6 +25,13 @@ class Competition {
 
   String get participants => '$registeredCount/$maxTeamSize';
 
+  bool get usesJudges {
+    final normalizedCategory = category.toLowerCase();
+    final normalizedName = name.toLowerCase();
+    return !normalizedCategory.contains('objective') &&
+        !normalizedName.contains('objective test');
+  }
+
   factory Competition.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return Competition(
