@@ -253,7 +253,7 @@ class _MessagesTab extends StatelessWidget {
           label: const Text('New message request'),
         ),
         const SizedBox(height: 16),
-        _SectionTitle(title: 'Message requests'),
+        const _SectionTitle(title: 'Message requests'),
         StreamBuilder<List<Map<String, dynamic>>>(
           stream: dbService.messageRequestsStream,
           builder: (context, snapshot) {
@@ -303,7 +303,7 @@ class _MessagesTab extends StatelessWidget {
           },
         ),
         const SizedBox(height: 20),
-        _SectionTitle(title: 'Chats'),
+        const _SectionTitle(title: 'Chats'),
         StreamBuilder<List<Map<String, dynamic>>>(
           stream: dbService.conversationsStream,
           builder: (context, snapshot) {
@@ -322,7 +322,7 @@ class _MessagesTab extends StatelessWidget {
                 final otherName = names.entries
                     .firstWhere(
                       (entry) => entry.key != dbService.currentUserId,
-                      orElse: () => MapEntry<String, dynamic>('', 'Member'),
+                      orElse: () => const MapEntry<String, dynamic>('', 'Member'),
                     )
                     .value
                     .toString();
