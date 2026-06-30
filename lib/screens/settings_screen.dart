@@ -4,6 +4,7 @@ import '../services/auth_service.dart';
 import 'accessibility_settings_screen.dart';
 import 'import_state_results_screen.dart';
 import '../services/state_results_parser_service.dart';
+import '../widgets/app_chrome.dart';
 import '../widgets/fbla_app_bar.dart';
 import '../widgets/fbla_screen_shell.dart';
 import '../main.dart';
@@ -99,6 +100,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     builder: (_) => const AccessibilitySettingsScreen(),
                   ),
                 );
+              },
+            ),
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: ListTile(
+              leading: Icon(Icons.restart_alt, color: theme.colorScheme.primary),
+              title: const Text('Reset tutorials'),
+              subtitle: const Text('Show the screen tips again during demos'),
+              onTap: () async {
+                await AppInstructionCard.resetDismissedInstructions();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Tutorials reset. Reopen a screen to see them.'),
+                    ),
+                  );
+                }
               },
             ),
           ),

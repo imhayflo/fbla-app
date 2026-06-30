@@ -308,6 +308,19 @@ class _PaintStrokePainter extends CustomPainter {
 }
 
 class AppInstructionCard extends StatefulWidget {
+  static const dismissedKeyPrefix = 'instruction_dismissed_';
+
+  static Future<void> resetDismissedInstructions() async {
+    final prefs = await SharedPreferences.getInstance();
+    final keys = prefs
+        .getKeys()
+        .where((key) => key.startsWith(dismissedKeyPrefix))
+        .toList();
+    for (final key in keys) {
+      await prefs.remove(key);
+    }
+  }
+
   final String id;
   final String title;
   final List<String> tips;
@@ -394,7 +407,6 @@ class AppHelpButton extends StatelessWidget {
 }
 
 class _AppInstructionCardState extends State<AppInstructionCard> {
-  static const _prefix = 'instruction_dismissed_';
   bool _loading = true;
   bool _dismissed = false;
   int _index = 0;
@@ -409,7 +421,9 @@ class _AppInstructionCardState extends State<AppInstructionCard> {
     final prefs = await SharedPreferences.getInstance();
     if (mounted) {
       setState(() {
-        _dismissed = prefs.getBool('$_prefix${widget.id}') ?? false;
+        _dismissed =
+            prefs.getBool('${AppInstructionCard.dismissedKeyPrefix}${widget.id}') ??
+                false;
         _loading = false;
       });
     }
@@ -417,7 +431,10 @@ class _AppInstructionCardState extends State<AppInstructionCard> {
 
   Future<void> _dismiss() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('$_prefix${widget.id}', true);
+    await prefs.setBool(
+      '${AppInstructionCard.dismissedKeyPrefix}${widget.id}',
+      true,
+    );
     if (mounted) setState(() => _dismissed = true);
   }
 
